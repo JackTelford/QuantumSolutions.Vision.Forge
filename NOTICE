@@ -1,0 +1,17 @@
+QuantumSolutions.Vision.Forge
+Copyright 2026 Quantum Solutions
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Third-party software and assets used by this product, their versions and
+licenses, are listed in THIRD-PARTY.md. Verbatim license texts are kept under
+docs/licenses/.
+
+blender/apply_scene.py uses the Blender Python API (bpy). The Blender
+Foundation treats scripts that use bpy as subject to the GNU General Public
+License when distributed. Apache-2.0 is compatible with GPL version 3 in that
+direction, which is why this repository uses Apache-2.0 and must never add a
+dependency that is incompatible with GPL version 3.
+
+Blender and ffmpeg are not bundled. They are installed separately by the user
+and called as external programs.

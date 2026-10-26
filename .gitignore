@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Render output, scratch and local caches: whole roots, never individual subfolders
+out/
+.tmp/
+.vision-forge/
+*.download
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editors and OS
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.swp
+.DS_Store
+Thumbs.db
+Desktop.ini
