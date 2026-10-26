@@ -34,7 +34,9 @@ describe('schema-registry', () => {
   it('lists every schema file as a document kind, in file-name order', () => {
     const expected = readdirSync(schemasDir).filter((name) => name.endsWith(schemaFileSuffix)).map((name) => name.slice(0, -schemaFileSuffix.length)).sort();
     assert.deepEqual([...documentKinds], expected);
-    assert.deepEqual([...documentKinds], ['cli-result', 'render-manifest', 'tools']);
+    const onDisk = readdirSync(schemasDir).filter((name) => name.endsWith(schemaFileSuffix)).map((name) => name.slice(0, -schemaFileSuffix.length)).sort();
+    assert.deepEqual([...documentKinds], onDisk);
+    for (const expected of ['cli-result', 'render-manifest', 'tools']) assert.ok(documentKinds.includes(expected), `${expected} must be a kind`);
   });
 
   it('returns the schema whose kind constant matches the requested kind', () => {
@@ -50,8 +52,8 @@ describe('schema-registry', () => {
     assert.equal(hasSchema('scene'), false);
     assert.throws(() => schemaFor('scene'), (error: unknown) => error instanceof SchemaValidationError
       && error.kind === 'unknown'
-      && error.problems[0] === '/kind: "scene" is not a known document kind (known kinds: cli-result, render-manifest, tools)'
-      && error.hint === 'Set "kind" to one of: cli-result, render-manifest, tools.');
+      && error.problems[0] === `/kind: "scene" is not a known document kind (known kinds: ${documentKinds.join(', ')})`
+      && error.hint === `Set "kind" to one of: ${documentKinds.join(', ')}.`);
   });
 
   it('declaredKind reads the kind constant and tolerates schemas without one', () => {

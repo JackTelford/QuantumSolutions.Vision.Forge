@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import { failureResult, successResult } from '../../src/cli/result.ts';
 import type { CliResult } from '../../src/cli/result.ts';
 import { SchemaValidationError } from '../../src/errors/vision-forge-error.ts';
+import { documentKinds } from '../../src/schema/schema-registry.ts';
 import { assertKind, isDateTime, validateDocument } from '../../src/schema/validator.ts';
 import type { CliResult as CliResultContract } from '../../src/shared/contracts/cli-result.ts';
 import type { RenderManifest } from '../../src/shared/contracts/render-manifest.ts';
@@ -186,7 +187,7 @@ describe('validateDocument', () => {
   });
 
   it('throws SchemaValidationError for a kind without a schema, with a hint that names the kinds', () => {
-    assert.throws(() => validateDocument('shot-spec', {}), (error: unknown) => error instanceof SchemaValidationError && error.kind === 'unknown' && /"shot-spec" is not a known document kind/.test(error.message) && error.hint === 'Set "kind" to one of: cli-result, render-manifest, tools.');
+    assert.throws(() => validateDocument('shot-spec', {}), (error: unknown) => error instanceof SchemaValidationError && error.kind === 'unknown' && /"shot-spec" is not a known document kind/.test(error.message) && error.hint === `Set "kind" to one of: ${documentKinds.join(', ')}.`);
   });
 
   it('a generated CliResult contract is assignable to the handwritten CliResult', () => {
@@ -203,11 +204,11 @@ describe('assertKind', () => {
   });
 
   it('rejects a document that is not an object, with a hint that names the kinds', () => {
-    assert.throws(() => assertKind('tools'), (error: unknown) => error instanceof SchemaValidationError && error.kind === 'unknown' && /must be a JSON object/.test(error.problems[0] ?? '') && error.hint === 'Set "kind" to one of: cli-result, render-manifest, tools.');
+    assert.throws(() => assertKind('tools'), (error: unknown) => error instanceof SchemaValidationError && error.kind === 'unknown' && /must be a JSON object/.test(error.problems[0] ?? '') && error.hint === `Set "kind" to one of: ${documentKinds.join(', ')}.`);
   });
 
   it('rejects a document without a kind, listing the known kinds', () => {
-    assert.throws(() => assertKind({ version: 1 }), (error: unknown) => error instanceof SchemaValidationError && error.kind === 'unknown' && /known kinds: cli-result, render-manifest, tools/.test(error.problems[0] ?? ''));
+    assert.throws(() => assertKind({ version: 1 }), (error: unknown) => error instanceof SchemaValidationError && error.kind === 'unknown' && (error.problems[0] ?? '').includes(`known kinds: ${documentKinds.join(', ')}`));
   });
 
   it('rejects a document whose kind has no schema', () => {

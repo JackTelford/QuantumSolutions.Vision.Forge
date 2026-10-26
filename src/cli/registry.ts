@@ -34,6 +34,11 @@ export function isCommandName(value: string): value is CommandName {
 const loaders: Readonly<Partial<Record<CommandName, () => Promise<{ readonly command: Command }>>>> = {
   help: () => import('./commands/help.ts'),
   version: () => import('./commands/version.ts'),
+  doctor: () => import('./commands/doctor.ts'),
+  validate: () => import('./commands/validate.ts'),
+  assemble: () => import('./commands/assemble.ts'),
+  qa: () => import('./commands/qa.ts'),
+  sheet: () => import('./commands/sheet.ts'),
 };
 
 /** Loads a command's implementation, or undefined when it is not implemented yet. */

@@ -113,7 +113,7 @@ describe('scripts/gen-types.ts', () => {
   it('--check exits 0 against the committed files', async () => {
     const result = await runner.run({ label: 'gen-types', executable: process.execPath, args: [genTypesPath, '--check'], cwd: repoRoot, timeoutMs: 120_000 }, never);
     assert.equal(result.exitCode, 0, result.stderr);
-    assert.match(result.stdout, /^3 contract files are up to date\.\n$/);
+    assert.match(result.stdout, /^\d+ contract files are up to date\.\n$/);
   });
 
   it('an unknown argument is a usage error with exit code 2', async () => {
