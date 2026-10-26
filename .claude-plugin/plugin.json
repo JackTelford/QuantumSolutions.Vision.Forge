@@ -1,0 +1,22 @@
+{
+  "name": "vision-forge",
+  "description": "Turns an English brief into a finished video or still using only code: html, three and blender lanes rendered deterministically, assembled and checked with ffmpeg, no generative image or video model. Requires ffmpeg and Microsoft Edge or Google Chrome; Blender 5.2 is optional for the blender lane.",
+  "author": {
+    "name": "Quantum Solutions"
+  },
+  "homepage": "https://github.com/JackTelford/QuantumSolutions.Vision.Forge",
+  "repository": "https://github.com/JackTelford/QuantumSolutions.Vision.Forge",
+  "license": "Apache-2.0",
+  "keywords": [
+    "video",
+    "animation",
+    "cinematic",
+    "product-shot",
+    "explainer",
+    "title-sequence",
+    "three.js",
+    "blender",
+    "ffmpeg",
+    "deterministic-rendering"
+  ]
+}

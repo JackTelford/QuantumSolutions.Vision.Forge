@@ -1,0 +1,13 @@
+{
+  "name": "quantum-solutions",
+  "owner": {
+    "name": "Quantum Solutions"
+  },
+  "description": "Plugins by Quantum Solutions. Currently one: vision-forge, a cinematic studio that turns a brief into a video or still with code-rendered lanes.",
+  "plugins": [
+    {
+      "name": "vision-forge",
+      "source": "./"
+    }
+  ]
+}

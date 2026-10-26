@@ -1,0 +1,91 @@
+# Continuous integration: type check, house-rule lint, schema drift, license
+# allowlist and unit tests on Windows and Ubuntu, Node 24 (required) and
+# Node 26 (informational: stripper drift is seen early, ADR 0001).
+# Actions are pinned by full commit SHA; the trailing comment names the tag
+# and docs/evidence/m0/ci-actions.md records how each SHA was resolved.
+# Runners are pinned to the windows-2025 and ubuntu-24.04 images, not the
+# -latest labels, so an image migration is a deliberate change recorded there.
+# workflow_dispatch lets a run be repeated by hand without a new commit.
+# No secrets, no deploy.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: ${{ matrix.os }} / node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    # Node 26 is informational until it is proven: its failure does not fail the workflow.
+    continue-on-error: ${{ matrix.node == '26' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2025, ubuntu-24.04]
+        node: ['24', '26']
+    steps:
+      - name: Check out
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Set up Node ${{ matrix.node }}
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Install ffmpeg (Ubuntu)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Install ffmpeg (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          choco install ffmpeg -y --no-progress
+
+      - name: Report tool versions
+        shell: bash
+        run: |
+          node --version
+          npm --version
+          ffmpeg -version | head -n 1
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          npm ci --ignore-scripts
+
+      - name: Type check
+        shell: bash
+        run: |
+          npm run typecheck
+
+      - name: Lint house rules
+        shell: bash
+        run: |
+          npm run lint
+
+      - name: Check generated types against the schemas
+        shell: bash
+        run: |
+          npm run schema:check
+
+      - name: Check dependency licenses
+        shell: bash
+        run: |
+          npm run licenses
+
+      - name: Test
+        shell: bash
+        run: |
+          npm test

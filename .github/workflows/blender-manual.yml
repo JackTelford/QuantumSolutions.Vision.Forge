@@ -1,0 +1,84 @@
+# M5 scaffolding. A manual smoke test of the pinned Blender release (the
+# BLENDER_VERSION value below) on a hosted Windows runner: install it, print
+# its version, list its render engines. It runs only when started by hand
+# (workflow_dispatch); it never runs on push or on a pull request, because
+# installing Blender takes minutes and the blender lane is not a
+# continuous-integration gate (README, "Current non-goals").
+#
+# Steps are PowerShell because the job is Windows-only and needs winget,
+# Get-FileHash and msiexec. The MSI file name and URL are derived from
+# BLENDER_VERSION; the SHA-256 matches the winget manifest and the
+# blender-<version>.sha256 file on download.blender.org (ADR 0004). A patch
+# bump touches BLENDER_VERSION and BLENDER_MSI_SHA256 only; BLENDER_EXE names
+# the series directory, which changes only with the minor version.
+#
+# GitHub prepends $ErrorActionPreference = 'Stop' to every pwsh step and
+# appends an exit on $LASTEXITCODE, so no step sets the preference itself and
+# the install step resets $LASTEXITCODE after a failed winget attempt.
+# The runner is pinned to the windows-2025 image, not the windows-latest
+# label, so an image migration is a deliberate change
+# (docs/evidence/m0/ci-actions.md).
+name: Blender manual check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  blender:
+    name: Blender on windows-2025
+    runs-on: windows-2025
+    timeout-minutes: 30
+    env:
+      BLENDER_VERSION: '5.2.3'
+      BLENDER_MSI_SHA256: 'a103d4ece8d9acffd2a95c9d8860355b1f209977cc983b4a3d1e1cfb441c8605'
+      BLENDER_EXE: 'C:\Program Files\Blender Foundation\Blender 5.2\blender.exe'
+    steps:
+      - name: Install Blender ${{ env.BLENDER_VERSION }} (winget, else the pinned MSI)
+        shell: pwsh
+        run: |
+          $installed = $false
+          $winget = Get-Command winget -ErrorAction SilentlyContinue
+          if ($null -ne $winget) {
+            Write-Host "winget found at $($winget.Source); installing BlenderFoundation.Blender $env:BLENDER_VERSION"
+            & winget install --id BlenderFoundation.Blender --version $env:BLENDER_VERSION --exact --silent --disable-interactivity --accept-package-agreements --accept-source-agreements
+            if ($LASTEXITCODE -eq 0) { $installed = $true } else { Write-Host "winget exited with $LASTEXITCODE; falling back to the pinned MSI" }
+          } else {
+            Write-Host 'winget is not available on this runner; falling back to the pinned MSI'
+          }
+          if (-not $installed) {
+            $series = ($env:BLENDER_VERSION -split '\.')[0..1] -join '.'
+            $fileName = "blender-${env:BLENDER_VERSION}-windows-x64.msi"
+            $url = "https://download.blender.org/release/Blender${series}/${fileName}"
+            $msi = Join-Path $env:RUNNER_TEMP $fileName
+            Write-Host "Downloading $url"
+            $ProgressPreference = 'SilentlyContinue'
+            Invoke-WebRequest -Uri $url -OutFile $msi
+            $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $msi).Hash.ToLowerInvariant()
+            if ($actual -ne $env:BLENDER_MSI_SHA256) {
+              throw "SHA-256 mismatch for the Blender MSI: expected $env:BLENDER_MSI_SHA256, got $actual"
+            }
+            Write-Host "SHA-256 verified: $actual"
+            $process = Start-Process -FilePath 'msiexec.exe' -ArgumentList @('/i', "`"$msi`"", '/quiet', '/norestart') -Wait -PassThru
+            # 3010 is ERROR_SUCCESS_REBOOT_REQUIRED: the install succeeded.
+            if ($process.ExitCode -notin @(0, 3010)) { throw "msiexec exited with $($process.ExitCode)" }
+          }
+          if (-not (Test-Path -LiteralPath $env:BLENDER_EXE)) { throw "blender.exe was not found at $env:BLENDER_EXE" }
+          Write-Host "Installed: $env:BLENDER_EXE"
+          # A failed winget attempt leaves its exit code in $LASTEXITCODE, and GitHub
+          # would end the step with it even though the MSI fallback succeeded.
+          $global:LASTEXITCODE = 0
+
+      - name: Print the Blender version
+        shell: pwsh
+        run: |
+          & $env:BLENDER_EXE --version
+          if ($LASTEXITCODE -ne 0) { throw "blender.exe --version exited with $LASTEXITCODE" }
+
+      - name: List the render engines in background mode
+        shell: pwsh
+        run: |
+          & $env:BLENDER_EXE -b --factory-startup -E help
+          if ($LASTEXITCODE -ne 0) { throw "blender.exe -b --factory-startup -E help exited with $LASTEXITCODE" }

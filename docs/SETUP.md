@@ -40,7 +40,7 @@ Environment variables `FFMPEG`, `BLENDER` and `CHROME` override discovery when a
 ## File locations
 
 - Programs: wherever their installer put them; `doctor` records the resolved paths in `tools.json` under the data directory.
-- Data directory (caches, tool manifest, optional narration component, browser profiles): `%LOCALAPPDATA%\VisionForge` on Windows, `~/Library/Application Support/VisionForge` on macOS, `~/.local/share/vision-forge` on Linux, or the `--data-dir` argument.
+- Data directory (caches, tool manifest, optional narration component, browser profiles): `%LOCALAPPDATA%\VisionForge` on Windows, `~/Library/Application Support/VisionForge` on macOS, `~/.local/share/vision-forge` on Linux, or the `--data-dir` argument. When Claude runs the skill it passes its own plugin data directory as `--data-dir`, so a command you run by hand without `--data-dir` keeps a separate tool manifest and cache. To share them, pass the same `--data-dir` the skill uses (Claude Code shows it as `${CLAUDE_PLUGIN_DATA}`), or set `VISION_FORGE_DATA`.
 - Render output: the `--out` argument, default `out/` under the current folder. Frames, logs and profiles stay under the data directory with short paths; only deliverables go to `out/`.
 
 ## Narration (optional)
