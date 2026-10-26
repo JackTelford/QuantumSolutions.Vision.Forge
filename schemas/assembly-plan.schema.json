@@ -1,0 +1,274 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vision-forge.quantumsolutions.dev/schemas/assembly-plan.schema.json",
+  "title": "AssemblyPlan",
+  "description": "What assemble turns into a delivery: the clips in order, the transitions between them, the audio tracks, captions, the finishing grade and the output encode. The render command builds it from a job; tests build it from synthetic clips.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "version", "fps", "width", "height", "clips", "transitions", "output"],
+  "properties": {
+    "kind": {
+      "const": "assembly-plan",
+      "description": "Document kind; always \"assembly-plan\"."
+    },
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Version of this document kind; always 1."
+    },
+    "fps": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Frames per second of every clip and of the delivery, for example 30."
+    },
+    "width": {
+      "type": "integer",
+      "minimum": 2,
+      "description": "Delivery width in pixels, even, for example 1920. Clips of another size are scaled and padded to it."
+    },
+    "height": {
+      "type": "integer",
+      "minimum": 2,
+      "description": "Delivery height in pixels, even, for example 1080."
+    },
+    "clips": {
+      "type": "array",
+      "description": "The clips in delivery order; at least one.",
+      "items": { "$ref": "#/$defs/Clip" }
+    },
+    "transitions": {
+      "type": "array",
+      "description": "Transitions between consecutive clips; a pair of clips without an entry is joined by a cut. Each transition shortens the delivery by its frame count.",
+      "items": { "$ref": "#/$defs/Transition" }
+    },
+    "audio": { "$ref": "#/$defs/AudioMix" },
+    "captions": { "$ref": "#/$defs/Captions" },
+    "grade": { "$ref": "#/$defs/FinishingGrade" },
+    "output": { "$ref": "#/$defs/Output" }
+  },
+  "$defs": {
+    "SourceKind": {
+      "type": "string",
+      "enum": ["frames", "video"],
+      "description": "How a clip is stored: frames is a numbered PNG sequence named by a printf pattern, video is one encoded file."
+    },
+    "TransitionType": {
+      "type": "string",
+      "enum": ["cut", "dissolve", "fade-black", "fade-white", "wipe-left", "wipe-right", "wipe-up", "wipe-down", "slide-left", "slide-right"],
+      "description": "The join between two clips, mapped to ffmpeg xfade transitions (cut has no overlap)."
+    },
+    "Codec": {
+      "type": "string",
+      "enum": ["h264", "hevc", "prores"],
+      "description": "Delivery codec: h264 (libx264, the default), hevc (libx265) or prores (prores_ks 422 HQ mezzanine)."
+    },
+    "EncodePreset": {
+      "type": "string",
+      "enum": ["ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow"],
+      "description": "libx264/libx265 speed preset; medium is the default."
+    },
+    "Clip": {
+      "type": "object",
+      "description": "One clip of the delivery.",
+      "additionalProperties": false,
+      "required": ["id", "source", "durationFrames"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique clip identifier within the plan, usually the shot id, for example \"s03\"."
+        },
+        "source": { "$ref": "#/$defs/ClipSource" },
+        "durationFrames": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Length of the clip in frames at the plan's fps, for example 90 for three seconds at 30 fps. A video source longer than this is trimmed."
+        }
+      }
+    },
+    "ClipSource": {
+      "type": "object",
+      "description": "Where a clip's pictures come from.",
+      "additionalProperties": false,
+      "required": ["kind", "path", "startNumber"],
+      "properties": {
+        "kind": { "$ref": "#/$defs/SourceKind" },
+        "path": {
+          "type": "string",
+          "description": "Absolute path: for frames, a printf pattern such as C:/vf/job1/s03/frames/f%06d.png; for video, the file itself."
+        },
+        "startNumber": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "First frame number of a frames pattern, for example 1; ignored for video (use 0)."
+        }
+      }
+    },
+    "Transition": {
+      "type": "object",
+      "description": "A transition that starts at the end of one clip and overlaps the start of the next.",
+      "additionalProperties": false,
+      "required": ["afterClipId", "type", "frames"],
+      "properties": {
+        "afterClipId": {
+          "type": "string",
+          "description": "Id of the clip the transition follows; it must not be the last clip."
+        },
+        "type": { "$ref": "#/$defs/TransitionType" },
+        "frames": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Overlap length in frames, for example 15 for half a second at 30 fps; no longer than either neighbouring clip."
+        }
+      }
+    },
+    "NarrationLine": {
+      "type": "object",
+      "description": "One narration recording placed on the timeline.",
+      "additionalProperties": false,
+      "required": ["path", "startFrame"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Absolute path of a WAV file (24 kHz or 48 kHz, mono or stereo)."
+        },
+        "startFrame": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Frame of the delivery at which the line starts, for example 45."
+        }
+      }
+    },
+    "Music": {
+      "type": "object",
+      "description": "A user-supplied music track under the whole delivery.",
+      "additionalProperties": false,
+      "required": ["path", "duckUnderNarration", "gainDb"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Absolute path of the music file (WAV, FLAC, MP3 or AAC); the user is responsible for its license."
+        },
+        "duckUnderNarration": {
+          "type": "boolean",
+          "description": "True to lower the music while narration plays (ffmpeg sidechaincompress)."
+        },
+        "gainDb": {
+          "type": "number",
+          "description": "Gain applied to the music before mixing, in decibels, for example -12."
+        }
+      }
+    },
+    "AudioMix": {
+      "type": "object",
+      "description": "The audio of the delivery: narration lines, optional music, loudness targets. Absent when the delivery is silent.",
+      "additionalProperties": false,
+      "required": ["narration", "music", "loudnessLufs", "truePeakDbtp"],
+      "properties": {
+        "narration": {
+          "type": "array",
+          "description": "Narration lines in timeline order; empty when there is none.",
+          "items": { "$ref": "#/$defs/NarrationLine" }
+        },
+        "music": {
+          "type": ["object", "null"],
+          "description": "The music track, or null when there is none.",
+          "additionalProperties": false,
+          "required": ["path", "duckUnderNarration", "gainDb"],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Absolute path of the music file (WAV, FLAC, MP3 or AAC); the user is responsible for its license."
+            },
+            "duckUnderNarration": {
+              "type": "boolean",
+              "description": "True to lower the music while narration plays (ffmpeg sidechaincompress)."
+            },
+            "gainDb": {
+              "type": "number",
+              "description": "Gain applied to the music before mixing, in decibels, for example -12."
+            }
+          }
+        },
+        "loudnessLufs": {
+          "type": "number",
+          "description": "Integrated loudness target in LUFS for the two-pass loudnorm, for example -16."
+        },
+        "truePeakDbtp": {
+          "type": "number",
+          "description": "True-peak ceiling in dBTP, for example -1.5."
+        }
+      }
+    },
+    "Captions": {
+      "type": "object",
+      "description": "Captions for the delivery: an SRT file that is attached as a sidecar and, when burnIn is true, rendered into the picture.",
+      "additionalProperties": false,
+      "required": ["srtPath", "burnIn"],
+      "properties": {
+        "srtPath": {
+          "type": "string",
+          "description": "Absolute path of the SRT file."
+        },
+        "burnIn": {
+          "type": "boolean",
+          "description": "True to render the captions into the frames with the subtitles filter."
+        }
+      }
+    },
+    "FinishingGrade": {
+      "type": "object",
+      "description": "The finishing applied to every frame before encoding (ADR 0008): a 3D LUT, a vignette and seeded grain. Absent when the clips are delivered as rendered.",
+      "additionalProperties": false,
+      "required": ["cubePath", "vignetteAmount", "vignetteSoftness", "grainAmount", "grainSeed"],
+      "properties": {
+        "cubePath": {
+          "type": ["string", "null"],
+          "description": "Absolute path of a .cube 3D LUT applied with tetrahedral interpolation in 16-bit RGB, or null for no LUT."
+        },
+        "vignetteAmount": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Vignette strength from 0 (none) to 1 (strong), for example 0.25."
+        },
+        "vignetteSoftness": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Vignette falloff from 0 (hard) to 1 (soft), for example 0.6."
+        },
+        "grainAmount": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Grain strength from 0 (none) to 1 (heavy), for example 0.15; applied only at assembly, never on stills."
+        },
+        "grainSeed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Seed of the grain noise, for example 7; the same seed reproduces the same grain."
+        }
+      }
+    },
+    "Output": {
+      "type": "object",
+      "description": "The delivery file and its encode settings. Colour is always tagged BT.709, pixel format yuv420p for h264 and hevc.",
+      "additionalProperties": false,
+      "required": ["path", "codec", "crf", "preset", "faststart"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Absolute path of the delivery file, for example C:/vf/out/film.mp4 (.mp4 for h264 and hevc, .mov for prores)."
+        },
+        "codec": { "$ref": "#/$defs/Codec" },
+        "crf": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Constant rate factor for h264 and hevc, 0 to 51; 16 is the delivery default. Ignored for prores."
+        },
+        "preset": { "$ref": "#/$defs/EncodePreset" },
+        "faststart": {
+          "type": "boolean",
+          "description": "True to move the MP4 index to the front (-movflags +faststart) so the file streams."
+        }
+      }
+    }
+  }
+}

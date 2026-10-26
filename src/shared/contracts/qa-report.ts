@@ -1,0 +1,191 @@
+/** @generated from schemas/qa-report.schema.json by scripts/gen-types.ts. Do not edit. */
+
+/**
+ * What was examined: the assembled delivery, one shot's frame sequence, or one still.
+ *
+ * This interface was referenced by `QaReport`'s JSON-Schema
+ * via the `definition` "SubjectKind".
+ */
+export type SubjectKind = 'deliverable' | 'shot' | 'still';
+/**
+ * The automated check: dimensions, fps and duration from ffprobe against the plan; black-frames (blackdetect) and frozen-frames (freezedetect); pops (adjacent-frame SSIM below the threshold away from a planned cut); exposure-drift (signalstats YAVG between shots); text-contrast (WCAG ratio behind each text box); loudness and true-peak (ebur128); hero-still-match (SSIM of the approved still against the rendered frame).
+ *
+ * This interface was referenced by `QaReport`'s JSON-Schema
+ * via the `definition` "CheckId".
+ */
+export type CheckId =
+  | 'dimensions'
+  | 'fps'
+  | 'duration'
+  | 'black-frames'
+  | 'frozen-frames'
+  | 'pops'
+  | 'exposure-drift'
+  | 'text-contrast'
+  | 'loudness'
+  | 'true-peak'
+  | 'hero-still-match';
+
+/**
+ * What the qa command measured on a delivery, a shot's frames or a still, and what Claude's vision review scored. Every check names what it measured and the threshold it was held to.
+ */
+export interface QaReport {
+  /**
+   * Document kind; always "qa-report".
+   */
+  kind: 'qa-report';
+  /**
+   * Version of this document kind; always 1.
+   */
+  version: 1;
+  /**
+   * When the report was written: an RFC 3339 timestamp in UTC with millisecond precision, for example 2026-10-26T20:00:00.000Z.
+   */
+  generatedAt: string;
+  subject: Subject;
+  /**
+   * The automated checks that ran, in the order they ran.
+   */
+  checks: Check[];
+  /**
+   * Vision review rounds, one entry per shot per round; empty when no review ran.
+   */
+  rubric: RubricRound[];
+  /**
+   * True when every check is ok and every rubric entry passed.
+   */
+  passed: boolean;
+}
+/**
+ * What the report is about.
+ *
+ * This interface was referenced by `QaReport`'s JSON-Schema
+ * via the `definition` "Subject".
+ */
+export interface Subject {
+  kind: SubjectKind;
+  /**
+   * Absolute path of the delivery file, the frames pattern or the still.
+   */
+  path: string;
+  /**
+   * The shot id for a shot or still subject; null for a delivery.
+   */
+  shotId: string | null;
+}
+/**
+ * One automated measurement and its verdict.
+ *
+ * This interface was referenced by `QaReport`'s JSON-Schema
+ * via the `definition` "Check".
+ */
+export interface Check {
+  id: CheckId;
+  /**
+   * True when the measurement met its threshold.
+   */
+  ok: boolean;
+  /**
+   * The measured value in the check's unit, for example 0.9942 for an SSIM; null when the check could not measure (the detail says why).
+   */
+  measured: number | null;
+  /**
+   * The limit the measurement was held to, in the same unit, for example 0.98; null for checks that compare against a plan value named in the detail.
+   */
+  threshold: number | null;
+  /**
+   * Unit of measured and threshold, for example "ssim", "LUFS", "dBTP", "frames", "px" or "ratio".
+   */
+  unit: string;
+  /**
+   * One sentence a reviewer can act on, for example "frame 212 differs from frame 211 (SSIM 0.41) with no planned cut there".
+   */
+  detail: string;
+  /**
+   * Frame numbers the check flagged, for example the first frame of each black segment; empty when none.
+   *
+   * Items: A frame number counted from 0.
+   */
+  frames: number[];
+}
+/**
+ * One vision review of one shot in one round.
+ *
+ * This interface was referenced by `QaReport`'s JSON-Schema
+ * via the `definition` "RubricRound".
+ */
+export interface RubricRound {
+  /**
+   * The reviewed shot's id.
+   */
+  shotId: string;
+  /**
+   * Review round, 1 for the first still, up to the retry cap of 3.
+   */
+  round: number;
+  scores: RubricScores;
+  /**
+   * The faults the reviewer named before deciding; at least three are expected before a pass.
+   *
+   * Items: One fault in plain words, for example "the cap's highlight clips to white".
+   */
+  faults: string[];
+  /**
+   * True when the total is 16 or more with no 0 on focalPoint, typography or artifacts.
+   */
+  pass: boolean;
+}
+/**
+ * The ten rubric items, each scored 0 (fails), 1 (acceptable) or 2 (strong).
+ *
+ * This interface was referenced by `QaReport`'s JSON-Schema
+ * via the `definition` "RubricScores".
+ */
+export interface RubricScores {
+  /**
+   * The eye finds the subject within a second: 0 to 2.
+   */
+  focalPoint: number;
+  /**
+   * Anchor, headroom and lead room read as intentional: 0 to 2.
+   */
+  composition: number;
+  /**
+   * Light has a direction and a shape: 0 to 2.
+   */
+  lightDirection: number;
+  /**
+   * Surfaces read as their material (roughness variation, shaped speculars): 0 to 2.
+   */
+  materials: number;
+  /**
+   * Depth is present through focus, haze, parallax or overlap: 0 to 2.
+   */
+  depthCues: number;
+  /**
+   * Type hierarchy and legibility: 0 to 2.
+   */
+  typography: number;
+  /**
+   * Colours match the look bible: 0 to 2.
+   */
+  palette: number;
+  /**
+   * No gray void, default font, stock blue or clipped highlight: 0 to 2.
+   */
+  nothingDefault: number;
+  /**
+   * Lens family, light and grade agree with the neighbouring shots: 0 to 2.
+   */
+  continuity: number;
+  /**
+   * No aliasing, z-fighting, banding or clipped text: 0 to 2.
+   */
+  artifacts: number;
+}
+
+/** Every SubjectKind value the schema allows, in schema order. */
+export const SubjectKindValues = ['deliverable', 'shot', 'still'] as const;
+
+/** Every CheckId value the schema allows, in schema order. */
+export const CheckIdValues = ['dimensions', 'fps', 'duration', 'black-frames', 'frozen-frames', 'pops', 'exposure-drift', 'text-contrast', 'loudness', 'true-peak', 'hero-still-match'] as const;
