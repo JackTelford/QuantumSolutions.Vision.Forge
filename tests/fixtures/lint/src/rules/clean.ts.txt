@@ -1,0 +1,78 @@
+/**
+ * A Node file that follows every house rule.
+ */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import ts from 'typescript';
+import type { Finding } from '../lint/finding.ts';
+import { frameTime } from '../shared/clean-shared.ts';
+import type { Timed } from '../shared/clean-shared.ts';
+
+/** Log levels as a const object, the house replacement for enums. */
+export const Levels = { quiet: 0, normal: 1 } as const;
+
+/** One of the levels. */
+export type Level = (typeof Levels)[keyof typeof Levels];
+
+/** A documented interface. */
+export interface Options {
+  readonly level: Level;
+  readonly root: string;
+}
+
+/** A documented class with explicit fields. */
+export class Reader implements Timed {
+  readonly frame: number;
+  private readonly root: string;
+
+  constructor(frame: number, root: string) {
+    this.frame = frame;
+    this.root = root;
+  }
+
+  /** Reads a file under the root. */
+  read(name: string): string {
+    return readFileSync(join(this.root, name), 'utf8');
+  }
+
+  /** Seconds for this reader's frame. */
+  seconds(fps: number): number {
+    return frameTime(this.frame, fps) + this.helper();
+  }
+
+  private helper(): number {
+    return 1;
+  }
+
+  /** A documented static method. */
+  static version(): string {
+    return ts.version;
+  }
+}
+
+/** An exported arrow with an explicit return type. */
+export const describe = (finding: Finding): string => `${finding.rule}@${finding.line}`;
+
+/** An async function. */
+export async function later(value: number): Promise<number> {
+  return value;
+}
+
+/** Overloads documented once. */
+export function pick(value: string): string;
+export function pick(value: number): number;
+export function pick(value: string | number): string | number {
+  return value;
+}
+
+const internal = (value: number) => value;
+
+function alsoInternal(value: number) {
+  return internal(value) + new Reader(0, '.').seconds(24);
+}
+
+/** A date with an argument, a timer and Math.random are fine outside page mode. */
+export function nodeOnly(): number {
+  setTimeout(() => {}, 1);
+  return new Date(0).getTime() + Date.now() + alsoInternal(1) + Math.random();
+}

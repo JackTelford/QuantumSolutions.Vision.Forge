@@ -1,0 +1,11 @@
+import { type Command, type CommandContext } from '../cli/command.ts';
+import { join, type ParsedPath } from 'node:path';
+import type { Logger } from '../cli/logger.ts';
+export { type Finding, findingAt } from '../lint/finding.ts';
+export type { Rule } from '../lint/finding.ts';
+
+/** Uses the imports so nothing is unused. */
+export function describe(command: Command, context: CommandContext, parsed: ParsedPath, log: Logger): string {
+  log.info(command.name);
+  return join(context.cwd, parsed.base);
+}

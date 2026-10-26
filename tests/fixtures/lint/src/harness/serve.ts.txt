@@ -1,0 +1,6 @@
+import { stripTypeScriptTypes } from 'node:module';
+
+/** The one place the stripper is used. */
+export function strip(source: string): string {
+  return stripTypeScriptTypes(source, { mode: 'strip' });
+}

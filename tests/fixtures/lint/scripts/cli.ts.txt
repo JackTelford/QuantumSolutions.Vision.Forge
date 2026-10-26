@@ -1,0 +1,4 @@
+/** The CLI entry must not read plugin variables. */
+export function dataDir(): string {
+  return process.env['CLAUDE_PLUGIN_DATA'] ?? '';
+}

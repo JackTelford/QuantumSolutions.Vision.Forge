@@ -1,0 +1,4 @@
+/** What a lane page receives. */
+export interface Spec {
+  readonly name: string;
+}

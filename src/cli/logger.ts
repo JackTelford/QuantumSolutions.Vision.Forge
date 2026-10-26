@@ -46,14 +46,17 @@ export class StreamLogger implements Logger {
 export class MemoryLogger implements Logger {
   readonly messages: string[] = [];
 
+  /** Records an info message. */
   info(message: string): void {
     this.messages.push(`info: ${message}`);
   }
 
+  /** Records a warning. */
   warn(message: string): void {
     this.messages.push(`warn: ${message}`);
   }
 
+  /** Records a debug message. */
   debug(message: string): void {
     this.messages.push(`debug: ${message}`);
   }

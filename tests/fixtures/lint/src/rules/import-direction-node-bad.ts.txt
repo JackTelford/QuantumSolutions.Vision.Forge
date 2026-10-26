@@ -1,0 +1,10 @@
+import { stripTypeScriptTypes } from 'node:module';
+import { init } from '../browser/lane.ts';
+import type { Spec } from '../browser/spec.ts';
+export { render } from '../browser/lane.ts';
+
+/** Uses every import. */
+export function strip(spec: Spec): string {
+  init(spec);
+  return stripTypeScriptTypes('const x: number = 1;');
+}

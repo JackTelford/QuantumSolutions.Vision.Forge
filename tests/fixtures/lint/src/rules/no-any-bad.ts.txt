@@ -1,0 +1,18 @@
+import type { Finding } from '../lint/finding.ts';
+
+/** An any parameter. */
+export function first(value: any): string {
+  return String(value);
+}
+
+/** An any in a cast and in a type argument. */
+export function second(values: Array<any>, finding: Finding): number {
+  const loose = finding as any;
+  return values.length + Number(loose);
+}
+
+/** The word any in a string and as an identifier is fine. */
+export function third(): string {
+  const any = 'any';
+  return any;
+}

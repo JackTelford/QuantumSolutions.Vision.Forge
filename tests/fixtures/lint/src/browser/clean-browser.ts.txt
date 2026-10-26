@@ -1,0 +1,17 @@
+import { Scene, WebGLRenderer } from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { frameTime } from '../shared/clean-shared.ts';
+import type { Spec } from './clean-browser-spec.ts';
+
+/** Builds the scene once. */
+export function init(spec: Spec, renderer: WebGLRenderer): EffectComposer {
+  const scene = new Scene();
+  scene.name = spec.name;
+  return new EffectComposer(renderer);
+}
+
+/** Renders one frame as a pure function of the frame number. */
+export function render(composer: EffectComposer, frame: number, fps: number): void {
+  const seconds = frameTime(frame, fps);
+  composer.render(seconds);
+}

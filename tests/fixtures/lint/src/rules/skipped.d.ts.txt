@@ -1,0 +1,2 @@
+/** A declaration file: the directory walk never lints it, so its any is never reported. */
+export declare function skipped(value: any): any;

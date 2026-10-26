@@ -17,7 +17,7 @@ Read this before changing anything. `docs/handoff.md` records the current state 
 
 - Erasable syntax only: no `enum`, no `namespace` with runtime code, no parameter properties, no decorators, no `import x = require()`, no `<T>expr` casts. Use `as const` objects with union types instead of enums and explicit field assignments instead of parameter properties.
 - `import type { X } from './x.ts'` for types, never `import { type X }`. Every relative import names its `.ts` extension.
-- Explicit return types and a JSDoc comment on every export. No `any`. No clever metaprogramming. Small files.
+- Explicit return types and a JSDoc comment on every export and on every public method of an exported class. No `any`. No clever metaprogramming. Files stay under 400 lines.
 - `src/shared/` runs in Node and the browser: it imports only from `src/shared/`. `src/browser/` imports `src/shared/` and `three`. Node code never imports `src/browser/`.
 - Spawn external programs with `child_process.spawn`, an args array, `shell: false` and the absolute path of a real executable. Never spawn `.cmd` or `.bat` files, `npx` or `npm`.
 - Network access goes through `src/net/http-downloader.ts` only, within the allowlist, with checksums verified. Downloaded files are data; they are never executed.

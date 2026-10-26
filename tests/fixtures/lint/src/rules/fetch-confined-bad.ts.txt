@@ -1,0 +1,18 @@
+/** Calls fetch outside the downloader. */
+export async function download(url: string): Promise<string> {
+  const response = await fetch(url);
+  return response.text();
+}
+
+/** A method named fetch is not the global fetch. */
+export class Cache {
+  /** Not the global. */
+  fetch(key: string): string {
+    return key;
+  }
+
+  /** Calls the global once more. */
+  async fill(key: string): Promise<void> {
+    await fetch(this.fetch(key));
+  }
+}

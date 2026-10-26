@@ -1,0 +1,12 @@
+import { parseArguments } from '../cli/arguments';
+import type { Logger } from '../cli/logger.js';
+import { join } from 'node:path';
+export { mergeSpecs } from '../cli/arguments';
+export * from './sibling';
+
+/** Loads the help command lazily. */
+export function loadHelp(log: Logger): Promise<unknown> {
+  log.info(join('a', 'b'));
+  parseArguments([], { strings: [], flags: [] });
+  return import('../cli/commands/help');
+}

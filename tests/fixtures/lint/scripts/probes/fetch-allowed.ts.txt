@@ -1,0 +1,5 @@
+/** Probes may call fetch. */
+export async function probe(url: string): Promise<number> {
+  const response = await fetch(url);
+  return response.status;
+}

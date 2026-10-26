@@ -1,0 +1,39 @@
+import fs = require('node:fs');
+
+/** Colors. */
+export enum Color {
+  Red,
+}
+
+/** A namespace with runtime members. */
+export namespace Runtime {
+  export const value = 1;
+}
+
+/** A type-only namespace, which is erasable. */
+export namespace TypesOnly {
+  export interface Shape { readonly sides: number; }
+  export type Name = string;
+}
+declare namespace Ambient {
+  const declared: number;
+  enum Inner { C }
+}
+declare enum AmbientEnum {
+  A,
+}
+declare global {
+  enum Global { B }
+}
+declare class AmbientClass {
+  constructor(public x: number);
+}
+
+/** A point with parameter properties. */
+export class Point {
+  constructor(public x: number, private readonly y: number) {}
+}
+
+const length = <number>fs.readFileSync('x').length;
+
+export = length;

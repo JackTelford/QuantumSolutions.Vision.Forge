@@ -1,0 +1,6 @@
+import { stripTypeScriptTypes } from 'node:module';
+
+/** Probes (M0 evidence code) may use the stripper, like the serve harness. */
+export function stripProbe(source: string): string {
+  return stripTypeScriptTypes(source, { mode: 'strip' });
+}

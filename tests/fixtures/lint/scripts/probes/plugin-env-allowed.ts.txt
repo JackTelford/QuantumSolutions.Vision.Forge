@@ -1,0 +1,4 @@
+/** Outside src/ and scripts/cli.ts the plugin-env rule does not apply. */
+export function pluginRoot(): string {
+  return process.env['CLAUDE_PLUGIN_ROOT'] ?? '';
+}

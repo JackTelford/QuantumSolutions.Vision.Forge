@@ -1,0 +1,30 @@
+import { WebGLRenderer } from 'three';
+
+/** Everything page mode forbids, one per line. */
+export function badPage(renderer: WebGLRenderer, host: HTMLElement): void {
+  requestAnimationFrame(() => {});
+  setTimeout(() => {}, 16);
+  setInterval(() => {}, 16);
+  renderer.setAnimationLoop(() => {});
+  host.attachShadow({ mode: 'open' });
+  const started = Date.now();
+  const created = new Date();
+  const precise = performance.now();
+  const noise = Math.random();
+  host.style.cssText = 'transition: opacity 1s';
+  host.innerHTML = `<iframe src="x"></iframe>${started}${created.getTime()}${precise}${noise}`;
+  host.innerHTML += '<video autoplay></video>';
+  host.innerHTML += '<animate attributeName="x" />';
+  host.style.cssText = 'animation-timeline: scroll()';
+  const stamped = new Date(0);
+  console.log(stamped.getTime(), globalThis.performance.now());
+  host.style.cssText = 'animation: spin 1s linear infinite';
+  host.style.cssText = 'animation-name: spin';
+  host.innerHTML += '<style>@keyframes spin { to { opacity: 0; } }</style>';
+  const id = crypto.randomUUID();
+  const bytes = crypto.getRandomValues(new Uint8Array(4));
+  requestIdleCallback(() => {});
+  queueMicrotask(() => {});
+  setImmediate(() => {});
+  console.log(id, bytes.length);
+}

@@ -1,0 +1,16 @@
+function tag(): (target: unknown, key?: string) => void {
+  return (): void => {};
+}
+
+@tag()
+class Decorated {
+  @tag()
+  field = 1;
+
+  @tag()
+  method(@tag() value: number): number {
+    return value + this.field;
+  }
+}
+
+export { Decorated };

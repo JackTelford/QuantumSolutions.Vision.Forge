@@ -1,0 +1,7 @@
+import { describe, it } from 'node:test';
+
+describe('fetch in tests', () => {
+  it('is allowed', async () => {
+    await fetch('http://127.0.0.1:1/');
+  });
+});

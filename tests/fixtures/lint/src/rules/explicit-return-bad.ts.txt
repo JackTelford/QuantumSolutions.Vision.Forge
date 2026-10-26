@@ -1,0 +1,48 @@
+/** No return type. */
+export function implicitFunction(value: number) {
+  return value * 2;
+}
+
+/** No return type on the arrow. */
+export const implicitArrow = (value: number) => value * 2;
+
+/** No return type on the function expression. */
+export const implicitExpression = function (value: number) {
+  return value;
+};
+
+/** Typed through the variable annotation, which is fine. */
+export const typedThroughVariable: (value: number) => number = (value) => value;
+
+/** Typed on the arrow, which is fine. */
+export const explicitArrow = (value: number): number => value;
+
+/** A class with mixed methods. */
+export class Mixed {
+  /** No return type. */
+  implicitMethod(value: number) {
+    return value;
+  }
+
+  /** Has a return type. */
+  explicitMethod(value: number): number {
+    return value;
+  }
+
+  /** Private methods are not checked. */
+  private implicitPrivate() {
+    return 1;
+  }
+
+  /** Static methods are. */
+  static implicitStatic() {
+    return 2;
+  }
+}
+
+/** Not a function; no return type applies. */
+export const plainValue = 42;
+
+const localArrow = (value: number) => value;
+
+export { localArrow };

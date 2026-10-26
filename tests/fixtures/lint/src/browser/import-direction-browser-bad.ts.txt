@@ -1,0 +1,16 @@
+import { Scene } from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { canonicalJson } from '../shared/canonical-json.ts';
+import { helper } from './helper.ts';
+import { StreamLogger } from '../cli/logger.ts';
+import { chromium } from 'playwright-core';
+import { readFileSync } from 'node:fs';
+
+/** Uses every import. */
+export function build(): string {
+  const scene = new Scene();
+  const composer = new EffectComposer(helper());
+  const log = new StreamLogger(1);
+  log.info(String(chromium));
+  return canonicalJson({ scene: scene.type, composer: String(composer), file: readFileSync('x', 'utf8') });
+}

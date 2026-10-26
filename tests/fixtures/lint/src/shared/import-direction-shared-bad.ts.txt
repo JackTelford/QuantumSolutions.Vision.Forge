@@ -1,0 +1,12 @@
+import { readFileSync } from 'node:fs';
+import ts from 'typescript';
+import { PathTooLongError } from '../errors/vision-forge-error.ts';
+import { canonicalJson } from './canonical-json.ts';
+import type { JsonValue } from '../shared/canonical-json.ts';
+
+/** Uses every import. */
+export function describe(value: JsonValue): string {
+  const text = canonicalJson(value);
+  if (text.length > 240) throw new PathTooLongError(text, 240);
+  return `${readFileSync(text, 'utf8')} ${ts.version}`;
+}

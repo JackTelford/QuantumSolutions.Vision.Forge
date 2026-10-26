@@ -1,0 +1,4 @@
+/** This file sits under tests/fixtures/ and is skipped by the directory walk. */
+export function ignored(value: any): any {
+  return value;
+}

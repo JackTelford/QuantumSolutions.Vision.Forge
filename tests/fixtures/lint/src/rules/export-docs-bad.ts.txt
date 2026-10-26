@@ -1,0 +1,52 @@
+/**
+ * File header, separated from the first export by a blank line, so it
+ * does not count as that export's documentation.
+ */
+
+export const undocumentedConst = 1;
+
+// A line comment is not a JSDoc comment.
+export function undocumentedFunction(): number {
+  return undocumentedConst;
+}
+
+/* A plain block comment is not a JSDoc comment either. */
+export interface UndocumentedInterface {
+  readonly value: number;
+}
+
+export type UndocumentedAlias = string | number;
+
+/** Documented, but not directly above: a blank line separates them. */
+
+export class UndocumentedClass {
+  /** Documented method. */
+  documented(): void {}
+
+  undocumentedMethod(): number {
+    return 1;
+  }
+
+  private hidden(): number {
+    return 2;
+  }
+
+  #secret(): number {
+    return 3;
+  }
+
+  static undocumentedStatic(): number {
+    return 4;
+  }
+}
+
+/** Documented function; its overload signatures below need no second comment. */
+export function overloaded(value: string): string;
+export function overloaded(value: number): number;
+export function overloaded(value: string | number): string | number {
+  return value;
+}
+
+function notExported(): void {}
+
+export { notExported };

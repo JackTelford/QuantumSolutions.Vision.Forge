@@ -1,0 +1,11 @@
+/** @generated from schemas/example.schema.json by scripts/gen-types.ts. Do not edit. */
+
+export interface Generated {
+  readonly value: number;
+}
+
+export function build(value: number) {
+  return { value };
+}
+
+export const loose = build(1) as any;

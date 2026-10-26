@@ -1,0 +1,9 @@
+// The comment mentions CLAUDE_PLUGIN_ROOT, which is allowed.
+
+/** Reads plugin variables from the environment, which is forbidden. */
+export function pluginRoot(): string {
+  const fromIndex = process.env['CLAUDE_PLUGIN_ROOT'];
+  const fromProperty = process.env.CLAUDE_PLUGIN_DATA;
+  const fromTemplate = `${fromIndex ?? ''}CLAUDE_PLUGIN_${fromProperty ?? ''}`;
+  return fromTemplate;
+}

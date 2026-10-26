@@ -1,0 +1,9 @@
+/** Seconds at a frame, for a frame rate. */
+export function frameTime(frame: number, fps: number): number {
+  return frame / fps;
+}
+
+/** A shared type. */
+export interface Timed {
+  readonly frame: number;
+}
