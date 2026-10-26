@@ -2,6 +2,78 @@
 
 The single source of truth for where this repository stands. Newest milestone first. Every claim here points at a test or a file under `docs/evidence/`; anything else is listed under "Untested".
 
+## M0b: core infrastructure, checks and packaging (2026-10-26)
+
+### Done
+
+- **CLI foundation** (`scripts/cli.ts`, `src/cli/`): one JSON result document on standard output (`schemas/cli-result.schema.json`), progress on standard error, exit codes 0/1/2/130, explicit `--data-dir` and `--out` with per-OS defaults, `help` and `version` implemented, every other planned command answers `not-implemented` with its milestone. The CLI never reads `CLAUDE_PLUGIN_*` from the environment (lint rule `no-plugin-env`).
+- **Error taxonomy** (`src/errors/vision-forge-error.ts`): closed classes with code, message, hint and exit code; `describeError` for anything thrown.
+- **Process runner** (`src/process/`): `ProcessRunner` seam, `ChildProcessRunner` (absolute `.exe` paths only, no shell, time limit, cancellation, output mirrored to files) and the scripted `FakeProcessRunner` under `tests/fakes/`.
+- **Files and hashing** (`src/fs/`, `src/shared/`): atomic JSON writes, per-OS data directory, Windows path-length guard, directory removal with retry, canonical JSON and SHA-256 through Web Crypto (shared with the browser).
+- **Network** (`src/net/`): the allowlist as (host, redirect hosts) pairs from probe P7, an `HttpDownloader` with manual redirect checks per hop, Range resume, idle watchdog, streaming SHA-256/MD5 verification, salvage of a complete partial, query strings stripped from recorded URLs, and the `assets.json` ledger. It is the only file under `src/` allowed to call `fetch`.
+- **Harness server** (`src/harness/`): `serve.ts` as the only importer of Node's type stripper, run as a child process with `--disable-warning=ExperimentalWarning`; a reusable `request-handler.ts` (allowlisted roots, traversal guard, `.ts` → `text/javascript`, `nosniff`, `no-store`, loopback Host check, 405/404/400/500 policy); `HarnessServer` start/stop with validated roots, port reporting and an idempotent in-flight stop; the three import map.
+- **Contracts** (`schemas/`, `scripts/gen-types.ts`, `src/schema/`): the style guide, three schemas (`cli-result`, `tools`, `render-manifest`), generated and committed `src/shared/contracts/*.ts` with `<Name>Values` arrays, a drift check (`npm run schema:check`), and an Ajv 2020 validator with an own `date-time` format and problem lines that name the instance path.
+- **House-rule lint** (`scripts/lint.ts`, `src/lint/`): 13 rules on the TypeScript compiler API (decorators, erasable syntax, `import type`, `.ts` extensions, JSDoc and explicit return types on exports and public methods, no `any`, import direction, stripper and `fetch` confinement, plugin environment variables, key-like strings, page mode for `src/browser/`, file length).
+- **License check** (`scripts/licenses.ts`, `src/licenses/`): SPDX expression parsing against a short allowlist, production versus development from the lockfile, symlinked packages followed, `THIRD-PARTY.md` and `docs/licenses/` (license texts and NOTICE files of production dependencies) generated and kept current by a staleness test.
+- **Packaging**: `.claude-plugin/plugin.json` (plugin `vision-forge`, no pinned version), `.claude-plugin/marketplace.json` (marketplace `quantum-solutions`), `skills/cinematic-studio/SKILL.md` v0 (portable frontmatter, the one-command contract, result reading, behavior rules, the Blender rule, an honest status section) and `references/README.md` (the knowledge-base outline with milestones).
+- **CI**: `.github/workflows/ci.yml` (windows-2025 and ubuntu-24.04, Node 24 required and 26 informational, actions pinned by commit SHA, ffmpeg installed, `npm ci --ignore-scripts`, typecheck, lint, schema check, licenses, tests, `workflow_dispatch`); `blender-manual.yml` as `workflow_dispatch`-only M5 scaffolding.
+- Process: the six modules were built by parallel agents from written briefs, each reviewed adversarially (54 findings, 52 applied, 2 skipped and recorded below), then read again by the integrator.
+
+### Evidence
+
+| Claim | Number | Where |
+| --- | --- | --- |
+| Type checks pass under both configurations | `npm run typecheck` exit 0 | run locally 2026-10-26 |
+| House rules hold across the repository | `npm run lint`: no findings in 95 files | same |
+| Generated contracts match the schemas | `npm run schema:check`: 3 files up to date | same |
+| Every installed package is on the license allowlist | `npm run licenses`: 32 packages checked, 0 failed | same |
+| Unit and integration tests pass | `npm test`: 307 tests in 58 suites, 0 failures, 0 skipped | same |
+| Downloader resumes after an interruption and refuses bad hashes and hosts | 49 tests in `tests/net/` against a loopback server with Range, redirect, drop and hang modes | `tests/net/http-downloader.test.ts` |
+| Harness server strips `.ts`, refuses traversal (including `..%5C` on Windows), survives a stripper error, reports exact HEAD lengths, stops its child | 49 tests in `tests/harness/` | `tests/harness/harness-server.test.ts` |
+| Lint rules fire exactly once per violation and not on clean fixtures | 27 tests over 30 fixture files | `tests/lint/lint.test.ts` |
+| Schemas follow the style guide and the validator names paths | 74 tests | `tests/schema/` |
+| License check parses SPDX, walks nested and scoped packages, generates stable notices | 41 tests | `tests/licenses/` |
+| Plugin manifests and skill frontmatter are well-formed | 9 tests | `tests/packaging/packaging.test.ts` |
+| The CLI result contract round-trips through its schema | `successResult`/`failureResult` validate against `cli-result.schema.json` | `tests/schema/validator.test.ts` |
+
+### Untested
+
+- Continuous integration has not run: the workflows exist but nothing has been pushed since they were written. The first push after approval is the first run on both operating systems; the Chocolatey ffmpeg shim on Windows runners and the Node 26 job are unexercised.
+- `claude plugin validate .` passed with one warning, the deliberately absent `version` in plugin.json (the commit SHA versions the cache); installing the plugin from the marketplace and loading it with `--plugin-dir` on a clean profile is M8's check.
+- The downloader's path where a server answers 206 at the wrong offset, and the write-failure path when running as root on Linux (the test skips as root), have no test.
+- The harness server's '(aborted)' log marker, the config-directory removal warning and the SIGTERM handler on Windows are verified by reading, not by tests.
+- The downloader has only talked to a loopback server; the production allowlist and the real redirect chains are verified by unit tests against probe P7's recording, not by downloading from the real hosts.
+- `${CLAUDE_PROJECT_DIR}` substitution in skill bodies is taken from the Claude Code docs, not observed.
+- Nothing renders yet: no lane, no `doctor`, no setup scripts (M1).
+
+### Risks
+
+- A browser or Node update may change what the lint's page-mode and the stripper accept; the lint tests and the Node 26 CI job are the early warning.
+- `tests/fixtures/licenses/node_modules/` is tracked through a `.gitignore` negation; a tool that ignores `node_modules` by convention (an editor, a scanner) may hide it.
+- The license allowlist is deliberately short; the first dependency under another permissive license (MPL-2.0, Zlib) will fail the check and needs a reviewed addition.
+- `THIRD-PARTY.md` and `docs/licenses/` are written non-atomically; an interrupted `--write` is repaired by running it again.
+
+### Deliberately not done
+
+- No `doctor`, no `validate`, no setup scripts, no assemble or QA code: M1.
+- No `src/browser/` code yet, so the page-mode lint rule is proven only by fixtures.
+- No atomic writes for the generated notice files; no NOTICE copies for development dependencies.
+- The loopback fixture has no "resume from zero" mode (the one skipped test).
+
+### Review guide
+
+Read in this order:
+
+1. `scripts/cli.ts` and `src/cli/result.ts` — the one program the skill calls and the one document it returns.
+2. `src/net/http-downloader.ts` with `src/net/allowlist.ts` — every network byte goes through here.
+3. `src/harness/request-handler.ts` and `src/harness/harness-server.ts` — what the browser will talk to.
+4. `src/lint/export-rules.ts` and `src/lint/page-mode.ts` — the house rules as code.
+5. `skills/cinematic-studio/SKILL.md` — what Claude reads.
+
+### Next: M1
+
+Contracts and validation for the remaining documents (brief, treatment, shot spec, look bible, job, QA report, assets ledger); `doctor` writing `tools.json` with the setup scripts (`-CheckOnly`/`-Install`); `assemble` (normalize, xfade, mix, captions, H.264 CRF 16 BT.709 +faststart, optional ProRes/HEVC); the finishing module (`.cube` generation, lut3d/vignette chain); QA metrics (ffprobe, blackdetect, freezedetect, adjacent SSIM, signalstats drift, ebur128, text-contrast sampling); the contact sheet. Synthetic tests only. Then stop and report.
+
 ## M0a: research, probes and decisions (2026-10-26)
 
 ### Done
