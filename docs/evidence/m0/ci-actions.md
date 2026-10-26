@@ -10,7 +10,9 @@ The first run on `main` printed "Node.js 20 is deprecated. The following actions
 | `actions/setup-node` | `v7` | `949feb2413d6458794dcd2491c4babbbce0c15c1` | `https://api.github.com/repos/actions/setup-node/git/ref/tags/v7` (object type `commit`) |
 | `FedericoCarboni/setup-ffmpeg` | `v3.1` (latest release, 2024-02-04) | `37062fbf7149fc5578d6c57e08aed62458b375d6` | `https://api.github.com/repos/FedericoCarboni/setup-ffmpeg/tags` |
 
-`setup-ffmpeg` downloads a static ffmpeg build from GitHub releases on both runners and replaces the apt and Chocolatey steps. It is the one third-party action in the workflow; the SHA pin is the control.
+`setup-ffmpeg` downloads a static ffmpeg build from GitHub releases on both runners and replaces the apt and Chocolatey steps. It is the one third-party action in the workflow; the SHA pin is the control. It still targets the Node 20 action runtime (GitHub forces it onto Node 24 with a warning); the pin is bumped when the action publishes a Node 24 release.
+
+Result: run 40410446831 (commit 4bd4b78) passed on all four jobs: windows-2025 / node 24 in 52 s, windows-2025 / node 26 in 1 m 3 s, ubuntu-24.04 / node 24 in 26 s, ubuntu-24.04 / node 26 in 27 s. The two tests that failed on Linux in the first run (`tests/harness/static-roots.test.ts` treating `C:\Windows\win.ini` as absolute, `tests/process/child-process-runner.test.ts` using a Windows path for the shell-shim case) were platform-specific test expectations, not code defects, and were split by platform.
 
 The table and procedure below are the original M0b record.
 

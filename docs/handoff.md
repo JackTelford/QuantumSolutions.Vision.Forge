@@ -38,7 +38,7 @@ The single source of truth for where this repository stands. Newest milestone fi
 
 ### Untested
 
-- Continuous integration has not run: the workflows exist but nothing has been pushed since they were written. The first push after approval is the first run on both operating systems; the Chocolatey ffmpeg shim on Windows runners and the Node 26 job are unexercised.
+- Continuous integration: verified after the push. The first run (40407107859) passed on both Windows jobs, hung in `apt-get` on Ubuntu and showed two Linux-only test expectations written for Windows paths; after pinning the actions to v7, switching to the SHA-pinned `setup-ffmpeg` action and fixing the two tests, run 40410446831 passed on all four jobs (windows-2025 and ubuntu-24.04, Node 24 and 26) in under a minute each (`docs/evidence/m0/ci-actions.md`).
 - `claude plugin validate .` passed with one warning, the deliberately absent `version` in plugin.json (the commit SHA versions the cache); installing the plugin from the marketplace and loading it with `--plugin-dir` on a clean profile is M8's check.
 - The downloader's path where a server answers 206 at the wrong offset, and the write-failure path when running as root on Linux (the test skips as root), have no test.
 - The harness server's '(aborted)' log marker, the config-directory removal warning and the SIGTERM handler on Windows are verified by reading, not by tests.
