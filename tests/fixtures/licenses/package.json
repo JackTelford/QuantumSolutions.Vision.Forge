@@ -1,0 +1,15 @@
+{
+  "name": "licenses-fixture",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A tiny fake node_modules tree for tests/licenses: a scoped package, a nested package, a package with a NOTICE file, a legacy {type} license, a disallowed AND expression and a missing license.",
+  "dependencies": {
+    "@scope/alpha": "1.0.0",
+    "beta": "2.0.0",
+    "legacy": "0.1.0"
+  },
+  "devDependencies": {
+    "copyleft": "4.0.0",
+    "no-license": "3.0.0"
+  }
+}

@@ -1,5 +1,6 @@
-# Dependencies
+# Dependencies (the license-check test fixture is a fake node_modules tree and is tracked)
 node_modules/
+!tests/fixtures/licenses/**/node_modules/
 
 # Render output, scratch and local caches: whole roots, never individual subfolders
 out/
