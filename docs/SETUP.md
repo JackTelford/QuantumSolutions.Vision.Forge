@@ -1,0 +1,60 @@
+# Set up Vision.Forge on a new PC
+
+## Quick start
+
+1. Use Windows 11 (first class), macOS or Linux with a GPU driver installed. Allow about 1 GB of disk for the programs below plus render output; 16 GB RAM is recommended. An NVIDIA, AMD or Intel GPU makes the `three` lane and EEVEE fast; everything still runs on software rendering, slower.
+2. Clone this repository into a short path such as `C:\Code\QuantumSolutions.Vision.Forge`. Windows limits paths to 260 characters unless long paths are enabled, and render output lives under short job folders to stay inside that limit.
+3. Run `Setup-VisionForge.cmd` (milestone M1). It reports which programs are present, prints the exact install command for each missing one, and installs them only with `-Install`. It then runs `npm ci`.
+4. Run `node scripts\cli.ts doctor` (milestone M1). Exit code 0 means every required program was found; the output lists which lanes are available.
+
+Until M1 lands, install the programs by hand with the commands below and run `npm ci` in the clone.
+
+## What comes with this repository
+
+| Included | Purpose |
+| --- | --- |
+| TypeScript source under `scripts/` and `src/` | the command-line program, the render harness and the shared camera, timeline and composition code |
+| `blender/apply_scene.py` | the one Python file Blender runs; it applies a resolved scene and makes no decisions |
+| `skills/cinematic-studio/` | the Claude Code skill, its creative knowledge base, bundled OFL fonts and CC0 HDRIs (from M3) |
+| `schemas/` | JSON Schema contracts for every document the pipeline exchanges (from M1) |
+| `docs/` | decisions (`adr/`), research with sources, probe evidence with numbers, this guide, the handoff log |
+| `package.json` and `package-lock.json` | exact dependency pins; `npm ci` installs them |
+
+The clone contains no ffmpeg, no Blender, no browser, no model weights and no rendered media.
+
+## What is installed separately and why
+
+GitHub refuses ordinary files larger than 100 MiB, and the project rule is to call ffmpeg and Blender as external programs rather than bundle them. Blender's installer alone is about 350 MB. Keeping them outside the repository keeps clones small and lets each machine use a verified installer from the vendor.
+
+| Program | Why | Windows 11 | macOS | Linux |
+| --- | --- | --- | --- | --- |
+| Node.js 24.12 or newer | runs the TypeScript directly (no build step) | `winget install --id OpenJS.NodeJS.LTS --exact` | `brew install node@24` | distribution packages or nodejs.org |
+| ffmpeg and ffprobe | assembly, finishing grade, loudness, quality checks | `winget install --id Gyan.FFmpeg --exact` | `brew install ffmpeg` | `sudo apt install ffmpeg` |
+| Microsoft Edge or Google Chrome | headless rendering of the `html` and `three` lanes | Edge ships with Windows 11 | Chrome or Edge | Chrome or Chromium |
+| Blender 5.2 LTS (optional) | the `blender` lane | `winget install --id BlenderFoundation.Blender --version 5.2.3 --exact` (asks for administrator approval) | `brew install --cask blender` then confirm the version is 5.2.x | `snap install blender --channel=5.2/stable --classic` or the blender.org 5.2 LTS archive |
+
+Blender 5.2.3 installs to `C:\Program Files\Blender Foundation\Blender 5.2\blender.exe` on Windows. The MSI's SHA-256 is `a103d4ece8d9acffd2a95c9d8860355b1f209977cc983b4a3d1e1cfb441c8605`, the same value published in `blender-5.2.3.sha256` on download.blender.org; winget verifies it. Only 5.2.x is supported, because 4.5 and 5.x differ in the Python API in five places (see `docs/adr/0004-blender-lane-version-install-and-applier.md`). The skill never downloads Blender itself.
+
+Environment variables `FFMPEG`, `BLENDER` and `CHROME` override discovery when a program lives somewhere unusual; each must point at the real executable, not a `.cmd` shim.
+
+## File locations
+
+- Programs: wherever their installer put them; `doctor` records the resolved paths in `tools.json` under the data directory.
+- Data directory (caches, tool manifest, optional narration component, browser profiles): `%LOCALAPPDATA%\VisionForge` on Windows, `~/Library/Application Support/VisionForge` on macOS, `~/.local/share/vision-forge` on Linux, or the `--data-dir` argument.
+- Render output: the `--out` argument, default `out/` under the current folder. Frames, logs and profiles stay under the data directory with short paths; only deliverables go to `out/`.
+
+## Narration (optional)
+
+Narration uses Kokoro-82M on the CPU through `kokoro-js`. It is not installed with the repository because its package chain is about 425 MB and contains components under GPL-3.0 (eSpeak NG), LGPL-3.0 (libvips) and a proprietary Microsoft DirectML library that is present but not used. `node scripts\cli.ts audio install` (milestone M6) installs it into the data directory after showing the sizes and licenses, and downloads the model weights (92 MB) pinned to a commit and verified by SHA-256. You can skip narration entirely and supply your own recording.
+
+## Troubleshooting
+
+- **`doctor` says Blender is missing after installing it**: open a new terminal so PATH is refreshed, or set `BLENDER` to the full path of `blender.exe`. Microsoft Store builds are not supported; use the winget or blender.org installer.
+- **`doctor` refuses the Blender version**: only 5.2.x is supported. Install 5.2.3 with the command above; two versions can coexist.
+- **Blender renders fail with "Cannot initialize the GPU"**: EEVEE needs an interactive desktop session. Over some SSH or scheduled-task sessions only Cycles works; the still gate falls back to it and says so.
+- **The `three` lane reports a software renderer**: headless Edge and Chrome use the GPU by default on Windows; a mismatch means the driver or an enterprise policy blocked it. The renderer policy can be set to `software` explicitly.
+- **Edge refuses to start headless**: an enterprise policy can disallow headless mode; `doctor` then uses Chrome.
+- **Paths too long**: keep the clone and `--out` short, or enable long paths in Windows. The program refuses early with a hint rather than failing mid-render.
+- **`npm ci` fails**: use Node 24.12 or newer (`node --version`) and delete `node_modules` before retrying.
+
+Installer runs still depend on winget, network access and normal installer permissions. The setup script changes nothing without `-Install`.
