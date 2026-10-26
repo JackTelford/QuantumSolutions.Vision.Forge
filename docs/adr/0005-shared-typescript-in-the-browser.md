@@ -17,7 +17,7 @@ Facts: `stripTypeScriptTypes` erases `import type` lines to whitespace (line and
 Option 1.
 
 - `src/harness/serve.ts` is the only file that imports `stripTypeScriptTypes`. It runs as its own child process started with `--disable-warning=ExperimentalWarning`, listens on `127.0.0.1:0`, prints `{port}` once, serves `.ts` stripped as `text/javascript` with `X-Content-Type-Options: nosniff` and `Cache-Control: no-store`, answers `/favicon.ico` with 204, serves only allowlisted roots (runtime, lane, job page, `/vendor/three/` mapped to `node_modules/three` resolved from `import.meta.dirname`, `/fonts/`, `/assets/`) and refuses any path that escapes a root.
-- Pages carry an import map: `three` → `/vendor/three/build/three.module.js`, `three/addons/` and `three/examples/jsm/` → `/vendor/three/examples/jsm/`.
+- Pages carry an import map: `three` → `/vendor/three/build/three.module.js` and `three/addons/` → `/vendor/three/examples/jsm/`. Lane code imports addons only through the `three/addons/` spelling; the lint rejects `three/examples/jsm/`.
 - Type checking uses the two configurations from ADR 0001; `@types/three` 0.186.0 (dev, MIT, owner-approved) types the browser lane.
 - Fallback if the Node API drifts: pin `amaro` (MIT, the stripper Node wraps) in that one file.
 
