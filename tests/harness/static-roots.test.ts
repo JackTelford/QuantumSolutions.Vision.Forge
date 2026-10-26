@@ -35,10 +35,20 @@ describe('resolveWithinRoot', () => {
     }
   });
 
-  it('refuses absolute paths smuggled into the request', () => {
-    for (const path of ['/site//etc/passwd', '/site/C:%5CWindows%5Cwin.ini', '/site/%5C%5Cserver%5Cshare%5Cx']) {
+  it('refuses a POSIX absolute path smuggled into the request', () => {
+    assert.equal(resolveWithinRoot(root, '/site//etc/passwd'), undefined);
+  });
+
+  // A drive letter or a UNC prefix is absolute only on Windows; on POSIX "C:\Windows\win.ini" is an ordinary file name inside the root.
+  it('refuses Windows absolute paths smuggled into the request', { skip: onWindows ? false : 'drive letters and UNC prefixes are absolute only on Windows' }, () => {
+    for (const path of ['/site/C:%5CWindows%5Cwin.ini', '/site/%5C%5Cserver%5Cshare%5Cx']) {
       assert.equal(resolveWithinRoot(root, path), undefined, path);
     }
+  });
+
+  it('keeps a Windows-looking name inside the root on POSIX', { skip: onWindows ? 'only meaningful on POSIX' : false }, () => {
+    const resolved = resolveWithinRoot(root, '/site/C:%5CWindows%5Cwin.ini');
+    assert.ok(resolved !== undefined && resolved.startsWith(root.directory));
   });
 
   // On POSIX a backslash is an ordinary file-name character, so these are only traversals on Windows.

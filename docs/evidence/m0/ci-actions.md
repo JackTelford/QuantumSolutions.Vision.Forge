@@ -1,5 +1,19 @@
 # CI actions pinned by commit SHA
 
+## Update after the first run (2026-10-26, run 40407107859)
+
+The first run on `main` printed "Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24" for both v4 pins, and the `ubuntu-24.04 / node 24` job hung for over 14 minutes inside `sudo apt-get install -y ffmpeg` and was cancelled; both Windows jobs passed. The workflow now pins:
+
+| Action | Tag | Commit SHA | Resolved from |
+| --- | --- | --- | --- |
+| `actions/checkout` | `v7` | `3d3c42e5aac5ba805825da76410c181273ba90b1` | `https://api.github.com/repos/actions/checkout/git/ref/tags/v7` (object type `commit`) |
+| `actions/setup-node` | `v7` | `949feb2413d6458794dcd2491c4babbbce0c15c1` | `https://api.github.com/repos/actions/setup-node/git/ref/tags/v7` (object type `commit`) |
+| `FedericoCarboni/setup-ffmpeg` | `v3.1` (latest release, 2024-02-04) | `37062fbf7149fc5578d6c57e08aed62458b375d6` | `https://api.github.com/repos/FedericoCarboni/setup-ffmpeg/tags` |
+
+`setup-ffmpeg` downloads a static ffmpeg build from GitHub releases on both runners and replaces the apt and Chocolatey steps. It is the one third-party action in the workflow; the SHA pin is the control.
+
+The table and procedure below are the original M0b record.
+
 Recorded 2026-10-26T20:47Z for `.github/workflows/ci.yml` by reading the GitHub API with a fetch tool and confirming with `git ls-remote --tags` from the owner's machine. Nothing was installed and no workflow was run.
 
 ## Pins used in ci.yml

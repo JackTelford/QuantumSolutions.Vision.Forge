@@ -75,4 +75,4 @@ Implemented today (M0b): `help` and `version`. Planned: `doctor`, `validate`, `a
 
 ## Knowledge base
 
-Read a reference only when the step needs it. The outline, with the file for each step and the milestone that fills it, is [references/README.md](references/README.md); open it to find the file, then open the file. None of the reference files exists yet.
+Read a reference only when the step needs it. The outline, with one line per file and its status, is [references/README.md](references/README.md); open it to find the file, then open the file. The tables in the references are the vocabulary of the shot spec and the look bible: a value that is not in them is not a direction.

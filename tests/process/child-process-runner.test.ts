@@ -14,7 +14,8 @@ const never = new AbortController().signal;
 describe('assertRunnableExecutable', () => {
   it('rejects relative paths, shell scripts and missing files', () => {
     assert.throws(() => assertRunnableExecutable('node'), InvalidExecutableError);
-    assert.throws(() => assertRunnableExecutable('C:\\tools\\npm.cmd'), (error: unknown) => error instanceof InvalidExecutableError && /shell scripts/.test(error.message));
+    const shellShim = process.platform === 'win32' ? 'C:\\tools\\npm.cmd' : '/tmp/tools/npm.cmd';
+    assert.throws(() => assertRunnableExecutable(shellShim), (error: unknown) => error instanceof InvalidExecutableError && /shell scripts/.test(error.message));
     assert.throws(() => assertRunnableExecutable(join(tmpdir(), 'does-not-exist.exe')), InvalidExecutableError);
     assert.doesNotThrow(() => assertRunnableExecutable(node));
   });
