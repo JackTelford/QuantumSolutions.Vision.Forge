@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vision-forge.quantumsolutions.dev/schemas/cli-result.schema.json",
+  "title": "CliResult",
+  "description": "The one JSON document every CLI command prints on standard output. Built by src/cli/result.ts; Claude parses it and tests assert on it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "version", "command", "ok", "exitCode", "data", "artifacts", "errors", "evidence"],
+  "properties": {
+    "kind": {
+      "const": "cli-result",
+      "description": "Document kind; always \"cli-result\"."
+    },
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Version of this document kind; always 1."
+    },
+    "command": {
+      "type": "string",
+      "description": "Name of the command that ran, for example \"doctor\"; empty when no command was given."
+    },
+    "ok": {
+      "type": "boolean",
+      "description": "True when the command succeeded and exitCode is 0."
+    },
+    "exitCode": { "$ref": "#/$defs/ExitCode" },
+    "data": {
+      "description": "Command-specific payload: any JSON value, null when the command failed. Each command documents its shape."
+    },
+    "artifacts": {
+      "type": "array",
+      "description": "Absolute paths of the files the command produced for the user, in the order they were written.",
+      "items": {
+        "type": "string",
+        "description": "Absolute file path."
+      }
+    },
+    "errors": {
+      "type": "array",
+      "description": "The errors that stopped the command; empty when ok is true.",
+      "items": { "$ref": "#/$defs/CliResultError" }
+    },
+    "evidence": {
+      "type": "array",
+      "description": "Absolute paths of the evidence files (reports, contact sheets) the command wrote.",
+      "items": {
+        "type": "string",
+        "description": "Absolute file path."
+      }
+    }
+  },
+  "$defs": {
+    "ExitCode": {
+      "type": "integer",
+      "enum": [0, 1, 2, 130],
+      "description": "Process exit code: 0 success, 1 failure, 2 usage error, 130 cancelled."
+    },
+    "CliResultError": {
+      "type": "object",
+      "description": "One error entry: a stable code, what went wrong and what to do next.",
+      "additionalProperties": false,
+      "required": ["code", "message", "hint"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Stable machine-readable error code, for example \"usage\" or \"tool-missing\"."
+        },
+        "message": {
+          "type": "string",
+          "description": "What went wrong, one sentence for a person."
+        },
+        "hint": {
+          "type": "string",
+          "description": "What to do next, one sentence for a person."
+        }
+      }
+    }
+  }
+}

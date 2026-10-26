@@ -1,0 +1,203 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vision-forge.quantumsolutions.dev/schemas/render-manifest.schema.json",
+  "title": "RenderManifest",
+  "description": "What one shot render produced and under which fingerprint (ADR 0006). Written as manifest.json next to the frames; a complete manifest is what makes a cached shot reusable.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "version", "shotId", "key", "lane", "renderProfile", "fingerprint", "fps", "width", "height", "frameCount", "frames", "status", "startedAt", "toolVersionsHash"],
+  "properties": {
+    "kind": {
+      "const": "render-manifest",
+      "description": "Document kind; always \"render-manifest\"."
+    },
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Version of this document kind; always 1."
+    },
+    "shotId": {
+      "type": "string",
+      "description": "Identifier of the shot in its shot spec, for example \"s01\"."
+    },
+    "key": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "Shot hash as 64 lowercase hex characters: SHA-256 over the browser major version, the launch flags, the lane code hash, the shot spec, the look bible and the render profile (ADR 0006, decision 8). Names the cache folder."
+    },
+    "lane": { "$ref": "#/$defs/Lane" },
+    "renderProfile": {
+      "type": "object",
+      "description": "How the lane rendered: the engine, its backend and whether a hardware or software renderer produced the pixels.",
+      "additionalProperties": false,
+      "required": ["engine", "backend", "renderer"],
+      "properties": {
+        "engine": {
+          "type": "string",
+          "description": "Rendering engine, for example \"chromium\" for the browser lanes, \"cycles\" or \"eevee\" for Blender."
+        },
+        "backend": {
+          "type": "string",
+          "description": "Graphics backend the engine used: the ANGLE backend such as \"d3d11\" or \"swiftshader-webgl\" for browsers, the compute device such as \"CUDA\" or \"CPU\" for Blender."
+        },
+        "renderer": { "$ref": "#/$defs/Renderer" }
+      }
+    },
+    "fingerprint": {
+      "type": "object",
+      "description": "Everything that influences pixels (ADR 0006, decision 5). Two renders with equal fingerprints on the same machine produce byte-identical frames.",
+      "additionalProperties": false,
+      "required": ["node", "ffmpeg"],
+      "properties": {
+        "browser": {
+          "type": "object",
+          "description": "The browser the html and three lanes rendered in; absent for the blender lane.",
+          "additionalProperties": false,
+          "required": ["channel", "version", "args"],
+          "properties": {
+            "channel": {
+              "type": "string",
+              "description": "Browser channel that was launched, \"msedge\" or \"chrome\", as the tools manifest records it."
+            },
+            "version": {
+              "type": "string",
+              "description": "Full browser version, four dotted numbers, for example \"156.0.3700.42\"."
+            },
+            "args": {
+              "type": "array",
+              "description": "Launch flags passed to the browser, in order, for example \"--use-angle=d3d11\".",
+              "items": {
+                "type": "string",
+                "description": "One launch flag."
+              }
+            }
+          }
+        },
+        "webglRenderer": {
+          "type": "string",
+          "description": "UNMASKED_RENDERER_WEBGL string read from the browser at startup; absent for the blender lane."
+        },
+        "appliedDpi": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Windows AppliedDPI registry value in dots per inch (96 at 100% scaling); absent on other platforms."
+        },
+        "clearType": {
+          "type": "object",
+          "description": "The four Windows ClearType registry values that shape text anti-aliasing; absent on other platforms.",
+          "additionalProperties": false,
+          "required": ["fontSmoothing", "fontSmoothingType", "orientation", "gamma"],
+          "properties": {
+            "fontSmoothing": {
+              "type": "string",
+              "description": "FontSmoothing registry value as a decimal string; \"2\" when smoothing is on."
+            },
+            "fontSmoothingType": {
+              "type": "string",
+              "description": "FontSmoothingType registry value as a decimal string; \"2\" for ClearType."
+            },
+            "orientation": {
+              "type": "string",
+              "description": "FontSmoothingOrientation registry value as a decimal string (the subpixel order)."
+            },
+            "gamma": {
+              "type": "string",
+              "description": "FontSmoothingGamma registry value as a decimal string, 1000 to 2200."
+            }
+          }
+        },
+        "node": {
+          "type": "string",
+          "description": "Node version including the leading v, for example \"v24.13.0\"."
+        },
+        "three": {
+          "type": "string",
+          "description": "three.js version, for example \"0.186.1\"; absent unless the three lane rendered."
+        },
+        "ffmpeg": {
+          "type": "string",
+          "description": "Version as ffmpeg reports it, for example \"7.1.1\"."
+        },
+        "blender": {
+          "type": "string",
+          "description": "Blender version, for example \"4.2.3\"; absent unless the blender lane rendered."
+        }
+      }
+    },
+    "fps": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Frame rate in frames per second."
+    },
+    "width": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Frame width in pixels."
+    },
+    "height": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Frame height in pixels."
+    },
+    "frameCount": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of frames the shot has in total; frames lists the ones rendered so far."
+    },
+    "frames": {
+      "type": "array",
+      "description": "The rendered frames in index order; grows while status is rendering and has frameCount entries when complete.",
+      "items": {
+        "type": "object",
+        "description": "One rendered frame and the hash of its pixels.",
+        "additionalProperties": false,
+        "required": ["index", "sha256"],
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Zero-based frame number."
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "SHA-256 of the decoded pixels from ffmpeg framehash, never of the PNG bytes, as 64 lowercase hex characters."
+          }
+        }
+      }
+    },
+    "status": { "$ref": "#/$defs/RenderStatus" },
+    "startedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the render started: an RFC 3339 timestamp in UTC with millisecond precision, for example 2026-10-26T20:00:00.000Z."
+    },
+    "finishedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the render became complete or failed, in the same RFC 3339 form as startedAt; absent while rendering."
+    },
+    "toolVersionsHash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 of the canonical JSON of fingerprint, as 64 lowercase hex characters; equal fingerprints hash alike."
+    }
+  },
+  "$defs": {
+    "Lane": {
+      "type": "string",
+      "enum": ["html", "three", "blender"],
+      "description": "Which lane rendered the shot: html (HTML/CSS in a browser), three (Three.js WebGL in a browser) or blender."
+    },
+    "Renderer": {
+      "type": "string",
+      "enum": ["hardware", "software"],
+      "description": "Whether the GPU (hardware) or a CPU rasterizer such as SwiftShader (software) produced the pixels."
+    },
+    "RenderStatus": {
+      "type": "string",
+      "enum": ["rendering", "complete", "failed"],
+      "description": "Where the render stands: rendering (frames still being produced), complete (every frame hashed) or failed."
+    }
+  }
+}

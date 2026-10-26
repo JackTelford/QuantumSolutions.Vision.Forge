@@ -1,0 +1,225 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vision-forge.quantumsolutions.dev/schemas/tools.schema.json",
+  "title": "ToolsManifest",
+  "description": "What doctor found on this machine: platform, Node, external programs, browsers, GPU, which lanes can run and whether narration is installed. Written as tools.json under the data directory.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "version", "generatedAt", "platform", "node", "interactiveSession", "longPathsEnabled", "programs", "browsers", "gpu", "lanes", "narration"],
+  "properties": {
+    "kind": {
+      "const": "tools",
+      "description": "Document kind; always \"tools\"."
+    },
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Version of this document kind; always 1."
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When doctor wrote this manifest: an RFC 3339 timestamp in UTC with millisecond precision, for example 2026-10-26T20:00:00.000Z."
+    },
+    "platform": {
+      "type": "object",
+      "description": "The operating system doctor ran on.",
+      "additionalProperties": false,
+      "required": ["os", "arch", "release"],
+      "properties": {
+        "os": { "$ref": "#/$defs/OperatingSystem" },
+        "arch": {
+          "type": "string",
+          "description": "CPU architecture as Node reports it (process.arch), for example \"x64\" or \"arm64\"."
+        },
+        "release": {
+          "type": "string",
+          "description": "Operating system release as Node reports it (os.release()), for example \"10.0.26300\"."
+        }
+      }
+    },
+    "node": {
+      "type": "object",
+      "description": "The Node runtime doctor ran under; every command uses the same one.",
+      "additionalProperties": false,
+      "required": ["path", "version"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Absolute path of the node executable (process.execPath)."
+        },
+        "version": {
+          "type": "string",
+          "description": "Node version including the leading v, for example \"v24.13.0\"."
+        }
+      }
+    },
+    "interactiveSession": {
+      "type": "boolean",
+      "description": "True when doctor ran in an interactive desktop session, where a browser can open a window and reach the GPU; false in a service or CI session."
+    },
+    "longPathsEnabled": {
+      "type": ["boolean", "null"],
+      "description": "Windows LongPathsEnabled registry value as a boolean; null on other platforms or when the value could not be read."
+    },
+    "programs": {
+      "type": "object",
+      "description": "The external programs that were found. A program that was not found is a missing property, never null.",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "ffmpeg": { "$ref": "#/$defs/FfmpegProgram" },
+        "ffprobe": { "$ref": "#/$defs/Program" },
+        "blender": { "$ref": "#/$defs/Program" }
+      }
+    },
+    "browsers": {
+      "type": "array",
+      "description": "The browsers that were found, in launch preference order (Edge before Chrome); empty when none was found.",
+      "items": { "$ref": "#/$defs/Browser" }
+    },
+    "gpu": {
+      "type": ["object", "null"],
+      "description": "The graphics adapter and its driver; null when none could be identified.",
+      "additionalProperties": false,
+      "required": ["name", "driver"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Adapter name as the driver reports it, for example \"NVIDIA GeForce RTX 4080\"."
+        },
+        "driver": {
+          "type": "string",
+          "description": "Driver version as the driver reports it, for example \"581.57\"."
+        }
+      }
+    },
+    "lanes": {
+      "type": "object",
+      "description": "Which render lanes can run on this machine, given the programs and browsers found.",
+      "additionalProperties": false,
+      "required": ["html", "three", "blender", "audio"],
+      "properties": {
+        "html": {
+          "type": "boolean",
+          "description": "True when the HTML/CSS lane can run: a browser and ffmpeg were found."
+        },
+        "three": {
+          "type": "boolean",
+          "description": "True when the Three.js lane can run: a browser with WebGL2 and ffmpeg were found."
+        },
+        "blender": {
+          "type": "boolean",
+          "description": "True when the Blender lane can run: a supported Blender and ffmpeg were found."
+        },
+        "audio": {
+          "type": "boolean",
+          "description": "True when audio can be assembled: ffmpeg with the required encoders was found."
+        }
+      }
+    },
+    "narration": {
+      "type": "object",
+      "description": "State of the optional narration component (ADR 0007).",
+      "additionalProperties": false,
+      "required": ["installed", "weightsVerified"],
+      "properties": {
+        "installed": {
+          "type": "boolean",
+          "description": "True when the narration component is installed under the data directory."
+        },
+        "weightsVerified": {
+          "type": "boolean",
+          "description": "True when the installed model weights matched their pinned checksums."
+        }
+      }
+    }
+  },
+  "$defs": {
+    "OperatingSystem": {
+      "type": "string",
+      "enum": ["win32", "darwin", "linux"],
+      "description": "Operating system as Node reports it (process.platform)."
+    },
+    "Channel": {
+      "type": "string",
+      "enum": ["msedge", "chrome"],
+      "description": "Browser channel as Playwright's launch option names it: msedge is Microsoft Edge, chrome is Google Chrome."
+    },
+    "Program": {
+      "type": "object",
+      "description": "An external program that was found.",
+      "additionalProperties": false,
+      "required": ["path", "version"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Absolute path of the executable."
+        },
+        "version": {
+          "type": "string",
+          "description": "Version as the program reports it, for example \"7.1.1\"."
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "SHA-256 of the executable file as 64 lowercase hex characters; present when doctor computed it."
+        }
+      }
+    },
+    "FfmpegProgram": {
+      "type": "object",
+      "description": "The ffmpeg program that was found, with the filters and encoders this build offers.",
+      "additionalProperties": false,
+      "required": ["path", "version", "filters", "encoders"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Absolute path of the ffmpeg executable."
+        },
+        "version": {
+          "type": "string",
+          "description": "Version as ffmpeg reports it, for example \"7.1.1\"."
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "SHA-256 of the executable file as 64 lowercase hex characters; present when doctor computed it."
+        },
+        "filters": {
+          "type": "array",
+          "description": "Names of the filters this ffmpeg build offers (ffmpeg -filters), for example \"lut3d\" or \"drawtext\".",
+          "items": {
+            "type": "string",
+            "description": "One filter name."
+          }
+        },
+        "encoders": {
+          "type": "array",
+          "description": "Names of the encoders this ffmpeg build offers (ffmpeg -encoders), for example \"libx264\" or \"aac\".",
+          "items": {
+            "type": "string",
+            "description": "One encoder name."
+          }
+        }
+      }
+    },
+    "Browser": {
+      "type": "object",
+      "description": "A browser that was found and can be launched.",
+      "additionalProperties": false,
+      "required": ["channel", "path", "version"],
+      "properties": {
+        "channel": { "$ref": "#/$defs/Channel" },
+        "path": {
+          "type": "string",
+          "description": "Absolute path of the browser executable."
+        },
+        "version": {
+          "type": "string",
+          "description": "Full browser version, four dotted numbers, for example \"156.0.3700.42\"."
+        }
+      }
+    }
+  }
+}

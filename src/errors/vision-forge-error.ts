@@ -154,11 +154,11 @@ export class SchemaValidationError extends VisionForgeError {
   readonly kind: string;
   readonly problems: readonly string[];
 
-  constructor(kind: string, problems: readonly string[]) {
+  constructor(kind: string, problems: readonly string[], hint?: string) {
     super({
       code: 'schema-validation',
       message: `The ${kind} document is invalid: ${problems.slice(0, 3).join('; ')}${problems.length > 3 ? ` (and ${problems.length - 3} more)` : ''}.`,
-      hint: `Fix the listed paths. The schema is schemas/${kind}.schema.json.`,
+      hint: hint ?? `Fix the listed paths. The schema is schemas/${kind}.schema.json.`,
     });
     this.kind = kind;
     this.problems = problems;
