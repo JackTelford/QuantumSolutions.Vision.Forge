@@ -1,0 +1,477 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vision-forge.quantumsolutions.dev/schemas/shot-spec.schema.json",
+  "title": "ShotSpec",
+  "description": "Every shot of a piece, fully specified: lane, length, camera (ADR 0008), lighting, composition, text, subject and atmosphere, plus the transitions between shots. The lanes render from it; the shot hash is computed over each shot (ADR 0006).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "version", "id", "briefId", "treatmentId", "lookId", "fps", "width", "height", "shots", "transitions", "createdAt"],
+  "properties": {
+    "kind": {
+      "const": "shot-spec",
+      "description": "Document kind; always \"shot-spec\"."
+    },
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Version of this document kind; always 1."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+      "description": "Slug that names the shot spec, 2 to 63 lowercase letters, digits and hyphens, for example \"obsidian-bottle-shots\"."
+    },
+    "briefId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+      "description": "Id of the brief the shots serve, for example \"obsidian-bottle\"."
+    },
+    "treatmentId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+      "description": "Id of the treatment the shots come from, for example \"obsidian-bottle-t1\"."
+    },
+    "lookId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+      "description": "Id of the look bible every shot uses, for example \"obsidian\"."
+    },
+    "fps": { "$ref": "#/$defs/FrameRate" },
+    "width": {
+      "type": "integer",
+      "minimum": 2,
+      "description": "Frame width in pixels of every shot, even, for example 1920."
+    },
+    "height": {
+      "type": "integer",
+      "minimum": 2,
+      "description": "Frame height in pixels of every shot, even, for example 1080."
+    },
+    "shots": {
+      "type": "array",
+      "description": "The shots in screen order; at least one for a piece that renders.",
+      "items": { "$ref": "#/$defs/Shot" }
+    },
+    "transitions": {
+      "type": "array",
+      "description": "Transitions between consecutive shots; a pair of shots without an entry is joined by a cut. Each transition other than a cut shortens the piece by its frame count; a cut's frames are ignored.",
+      "items": { "$ref": "#/$defs/Transition" }
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the shot spec was written: an RFC 3339 timestamp in UTC with millisecond precision, for example 2026-10-26T20:00:00.000Z."
+    }
+  },
+  "$defs": {
+    "Lane": {
+      "type": "string",
+      "enum": ["html", "three", "blender"],
+      "description": "Which lane renders a shot: html (HTML/CSS in a browser), three (Three.js WebGL in a browser) or blender."
+    },
+    "FrameRate": {
+      "type": "integer",
+      "enum": [24, 25, 30, 60],
+      "description": "Frames per second of every shot and of the delivery."
+    },
+    "ShotSize": {
+      "type": "string",
+      "enum": ["ECU", "CU", "MCU", "MS", "MLS", "FS", "LS", "ELS"],
+      "description": "Shot size from extreme close-up (ECU) to extreme long shot (ELS)."
+    },
+    "CameraAngle": {
+      "type": "string",
+      "enum": ["eye", "low", "high", "overhead", "ground", "dutch"],
+      "description": "Camera height and tilt relative to the subject; dutch is a rolled horizon (see dutchDegrees)."
+    },
+    "CameraMove": {
+      "type": "string",
+      "enum": ["static-hold", "breathe", "push-in", "pull-out", "truck-left", "truck-right", "pedestal-up", "pedestal-down", "pan-left", "pan-right", "tilt-up", "tilt-down", "arc-left", "arc-right", "turntable", "crane-reveal", "rack-focus", "zoom-in", "zoom-out", "crash-zoom", "dolly-zoom", "whip-pan", "handheld", "parallax-drift", "light-sweep", "top-down-reveal"],
+      "description": "Camera move preset baked by src/shared/camera/ into per-frame position, rotation, focal length and focus (ADR 0008)."
+    },
+    "EasingToken": {
+      "type": "string",
+      "enum": ["linear", "ease", "ease-in", "ease-out", "ease-in-out", "standard", "standard-decelerate", "standard-accelerate", "emphasized", "emphasized-decelerate", "emphasized-accelerate", "sine-in-out", "spring"],
+      "description": "Easing curve of a move or an animation, evaluated by src/shared/easing/ as a pure function of progress."
+    },
+    "FocalLength": {
+      "type": "integer",
+      "enum": [14, 18, 24, 28, 35, 50, 65, 85, 100, 135, 200],
+      "description": "Lens focal length in millimetres on a 36 mm sensor (ADR 0008)."
+    },
+    "ShutterAngle": {
+      "type": "integer",
+      "enum": [90, 180, 360],
+      "description": "Shutter angle in degrees; 180 is the cinematic default, 360 doubles the motion blur, 90 halves it."
+    },
+    "LightingPreset": {
+      "type": "string",
+      "enum": ["product-studio", "three-point-soft", "rembrandt", "butterfly", "split", "rim-only", "contre-jour", "window", "soft-cross", "high-key", "low-key", "golden-hour", "overcast-soft", "neon-night", "practical-glow", "neon-rim"],
+      "description": "Lighting setup from the lighting cookbook; every lane maps it to its own lights and calibrated intensities."
+    },
+    "CompositionAnchor": {
+      "type": "string",
+      "enum": ["center", "thirds-left", "thirds-right", "thirds-top", "thirds-bottom", "golden-left", "golden-right"],
+      "description": "Where the subject sits in the frame: the centre, a rule-of-thirds line or a golden-ratio line."
+    },
+    "TextSide": {
+      "type": "string",
+      "enum": ["left", "right", "center", "none"],
+      "description": "Which side of the frame text occupies relative to the subject; none means the shot carries no text."
+    },
+    "TextRole": {
+      "type": "string",
+      "enum": ["title", "subtitle", "body", "caption", "label", "lower-third-name", "lower-third-title", "counter"],
+      "description": "The typographic role of a text element; the look bible's type scale sets its size and tracking."
+    },
+    "TextAnimation": {
+      "type": "string",
+      "enum": ["none", "fade-rise", "blur-in", "mask-wipe", "tracking-in", "stagger-words", "counter"],
+      "description": "How a text element enters, as a pure function of the frame number."
+    },
+    "Primitive": {
+      "type": "string",
+      "enum": ["none", "bottle", "can", "box", "slab", "card", "pill", "jar", "sphere", "cylinder", "torus"],
+      "description": "Procedural stand-in geometry for the subject when no asset is supplied; none means no stand-in."
+    },
+    "TransitionType": {
+      "type": "string",
+      "enum": ["cut", "dissolve", "fade-black", "fade-white", "wipe-left", "wipe-right", "wipe-up", "wipe-down", "slide-left", "slide-right"],
+      "description": "The join between two shots or clips, mapped to ffmpeg xfade transitions (cut has no overlap)."
+    },
+    "Renderer": {
+      "type": "string",
+      "enum": ["hardware", "software"],
+      "description": "Whether the GPU (hardware) or a CPU rasterizer such as SwiftShader (software) produced the pixels."
+    },
+    "Shot": {
+      "type": "object",
+      "description": "One shot: everything a lane needs to render every frame of it as a pure function of the frame number.",
+      "additionalProperties": false,
+      "required": ["id", "title", "lane", "durationFrames", "size", "angle", "dutchDegrees", "lens", "move", "lighting", "exposureOffsetEv", "composition", "text", "subject", "atmosphere", "narrationEvent", "seed", "renderProfile"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifier of the shot, unique within the spec and used by the treatment, the job and the render manifest, for example \"s01\"."
+        },
+        "title": {
+          "type": "string",
+          "description": "Short name of the shot, for example \"Shoulder sweep\"."
+        },
+        "lane": { "$ref": "#/$defs/Lane" },
+        "durationFrames": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Length of the shot in frames at the spec's fps, for example 120 for four seconds at 30 fps."
+        },
+        "size": { "$ref": "#/$defs/ShotSize" },
+        "angle": { "$ref": "#/$defs/CameraAngle" },
+        "dutchDegrees": {
+          "type": "number",
+          "minimum": -15,
+          "maximum": 15,
+          "description": "Horizon roll in degrees, -15 to 15, positive clockwise; 0 for a level horizon, for example 4 for a dutch angle."
+        },
+        "lens": { "$ref": "#/$defs/Lens" },
+        "move": { "$ref": "#/$defs/Move" },
+        "lighting": { "$ref": "#/$defs/Lighting" },
+        "exposureOffsetEv": {
+          "type": "number",
+          "minimum": -2,
+          "maximum": 2,
+          "description": "Exposure offset in EV stops relative to the look bible's exposureEv, -2 to 2, for example -0.5."
+        },
+        "composition": { "$ref": "#/$defs/Composition" },
+        "text": {
+          "type": "array",
+          "description": "Text elements overlaid on the shot, in reading order; empty when the shot carries no text.",
+          "items": { "$ref": "#/$defs/TextElement" }
+        },
+        "subject": { "$ref": "#/$defs/ShotSubject" },
+        "atmosphere": { "$ref": "#/$defs/Atmosphere" },
+        "narrationEvent": {
+          "type": ["string", "null"],
+          "description": "Id of the narration line that starts with this shot, for example \"n1\"; null when none."
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Seed of every seeded random choice in the shot (handheld jitter, motes), for example 7; the same seed reproduces the same frames."
+        },
+        "renderProfile": {
+          "type": ["object", "null"],
+          "description": "How the still gate rendered the shot (ADR 0004): engine, backend and renderer; render refuses to switch. Null until the still gate sets it.",
+          "additionalProperties": false,
+          "required": ["engine", "backend", "renderer"],
+          "properties": {
+            "engine": {
+              "type": "string",
+              "description": "Rendering engine, for example \"chromium\" for the browser lanes, \"cycles\" or \"eevee\" for Blender."
+            },
+            "backend": {
+              "type": "string",
+              "description": "Graphics backend the engine used: the ANGLE backend such as \"d3d11\" or \"swiftshader-webgl\" for browsers, the compute device such as \"CUDA\" or \"CPU\" for Blender."
+            },
+            "renderer": { "$ref": "#/$defs/Renderer" }
+          }
+        }
+      }
+    },
+    "RenderProfile": {
+      "type": "object",
+      "description": "How a lane rendered a shot: the engine, its backend and whether a hardware or software renderer produced the pixels. The same shape as the render manifest's renderProfile.",
+      "additionalProperties": false,
+      "required": ["engine", "backend", "renderer"],
+      "properties": {
+        "engine": {
+          "type": "string",
+          "description": "Rendering engine, for example \"chromium\" for the browser lanes, \"cycles\" or \"eevee\" for Blender."
+        },
+        "backend": {
+          "type": "string",
+          "description": "Graphics backend the engine used: the ANGLE backend such as \"d3d11\" or \"swiftshader-webgl\" for browsers, the compute device such as \"CUDA\" or \"CPU\" for Blender."
+        },
+        "renderer": { "$ref": "#/$defs/Renderer" }
+      }
+    },
+    "Lens": {
+      "type": "object",
+      "description": "The physical lens of the shot on a 36 mm sensor (ADR 0008); every lane maps it to the same framing.",
+      "additionalProperties": false,
+      "required": ["focalMm", "fStop", "focusDistanceM", "shutterAngleDeg"],
+      "properties": {
+        "focalMm": { "$ref": "#/$defs/FocalLength" },
+        "fStop": {
+          "type": "number",
+          "minimum": 1.4,
+          "maximum": 22,
+          "description": "Aperture as an f-number, 1.4 to 22, for example 2.8; smaller is shallower focus."
+        },
+        "focusDistanceM": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Distance from the camera to the focus plane in metres, greater than 0, for example 1.2."
+        },
+        "shutterAngleDeg": { "$ref": "#/$defs/ShutterAngle" }
+      }
+    },
+    "Move": {
+      "type": "object",
+      "description": "The camera move of the shot, baked per frame by src/shared/camera/.",
+      "additionalProperties": false,
+      "required": ["preset", "amplitude", "easing", "startFrame", "endFrame"],
+      "properties": {
+        "preset": { "$ref": "#/$defs/CameraMove" },
+        "amplitude": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Strength of the move from 0 (none) to 1 (the preset's full travel), for example 0.6."
+        },
+        "easing": { "$ref": "#/$defs/EasingToken" },
+        "startFrame": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Frame of the shot at which the move starts, counted from 0 and below durationFrames, for example 0."
+        },
+        "endFrame": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "description": "Frame of the shot at which the move has finished (exclusive), above startFrame and at most durationFrames, for example 120; null means it finishes with the shot."
+        }
+      }
+    },
+    "Lighting": {
+      "type": "object",
+      "description": "The lighting of the shot: a cookbook preset with per-shot intensity and colour temperature adjustments.",
+      "additionalProperties": false,
+      "required": ["preset", "keyIntensity", "fillRatio", "rimIntensity", "kelvin"],
+      "properties": {
+        "preset": { "$ref": "#/$defs/LightingPreset" },
+        "keyIntensity": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Key light intensity as a multiplier of the preset's own, 0 or more; 1 keeps the preset, for example 1.2."
+        },
+        "fillRatio": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Key-to-fill ratio, greater than 0; 4 means the key is four times the fill, for example 4."
+        },
+        "rimIntensity": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Rim light intensity as a multiplier of the preset's own, 0 or more; 0 removes the rim, for example 0.8."
+        },
+        "kelvin": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 20000,
+          "description": "Colour temperature of the key light in kelvin, 1000 to 20000, for example 5600 for daylight."
+        }
+      }
+    },
+    "Composition": {
+      "type": "object",
+      "description": "Where the subject and the text sit in the frame; the composition solver places the camera from it.",
+      "additionalProperties": false,
+      "required": ["anchor", "headroomPct", "leadRoomPct", "textSide"],
+      "properties": {
+        "anchor": { "$ref": "#/$defs/CompositionAnchor" },
+        "headroomPct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 30,
+          "description": "Space above the subject as a percentage of the frame height, 0 to 30, for example 10."
+        },
+        "leadRoomPct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 40,
+          "description": "Space in front of the subject in its facing or moving direction as a percentage of the frame width, 0 to 40, for example 15."
+        },
+        "textSide": { "$ref": "#/$defs/TextSide" }
+      }
+    },
+    "TextBox": {
+      "type": "object",
+      "description": "The box a text element occupies, as fractions of the frame from its top-left corner; it must lie inside the title-safe area (the central 90 percent).",
+      "additionalProperties": false,
+      "required": ["x", "y", "w", "h"],
+      "properties": {
+        "x": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Left edge as a fraction of the frame width, 0 to 1, for example 0.1."
+        },
+        "y": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Top edge as a fraction of the frame height, 0 to 1, for example 0.7."
+        },
+        "w": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Width as a fraction of the frame width, 0 to 1, for example 0.4."
+        },
+        "h": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Height as a fraction of the frame height, 0 to 1, for example 0.12."
+        }
+      }
+    },
+    "TextElement": {
+      "type": "object",
+      "description": "One piece of text overlaid on the shot, animated as a pure function of the frame number.",
+      "additionalProperties": false,
+      "required": ["id", "role", "content", "box", "animation", "staggerMs", "inFrame", "outFrame"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifier of the text element, unique within the shot, for example \"t1\"."
+        },
+        "role": { "$ref": "#/$defs/TextRole" },
+        "content": {
+          "type": "string",
+          "description": "The text shown, verbatim, for example \"Now in 500 ml\"."
+        },
+        "box": { "$ref": "#/$defs/TextBox" },
+        "animation": { "$ref": "#/$defs/TextAnimation" },
+        "staggerMs": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Delay between successive words or characters in milliseconds for staggered animations, 0 or more, for example 40."
+        },
+        "inFrame": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Frame of the shot at which the element starts entering, counted from 0 and below durationFrames, for example 12."
+        },
+        "outFrame": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "description": "Frame of the shot at which the element is gone (exclusive), above inFrame and at most durationFrames, for example 110; null means it stays until the shot ends."
+        }
+      }
+    },
+    "BoundsM": {
+      "type": "object",
+      "description": "The subject's bounding box in metres; the composition solver frames it.",
+      "additionalProperties": false,
+      "required": ["w", "h", "d"],
+      "properties": {
+        "w": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Width in metres, greater than 0, for example 0.08."
+        },
+        "h": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Height in metres, greater than 0, for example 0.25."
+        },
+        "d": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Depth in metres, greater than 0, for example 0.08."
+        }
+      }
+    },
+    "ShotSubject": {
+      "type": "object",
+      "description": "What the shot shows: a ledger asset or a procedural primitive, with its size.",
+      "additionalProperties": false,
+      "required": ["assetId", "primitive", "boundsM"],
+      "properties": {
+        "assetId": {
+          "type": ["string", "null"],
+          "description": "Id of the ledger asset that is the subject, present in assets.json under the data directory, for example \"model:bottle\"; null when the primitive stands in."
+        },
+        "primitive": { "$ref": "#/$defs/Primitive" },
+        "boundsM": { "$ref": "#/$defs/BoundsM" }
+      }
+    },
+    "Atmosphere": {
+      "type": "object",
+      "description": "Depth cues in the air of the shot.",
+      "additionalProperties": false,
+      "required": ["haze", "motes"],
+      "properties": {
+        "haze": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Haze density from 0 (clear) to 1 (thick), for example 0.15."
+        },
+        "motes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of floating dust motes, 0 or more, placed from the shot's seed, for example 200."
+        }
+      }
+    },
+    "Transition": {
+      "type": "object",
+      "description": "A transition that starts at the end of one shot and overlaps the start of the next.",
+      "additionalProperties": false,
+      "required": ["afterShotId", "type", "frames"],
+      "properties": {
+        "afterShotId": {
+          "type": "string",
+          "description": "Id of the shot the transition follows; it must not be the last shot."
+        },
+        "type": { "$ref": "#/$defs/TransitionType" },
+        "frames": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Overlap length in frames, for example 15 for half a second at 30 fps; no longer than either neighbouring shot; ignored for a cut."
+        }
+      }
+    }
+  }
+}

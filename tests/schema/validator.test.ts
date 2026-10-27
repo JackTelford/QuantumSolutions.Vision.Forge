@@ -25,12 +25,13 @@ const toolsExample: ToolsManifest = {
     blender: { path: 'C:\\Program Files\\Blender Foundation\\Blender 4.2\\blender.exe', version: '4.2.3', sha256: hex('b') },
   },
   browsers: [
-    { channel: 'msedge', path: 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', version: '156.0.3700.42' },
-    { channel: 'chrome', path: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', version: '156.0.7700.10' },
+    { channel: 'msedge', path: 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', version: '156.0.3700.42', webgl: null },
+    { channel: 'chrome', path: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', version: '156.0.7700.10', webgl: null },
   ],
   gpu: { name: 'NVIDIA GeForce RTX 4080', driver: '581.57' },
   lanes: { html: true, three: true, blender: true, audio: true },
   narration: { installed: false, weightsVerified: false },
+  problems: [],
 };
 
 const renderExample: RenderManifest = {
@@ -187,7 +188,7 @@ describe('validateDocument', () => {
   });
 
   it('throws SchemaValidationError for a kind without a schema, with a hint that names the kinds', () => {
-    assert.throws(() => validateDocument('shot-spec', {}), (error: unknown) => error instanceof SchemaValidationError && error.kind === 'unknown' && /"shot-spec" is not a known document kind/.test(error.message) && error.hint === `Set "kind" to one of: ${documentKinds.join(', ')}.`);
+    assert.throws(() => validateDocument('scene', {}), (error: unknown) => error instanceof SchemaValidationError && error.kind === 'unknown' && /"scene" is not a known document kind/.test(error.message) && error.hint === `Set "kind" to one of: ${documentKinds.join(', ')}.`);
   });
 
   it('a generated CliResult contract is assignable to the handwritten CliResult', () => {
@@ -212,7 +213,7 @@ describe('assertKind', () => {
   });
 
   it('rejects a document whose kind has no schema', () => {
-    assert.throws(() => assertKind({ kind: 'look-bible' }), (error: unknown) => error instanceof SchemaValidationError && error.kind === 'unknown' && /"look-bible" is not a known document kind/.test(error.problems[0] ?? ''));
+    assert.throws(() => assertKind({ kind: 'scene' }), (error: unknown) => error instanceof SchemaValidationError && error.kind === 'unknown' && /"scene" is not a known document kind/.test(error.problems[0] ?? ''));
   });
 });
 

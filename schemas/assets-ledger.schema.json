@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vision-forge.quantumsolutions.dev/schemas/assets-ledger.schema.json",
+  "title": "AssetsLedger",
+  "description": "Every asset downloaded into the data directory (fonts, HDRIs, model weights) with its source, license, hashes and files. Written as assets.json under the data directory by src/net/asset-ledger.ts; commands consult it before downloading again and credits are generated from it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "version", "assets"],
+  "properties": {
+    "kind": {
+      "const": "assets-ledger",
+      "description": "Document kind; always \"assets-ledger\"."
+    },
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Version of this document kind; always 1."
+    },
+    "assets": {
+      "type": "array",
+      "description": "The downloaded assets, sorted by id; empty when nothing has been downloaded.",
+      "items": { "$ref": "#/$defs/AssetRecord" }
+    }
+  },
+  "$defs": {
+    "AssetRecord": {
+      "type": "object",
+      "description": "One downloaded asset and where it came from.",
+      "additionalProperties": false,
+      "required": ["id", "source", "finalUrl", "license", "bytes", "sha256", "fetchedAt", "files"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable identifier chosen by the command that downloaded the asset, unique within the ledger, for example \"font:inter\" or \"hdri:studio_small_09\"."
+        },
+        "source": {
+          "type": "string",
+          "description": "The URL the download started from, for example https://dl.polyhaven.com/file/ph-assets/HDRIs/hdr/1k/studio_small_09_1k.hdr."
+        },
+        "finalUrl": {
+          "type": "string",
+          "description": "The URL that served the bytes after redirects, for example https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_09_1k.hdr."
+        },
+        "license": {
+          "type": "string",
+          "description": "SPDX identifier or license name, for example \"CC0-1.0\" or \"OFL-1.1\"."
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Size of the downloaded file in bytes, for example 1615248."
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "SHA-256 of the downloaded file as 64 lowercase hex characters, verified against the pin."
+        },
+        "md5": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}$",
+          "description": "MD5 of the downloaded file as 32 lowercase hex characters; present when the source publishes one."
+        },
+        "fetchedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the download finished: an RFC 3339 timestamp in UTC with millisecond precision, for example 2026-10-26T12:01:00.000Z."
+        },
+        "credit": {
+          "type": "string",
+          "description": "Attribution text the source asks for, for example \"HDRI by Poly Haven (CC0)\"; present when there is one."
+        },
+        "files": {
+          "type": "array",
+          "description": "Paths, relative to the data directory with forward slashes, that belong to this asset; at least the downloaded file.",
+          "items": {
+            "type": "string",
+            "description": "One relative path, for example \"hdri/studio_small_09_1k.hdr\"."
+          }
+        }
+      }
+    }
+  }
+}

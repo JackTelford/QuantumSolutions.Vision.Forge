@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vision-forge.quantumsolutions.dev/schemas/treatment.schema.json",
+  "title": "Treatment",
+  "description": "The creative plan derived from a brief: the logline, the look it will use, the beats in order with their lanes and the shots each beat owns, what was substituted for what the user asked, and the risks. The shot spec is derived from it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "version", "id", "briefId", "logline", "lookId", "beats", "substitutions", "risks", "narrationFirst", "createdAt"],
+  "properties": {
+    "kind": {
+      "const": "treatment",
+      "description": "Document kind; always \"treatment\"."
+    },
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Version of this document kind; always 1."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+      "description": "Slug that names the treatment, 2 to 63 lowercase letters, digits and hyphens, for example \"obsidian-bottle-t1\"."
+    },
+    "briefId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+      "description": "Id of the brief this treatment answers, for example \"obsidian-bottle\"."
+    },
+    "logline": {
+      "type": "string",
+      "description": "The piece in one sentence, for example \"A black bottle emerges from darkness as a single light sweeps its shoulder.\"."
+    },
+    "lookId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+      "description": "Id of the look bible every shot uses, for example \"obsidian\"."
+    },
+    "beats": {
+      "type": "array",
+      "description": "The beats in screen order; at least one for a piece that renders.",
+      "items": { "$ref": "#/$defs/Beat" }
+    },
+    "substitutions": {
+      "type": "array",
+      "description": "What the treatment changed from the brief and why, in the order the changes were made; empty when it follows the brief exactly.",
+      "items": { "$ref": "#/$defs/Substitution" }
+    },
+    "risks": {
+      "type": "array",
+      "description": "What could make the piece fail, one sentence each; empty when none was identified.",
+      "items": {
+        "type": "string",
+        "description": "One risk, for example \"glass caustics may render noisy at the time budget\"."
+      }
+    },
+    "narrationFirst": {
+      "type": "boolean",
+      "description": "True when narration audio is produced before shot durations are locked, because sentence lengths set the clock."
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the treatment was written: an RFC 3339 timestamp in UTC with millisecond precision, for example 2026-10-26T20:00:00.000Z."
+    }
+  },
+  "$defs": {
+    "Lane": {
+      "type": "string",
+      "enum": ["html", "three", "blender"],
+      "description": "Which lane renders a shot: html (HTML/CSS in a browser), three (Three.js WebGL in a browser) or blender."
+    },
+    "Beat": {
+      "type": "object",
+      "description": "One beat of the piece: a span of screen time with one intent, rendered in one lane and made of one or more shots.",
+      "additionalProperties": false,
+      "required": ["id", "title", "intent", "durationSeconds", "lane", "shotIds"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifier of the beat, unique within the treatment, for example \"b1\"."
+        },
+        "title": {
+          "type": "string",
+          "description": "Short name of the beat, for example \"Reveal\"."
+        },
+        "intent": {
+          "type": "string",
+          "description": "What the beat must do for the viewer, for example \"establish the bottle as the hero\"."
+        },
+        "durationSeconds": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Length of the beat in seconds, greater than 0, for example 4."
+        },
+        "lane": { "$ref": "#/$defs/Lane" },
+        "shotIds": {
+          "type": "array",
+          "description": "Ids of the shots that make up the beat, in order; each shot id belongs to exactly one beat.",
+          "items": {
+            "type": "string",
+            "description": "One shot id as the shot spec names it, for example \"s01\"."
+          }
+        }
+      }
+    },
+    "Substitution": {
+      "type": "object",
+      "description": "Something the user asked for that the treatment replaced.",
+      "additionalProperties": false,
+      "required": ["requested", "substitute", "reason"],
+      "properties": {
+        "requested": {
+          "type": "string",
+          "description": "What the brief asked for, for example \"a hand picking up the bottle\"."
+        },
+        "substitute": {
+          "type": "string",
+          "description": "What the treatment does instead, for example \"the bottle rises on a turntable\"."
+        },
+        "reason": {
+          "type": "string",
+          "description": "Why, in one sentence, for example \"photoreal humans are outside the limits the user acknowledged\"."
+        }
+      }
+    }
+  }
+}

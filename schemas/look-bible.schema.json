@@ -1,0 +1,295 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vision-forge.quantumsolutions.dev/schemas/look-bible.schema.json",
+  "title": "LookBible",
+  "description": "The one look every shot of a piece shares (ADR 0008): palette, typography, default lighting, motion family, tone mapping, exposure, the finishing grade and the exposure band QA holds frames to. The finishing module turns the grade into a .cube LUT and an ffmpeg filter chain.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "version", "id", "name", "preset", "palette", "typography", "lightingDefault", "motionFamily", "toneMapping", "exposureEv", "grade", "qa", "createdAt"],
+  "properties": {
+    "kind": {
+      "const": "look-bible",
+      "description": "Document kind; always \"look-bible\"."
+    },
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Version of this document kind; always 1."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+      "description": "Slug that names the look, 2 to 63 lowercase letters, digits and hyphens, for example \"obsidian\". Treatments and shot specs refer to it as lookId."
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name of the look, for example \"Obsidian\"."
+    },
+    "preset": { "$ref": "#/$defs/LookPreset" },
+    "palette": {
+      "type": "object",
+      "description": "The six colours of the look as lowercase sRGB hex; text must reach WCAG contrast 4.5 over background and over surface.",
+      "additionalProperties": false,
+      "required": ["background", "surface", "primary", "accent", "text", "highlight"],
+      "properties": {
+        "background": {
+          "type": "string",
+          "pattern": "^#[0-9a-f]{6}$",
+          "description": "Frame background colour as lowercase hex, for example \"#0b0b0f\"."
+        },
+        "surface": {
+          "type": "string",
+          "pattern": "^#[0-9a-f]{6}$",
+          "description": "Colour of cards, panels and lower-third plates as lowercase hex, for example \"#16161d\"."
+        },
+        "primary": {
+          "type": "string",
+          "pattern": "^#[0-9a-f]{6}$",
+          "description": "Brand or subject colour as lowercase hex, for example \"#c9a84c\"."
+        },
+        "accent": {
+          "type": "string",
+          "pattern": "^#[0-9a-f]{6}$",
+          "description": "Secondary colour for emphasis as lowercase hex, for example \"#4cc9c0\"."
+        },
+        "text": {
+          "type": "string",
+          "pattern": "^#[0-9a-f]{6}$",
+          "description": "Text colour as lowercase hex, for example \"#f4f1ea\"."
+        },
+        "highlight": {
+          "type": "string",
+          "pattern": "^#[0-9a-f]{6}$",
+          "description": "Colour of speculars, rims and glow as lowercase hex, for example \"#ffffff\"."
+        }
+      }
+    },
+    "typography": {
+      "type": "object",
+      "description": "The type system of the look: two bundled families and the scale between roles.",
+      "additionalProperties": false,
+      "required": ["display", "body", "scaleRatio", "displayTrackingEm", "uppercaseTrackingEm"],
+      "properties": {
+        "display": { "$ref": "#/$defs/FontFamily" },
+        "body": { "$ref": "#/$defs/FontFamily" },
+        "scaleRatio": {
+          "type": "number",
+          "minimum": 1.25,
+          "maximum": 1.333,
+          "description": "Ratio between successive sizes of the type scale: 1.25 (major third) or 1.333 (perfect fourth)."
+        },
+        "displayTrackingEm": {
+          "type": "number",
+          "description": "Letter spacing of display text in em, for example -0.02 (tighter) or 0."
+        },
+        "uppercaseTrackingEm": {
+          "type": "number",
+          "description": "Letter spacing of uppercase labels in em, for example 0.08."
+        }
+      }
+    },
+    "lightingDefault": { "$ref": "#/$defs/LightingPreset" },
+    "motionFamily": { "$ref": "#/$defs/MotionFamily" },
+    "toneMapping": { "$ref": "#/$defs/ToneMapping" },
+    "exposureEv": {
+      "type": "number",
+      "description": "Base exposure of every shot in EV stops relative to the calibrated gray card, for example -0.3; each shot adds its exposureOffsetEv."
+    },
+    "grade": { "$ref": "#/$defs/Grade" },
+    "qa": {
+      "type": "object",
+      "description": "The band QA holds the picture to.",
+      "additionalProperties": false,
+      "required": ["yavgMin", "yavgMax"],
+      "properties": {
+        "yavgMin": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 255,
+          "description": "Lowest acceptable average luma per frame as ffmpeg signalstats YAVG reports it, 0 to 255, for example 24."
+        },
+        "yavgMax": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 255,
+          "description": "Highest acceptable average luma per frame as ffmpeg signalstats YAVG reports it, 0 to 255 and above yavgMin, for example 140."
+        }
+      }
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the look bible was written: an RFC 3339 timestamp in UTC with millisecond precision, for example 2026-10-26T20:00:00.000Z."
+    }
+  },
+  "$defs": {
+    "LookPreset": {
+      "type": "string",
+      "enum": ["studio-clean", "obsidian", "warm-editorial", "neon-tech", "paper-flat", "noir-title", "sunset-gradient", "custom"],
+      "description": "Named look the look bible starts from; custom means every value was set by hand."
+    },
+    "FontFamily": {
+      "type": "string",
+      "enum": ["inter", "space-grotesk", "playfair-display", "jetbrains-mono"],
+      "description": "One of the bundled OFL font families."
+    },
+    "LightingPreset": {
+      "type": "string",
+      "enum": ["product-studio", "three-point-soft", "rembrandt", "butterfly", "split", "rim-only", "contre-jour", "window", "soft-cross", "high-key", "low-key", "golden-hour", "overcast-soft", "neon-night", "practical-glow", "neon-rim"],
+      "description": "Lighting setup from the lighting cookbook; every lane maps it to its own lights and calibrated intensities."
+    },
+    "MotionFamily": {
+      "type": "string",
+      "enum": ["calm", "snappy", "cinematic"],
+      "description": "The family of easing and timing defaults a look uses for every move and animation."
+    },
+    "ToneMapping": {
+      "type": "string",
+      "enum": ["agx", "standard"],
+      "description": "Tone mapping of the 3D lanes (ADR 0008): agx for photographic looks, standard for graphic looks."
+    },
+    "OffsetRgb": {
+      "type": "object",
+      "description": "A per-channel offset added to the picture, each channel -1 to 1 where 0 changes nothing.",
+      "additionalProperties": false,
+      "required": ["r", "g", "b"],
+      "properties": {
+        "r": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Red offset, -1 to 1, for example 0.02."
+        },
+        "g": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Green offset, -1 to 1, for example 0."
+        },
+        "b": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Blue offset, -1 to 1, for example -0.01."
+        }
+      }
+    },
+    "MultiplierRgb": {
+      "type": "object",
+      "description": "A per-channel multiplier (gain) or exponent (gamma) applied to the picture, each channel 0 to 4 where 1 changes nothing; as an exponent, a value above 1 darkens the midtones and a value below 1 brightens them.",
+      "additionalProperties": false,
+      "required": ["r", "g", "b"],
+      "properties": {
+        "r": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 4,
+          "description": "Red factor, 0 to 4, for example 1.05."
+        },
+        "g": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 4,
+          "description": "Green factor, 0 to 4, for example 1."
+        },
+        "b": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 4,
+          "description": "Blue factor, 0 to 4, for example 0.98."
+        }
+      }
+    },
+    "SplitTone": {
+      "type": "object",
+      "description": "A hue tint applied to shadows and another to highlights.",
+      "additionalProperties": false,
+      "required": ["shadowHue", "shadowAmount", "highlightHue", "highlightAmount"],
+      "properties": {
+        "shadowHue": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 360,
+          "description": "Hue of the shadow tint in degrees, 0 to 360, for example 220 for blue."
+        },
+        "shadowAmount": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Strength of the shadow tint from 0 (none) to 1 (full), for example 0.15."
+        },
+        "highlightHue": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 360,
+          "description": "Hue of the highlight tint in degrees, 0 to 360, for example 40 for amber."
+        },
+        "highlightAmount": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Strength of the highlight tint from 0 (none) to 1 (full), for example 0.1."
+        }
+      }
+    },
+    "Grade": {
+      "type": "object",
+      "description": "The finishing grade (ADR 0008): lift, gamma and gain, saturation and contrast, split toning, vignette, grain and halation. src/shared/grade/ bakes it into a 33-point .cube LUT; the vignette and the grain are ffmpeg filters applied at assembly.",
+      "additionalProperties": false,
+      "required": ["lift", "gamma", "gain", "saturation", "contrast", "contrastPivot", "splitTone", "vignetteAmount", "vignetteSoftness", "grainAmount", "grainSeed", "halationAmount"],
+      "properties": {
+        "lift": { "$ref": "#/$defs/OffsetRgb" },
+        "gamma": { "$ref": "#/$defs/MultiplierRgb" },
+        "gain": { "$ref": "#/$defs/MultiplierRgb" },
+        "saturation": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2,
+          "description": "Saturation multiplier from 0 (monochrome) to 2 (double); 1 changes nothing, for example 0.9."
+        },
+        "contrast": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2,
+          "description": "Contrast multiplier around the pivot from 0 (flat) to 2 (double); 1 changes nothing, for example 1.1."
+        },
+        "contrastPivot": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "The picture level the contrast pivots on, 0 to 1 of the display range, for example 0.18 for middle gray."
+        },
+        "splitTone": { "$ref": "#/$defs/SplitTone" },
+        "vignetteAmount": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Vignette strength from 0 (none) to 1 (strong), for example 0.25."
+        },
+        "vignetteSoftness": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Vignette falloff from 0 (hard) to 1 (soft), for example 0.6."
+        },
+        "grainAmount": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Grain strength from 0 (none) to 1 (heavy), for example 0.15; applied only at assembly, never on stills."
+        },
+        "grainSeed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Seed of the grain noise, for example 7; the same seed reproduces the same grain."
+        },
+        "halationAmount": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Halation (glow bleeding from bright edges) from 0 (none) to 1 (strong), for example 0.1."
+        }
+      }
+    }
+  }
+}

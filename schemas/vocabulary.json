@@ -1,0 +1,152 @@
+{
+  "Lane": {
+    "type": "string",
+    "values": ["html", "three", "blender"],
+    "description": "Which lane renders a shot: html (HTML/CSS in a browser), three (Three.js WebGL in a browser) or blender."
+  },
+  "UseCase": {
+    "type": "string",
+    "values": ["product-shot", "explainer", "title-sequence", "lower-third", "kinetic-type", "chart", "still", "custom"],
+    "description": "What the piece is for; it selects the default lane, tempo and templates."
+  },
+  "Aspect": {
+    "type": "string",
+    "values": ["16:9", "9:16", "1:1", "4:5", "21:9"],
+    "description": "Frame aspect ratio as width:height."
+  },
+  "FrameRate": {
+    "type": "integer",
+    "values": [24, 25, 30, 60],
+    "description": "Frames per second of every shot and of the delivery."
+  },
+  "Tempo": {
+    "type": "string",
+    "values": ["calm", "dynamic", "chaotic", "single-shot"],
+    "description": "Cutting rhythm: calm (long shots), dynamic (medium), chaotic (very short) or single-shot (no cuts)."
+  },
+  "SubjectKind": {
+    "type": "string",
+    "values": ["product", "abstract", "diagram", "text", "environment", "mixed"],
+    "description": "What the piece shows: a product, an abstract form, a diagram, text, an environment or a mix."
+  },
+  "ShotSize": {
+    "type": "string",
+    "values": ["ECU", "CU", "MCU", "MS", "MLS", "FS", "LS", "ELS"],
+    "description": "Shot size from extreme close-up (ECU) to extreme long shot (ELS)."
+  },
+  "CameraAngle": {
+    "type": "string",
+    "values": ["eye", "low", "high", "overhead", "ground", "dutch"],
+    "description": "Camera height and tilt relative to the subject; dutch is a rolled horizon (see dutchDegrees)."
+  },
+  "CameraMove": {
+    "type": "string",
+    "values": ["static-hold", "breathe", "push-in", "pull-out", "truck-left", "truck-right", "pedestal-up", "pedestal-down", "pan-left", "pan-right", "tilt-up", "tilt-down", "arc-left", "arc-right", "turntable", "crane-reveal", "rack-focus", "zoom-in", "zoom-out", "crash-zoom", "dolly-zoom", "whip-pan", "handheld", "parallax-drift", "light-sweep", "top-down-reveal"],
+    "description": "Camera move preset baked by src/shared/camera/ into per-frame position, rotation, focal length and focus (ADR 0008)."
+  },
+  "EasingToken": {
+    "type": "string",
+    "values": ["linear", "ease", "ease-in", "ease-out", "ease-in-out", "standard", "standard-decelerate", "standard-accelerate", "emphasized", "emphasized-decelerate", "emphasized-accelerate", "sine-in-out", "spring"],
+    "description": "Easing curve of a move or an animation, evaluated by src/shared/easing/ as a pure function of progress."
+  },
+  "FocalLength": {
+    "type": "integer",
+    "values": [14, 18, 24, 28, 35, 50, 65, 85, 100, 135, 200],
+    "description": "Lens focal length in millimetres on a 36 mm sensor (ADR 0008)."
+  },
+  "ShutterAngle": {
+    "type": "integer",
+    "values": [90, 180, 360],
+    "description": "Shutter angle in degrees; 180 is the cinematic default, 360 doubles the motion blur, 90 halves it."
+  },
+  "LightingPreset": {
+    "type": "string",
+    "values": ["product-studio", "three-point-soft", "rembrandt", "butterfly", "split", "rim-only", "contre-jour", "window", "soft-cross", "high-key", "low-key", "golden-hour", "overcast-soft", "neon-night", "practical-glow", "neon-rim"],
+    "description": "Lighting setup from the lighting cookbook; every lane maps it to its own lights and calibrated intensities."
+  },
+  "LookPreset": {
+    "type": "string",
+    "values": ["studio-clean", "obsidian", "warm-editorial", "neon-tech", "paper-flat", "noir-title", "sunset-gradient", "custom"],
+    "description": "Named look the look bible starts from; custom means every value was set by hand."
+  },
+  "FontFamily": {
+    "type": "string",
+    "values": ["inter", "space-grotesk", "playfair-display", "jetbrains-mono"],
+    "description": "One of the bundled OFL font families."
+  },
+  "TextRole": {
+    "type": "string",
+    "values": ["title", "subtitle", "body", "caption", "label", "lower-third-name", "lower-third-title", "counter"],
+    "description": "The typographic role of a text element; the look bible's type scale sets its size and tracking."
+  },
+  "TextAnimation": {
+    "type": "string",
+    "values": ["none", "fade-rise", "blur-in", "mask-wipe", "tracking-in", "stagger-words", "counter"],
+    "description": "How a text element enters, as a pure function of the frame number."
+  },
+  "CompositionAnchor": {
+    "type": "string",
+    "values": ["center", "thirds-left", "thirds-right", "thirds-top", "thirds-bottom", "golden-left", "golden-right"],
+    "description": "Where the subject sits in the frame: the centre, a rule-of-thirds line or a golden-ratio line."
+  },
+  "TextSide": {
+    "type": "string",
+    "values": ["left", "right", "center", "none"],
+    "description": "Which side of the frame text occupies relative to the subject; none means the shot carries no text."
+  },
+  "Primitive": {
+    "type": "string",
+    "values": ["none", "bottle", "can", "box", "slab", "card", "pill", "jar", "sphere", "cylinder", "torus"],
+    "description": "Procedural stand-in geometry for the subject when no asset is supplied; none means no stand-in."
+  },
+  "ToneMapping": {
+    "type": "string",
+    "values": ["agx", "standard"],
+    "description": "Tone mapping of the 3D lanes (ADR 0008): agx for photographic looks, standard for graphic looks."
+  },
+  "MotionFamily": {
+    "type": "string",
+    "values": ["calm", "snappy", "cinematic"],
+    "description": "The family of easing and timing defaults a look uses for every move and animation."
+  },
+  "Voice": {
+    "type": "string",
+    "values": ["af_heart", "af_bella", "af_nicole", "af_sarah", "bf_emma", "bm_george", "am_michael"],
+    "description": "Narration voice of the optional narration component (ADR 0007); the prefix is accent and gender."
+  },
+  "MusicPolicy": {
+    "type": "string",
+    "values": ["none", "user-supplied"],
+    "description": "Where music comes from: none, or a file the user supplies and licenses."
+  },
+  "TransitionType": {
+    "type": "string",
+    "values": ["cut", "dissolve", "fade-black", "fade-white", "wipe-left", "wipe-right", "wipe-up", "wipe-down", "slide-left", "slide-right"],
+    "description": "The join between two shots or clips, mapped to ffmpeg xfade transitions (cut has no overlap)."
+  },
+  "Codec": {
+    "type": "string",
+    "values": ["h264", "hevc", "prores"],
+    "description": "Delivery codec: h264 (libx264, the default), hevc (libx265) or prores (prores_ks 422 HQ mezzanine)."
+  },
+  "Renderer": {
+    "type": "string",
+    "values": ["hardware", "software"],
+    "description": "Whether the GPU (hardware) or a CPU rasterizer such as SwiftShader (software) produced the pixels."
+  },
+  "RenderStatus": {
+    "type": "string",
+    "values": ["rendering", "complete", "failed"],
+    "description": "Where a render stands: rendering (frames still being produced), complete (every frame hashed) or failed."
+  },
+  "JobStatus": {
+    "type": "string",
+    "values": ["planned", "stills", "rendering", "assembling", "qa", "delivered", "failed"],
+    "description": "Where a job stands in the pipeline: planned, stills (the still gate), rendering, assembling, qa, delivered or failed."
+  },
+  "ShotStatus": {
+    "type": "string",
+    "values": ["pending", "still-rendered", "still-approved", "rendered", "failed"],
+    "description": "Where one shot of a job stands: pending, still-rendered (awaiting review), still-approved, rendered or failed."
+  }
+}

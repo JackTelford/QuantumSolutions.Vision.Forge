@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vision-forge.quantumsolutions.dev/schemas/brief.schema.json",
+  "title": "Brief",
+  "description": "The user's request as the skill understood it: the prompt verbatim, the use case, the frame, the tempo, the subject, narration and music choices, and the limits the user acknowledged. The first document of a job; the treatment is derived from it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "version", "id", "title", "prompt", "useCase", "goal", "audience", "durationSeconds", "aspect", "fps", "width", "height", "tempo", "emotion", "genre", "era", "paletteHints", "mustHaveText", "subject", "narration", "music", "limitsAcknowledged", "createdAt"],
+  "properties": {
+    "kind": {
+      "const": "brief",
+      "description": "Document kind; always \"brief\"."
+    },
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Version of this document kind; always 1."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+      "description": "Slug that names the brief, 2 to 63 lowercase letters, digits and hyphens, for example \"obsidian-bottle\". Later documents refer to it as briefId."
+    },
+    "title": {
+      "type": "string",
+      "description": "Working title of the piece, for example \"Obsidian bottle reveal\"."
+    },
+    "prompt": {
+      "type": "string",
+      "description": "The user's words verbatim, unedited, for example \"a 10 second product reveal of a black glass bottle\"."
+    },
+    "useCase": { "$ref": "#/$defs/UseCase" },
+    "goal": {
+      "type": "string",
+      "description": "What the piece must achieve in one sentence, for example \"make the bottle feel premium\"."
+    },
+    "audience": {
+      "type": "string",
+      "description": "Who watches it, for example \"shoppers on a product page\"."
+    },
+    "durationSeconds": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Target length in seconds, greater than 0, for example 10."
+    },
+    "aspect": { "$ref": "#/$defs/Aspect" },
+    "fps": { "$ref": "#/$defs/FrameRate" },
+    "width": {
+      "type": "integer",
+      "minimum": 2,
+      "description": "Frame width in pixels, even, matching aspect, for example 1920."
+    },
+    "height": {
+      "type": "integer",
+      "minimum": 2,
+      "description": "Frame height in pixels, even, matching aspect, for example 1080."
+    },
+    "tempo": { "$ref": "#/$defs/Tempo" },
+    "emotion": {
+      "type": "string",
+      "description": "The feeling the piece should leave, for example \"quiet confidence\"."
+    },
+    "genre": {
+      "type": ["string", "null"],
+      "description": "Genre reference when the user gave one, for example \"luxury advertising\"; null when none."
+    },
+    "era": {
+      "type": ["string", "null"],
+      "description": "Period reference when the user gave one, for example \"1970s\"; null when none."
+    },
+    "paletteHints": {
+      "type": "array",
+      "description": "Colour words from the prompt, in the order they appeared; empty when none.",
+      "items": {
+        "type": "string",
+        "description": "One colour hint, for example \"deep black\" or \"#0b0b0f\"."
+      }
+    },
+    "mustHaveText": {
+      "type": "array",
+      "description": "Text the piece must show verbatim, in order; empty when none.",
+      "items": {
+        "type": "string",
+        "description": "One required line of text, for example \"Now in 500 ml\"."
+      }
+    },
+    "subject": {
+      "type": "object",
+      "description": "What the piece shows.",
+      "additionalProperties": false,
+      "required": ["description", "kind", "primitive", "assetIds"],
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "The subject in plain words, for example \"a matte black glass bottle with a silver cap\"."
+        },
+        "kind": { "$ref": "#/$defs/SubjectKind" },
+        "primitive": { "$ref": "#/$defs/Primitive" },
+        "assetIds": {
+          "type": "array",
+          "description": "Ids of ledger assets the subject uses (models, HDRIs), each present in assets.json under the data directory; empty when none.",
+          "items": {
+            "type": "string",
+            "description": "One asset id as the ledger records it, for example \"hdri:studio_small_09\"."
+          }
+        }
+      }
+    },
+    "narration": {
+      "type": "object",
+      "description": "Whether the piece is narrated and by which voice.",
+      "additionalProperties": false,
+      "required": ["enabled", "voice", "script"],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "True when narration is produced (the narration component must be installed, ADR 0007)."
+        },
+        "voice": { "$ref": "#/$defs/Voice" },
+        "script": {
+          "type": ["string", "null"],
+          "description": "The narration text when the user supplied it, for example \"Meet the new bottle.\"; null when the treatment writes it or narration is off."
+        }
+      }
+    },
+    "music": {
+      "type": "object",
+      "description": "Where music comes from.",
+      "additionalProperties": false,
+      "required": ["policy", "path"],
+      "properties": {
+        "policy": { "$ref": "#/$defs/MusicPolicy" },
+        "path": {
+          "type": ["string", "null"],
+          "description": "Absolute path of the user's music file (WAV, FLAC, MP3 or AAC) when policy is user-supplied, for example C:/music/bed.wav; null otherwise."
+        }
+      }
+    },
+    "limitsAcknowledged": {
+      "type": "array",
+      "description": "Limits the skill told the user about and the user accepted, in order; empty when none applied.",
+      "items": {
+        "type": "string",
+        "description": "One acknowledged limit, for example \"no photoreal humans\"."
+      }
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the brief was written: an RFC 3339 timestamp in UTC with millisecond precision, for example 2026-10-26T20:00:00.000Z."
+    }
+  },
+  "$defs": {
+    "UseCase": {
+      "type": "string",
+      "enum": ["product-shot", "explainer", "title-sequence", "lower-third", "kinetic-type", "chart", "still", "custom"],
+      "description": "What the piece is for; it selects the default lane, tempo and templates."
+    },
+    "Aspect": {
+      "type": "string",
+      "enum": ["16:9", "9:16", "1:1", "4:5", "21:9"],
+      "description": "Frame aspect ratio as width:height."
+    },
+    "FrameRate": {
+      "type": "integer",
+      "enum": [24, 25, 30, 60],
+      "description": "Frames per second of every shot and of the delivery."
+    },
+    "Tempo": {
+      "type": "string",
+      "enum": ["calm", "dynamic", "chaotic", "single-shot"],
+      "description": "Cutting rhythm: calm (long shots), dynamic (medium), chaotic (very short) or single-shot (no cuts)."
+    },
+    "SubjectKind": {
+      "type": "string",
+      "enum": ["product", "abstract", "diagram", "text", "environment", "mixed"],
+      "description": "What the piece shows: a product, an abstract form, a diagram, text, an environment or a mix."
+    },
+    "Primitive": {
+      "type": "string",
+      "enum": ["none", "bottle", "can", "box", "slab", "card", "pill", "jar", "sphere", "cylinder", "torus"],
+      "description": "Procedural stand-in geometry for the subject when no asset is supplied; none means no stand-in."
+    },
+    "Voice": {
+      "type": "string",
+      "enum": ["af_heart", "af_bella", "af_nicole", "af_sarah", "bf_emma", "bm_george", "am_michael"],
+      "description": "Narration voice of the optional narration component (ADR 0007); the prefix is accent and gender."
+    },
+    "MusicPolicy": {
+      "type": "string",
+      "enum": ["none", "user-supplied"],
+      "description": "Where music comes from: none, or a file the user supplies and licenses."
+    }
+  }
+}

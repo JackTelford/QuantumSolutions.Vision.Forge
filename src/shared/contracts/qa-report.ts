@@ -4,9 +4,9 @@
  * What was examined: the assembled delivery, one shot's frame sequence, or one still.
  *
  * This interface was referenced by `QaReport`'s JSON-Schema
- * via the `definition` "SubjectKind".
+ * via the `definition` "QaSubjectKind".
  */
-export type SubjectKind = 'deliverable' | 'shot' | 'still';
+export type QaSubjectKind = 'deliverable' | 'shot' | 'still';
 /**
  * The automated check: dimensions, fps and duration from ffprobe against the plan; black-frames (blackdetect) and frozen-frames (freezedetect); pops (adjacent-frame SSIM below the threshold away from a planned cut); exposure-drift (signalstats YAVG between shots); text-contrast (WCAG ratio behind each text box); loudness and true-peak (ebur128); hero-still-match (SSIM of the approved still against the rendered frame).
  *
@@ -63,7 +63,7 @@ export interface QaReport {
  * via the `definition` "Subject".
  */
 export interface Subject {
-  kind: SubjectKind;
+  kind: QaSubjectKind;
   /**
    * Absolute path of the delivery file, the frames pattern or the still.
    */
@@ -184,8 +184,8 @@ export interface RubricScores {
   artifacts: number;
 }
 
-/** Every SubjectKind value the schema allows, in schema order. */
-export const SubjectKindValues = ['deliverable', 'shot', 'still'] as const;
+/** Every QaSubjectKind value the schema allows, in schema order. */
+export const QaSubjectKindValues = ['deliverable', 'shot', 'still'] as const;
 
 /** Every CheckId value the schema allows, in schema order. */
 export const CheckIdValues = ['dimensions', 'fps', 'duration', 'black-frames', 'frozen-frames', 'pops', 'exposure-drift', 'text-contrast', 'loudness', 'true-peak', 'hero-still-match'] as const;

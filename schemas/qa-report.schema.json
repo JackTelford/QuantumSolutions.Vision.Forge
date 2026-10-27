@@ -38,7 +38,7 @@
     }
   },
   "$defs": {
-    "SubjectKind": {
+    "QaSubjectKind": {
       "type": "string",
       "enum": ["deliverable", "shot", "still"],
       "description": "What was examined: the assembled delivery, one shot's frame sequence, or one still."
@@ -54,7 +54,7 @@
       "additionalProperties": false,
       "required": ["kind", "path", "shotId"],
       "properties": {
-        "kind": { "$ref": "#/$defs/SubjectKind" },
+        "kind": { "$ref": "#/$defs/QaSubjectKind" },
         "path": {
           "type": "string",
           "description": "Absolute path of the delivery file, the frames pattern or the still."

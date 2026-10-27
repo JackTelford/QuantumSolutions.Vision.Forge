@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vision-forge.quantumsolutions.dev/schemas/job.schema.json",
+  "title": "Job",
+  "description": "The state of one production run: where its documents live, how far the pipeline has come and where each shot stands with its cache key, manifest, still and review rounds. Written as job.json under the output directory and updated by every stage.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "version", "id", "createdAt", "briefPath", "treatmentPath", "shotSpecPath", "lookPath", "outDir", "dataDir", "status", "shots", "deliverablePath"],
+  "properties": {
+    "kind": {
+      "const": "job",
+      "description": "Document kind; always \"job\"."
+    },
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Version of this document kind; always 1."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]{8}$",
+      "description": "Job identifier, 8 lowercase letters and digits, for example \"k7f2q9x1\"; it names the job folder."
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the job was created: an RFC 3339 timestamp in UTC with millisecond precision, for example 2026-10-26T20:00:00.000Z."
+    },
+    "briefPath": {
+      "type": "string",
+      "description": "Absolute path of the brief document, for example C:/vf/out/k7f2q9x1/brief.json."
+    },
+    "treatmentPath": {
+      "type": "string",
+      "description": "Absolute path of the treatment document, for example C:/vf/out/k7f2q9x1/treatment.json."
+    },
+    "shotSpecPath": {
+      "type": "string",
+      "description": "Absolute path of the shot spec document, for example C:/vf/out/k7f2q9x1/shot-spec.json."
+    },
+    "lookPath": {
+      "type": "string",
+      "description": "Absolute path of the look bible document, for example C:/vf/out/k7f2q9x1/look-bible.json."
+    },
+    "outDir": {
+      "type": "string",
+      "description": "Absolute path of the output directory the deliverables are written to, for example C:/vf/out/k7f2q9x1."
+    },
+    "dataDir": {
+      "type": "string",
+      "description": "Absolute path of the data directory the job used (caches, tools manifest, asset ledger), for example C:/Users/me/AppData/Local/VisionForge."
+    },
+    "status": { "$ref": "#/$defs/JobStatus" },
+    "shots": {
+      "type": "array",
+      "description": "One entry per shot of the shot spec, in screen order.",
+      "items": { "$ref": "#/$defs/JobShot" }
+    },
+    "deliverablePath": {
+      "type": ["string", "null"],
+      "description": "Absolute path of the delivered file once status is delivered, for example C:/vf/out/k7f2q9x1/film.mp4; null before."
+    }
+  },
+  "$defs": {
+    "JobStatus": {
+      "type": "string",
+      "enum": ["planned", "stills", "rendering", "assembling", "qa", "delivered", "failed"],
+      "description": "Where a job stands in the pipeline: planned, stills (the still gate), rendering, assembling, qa, delivered or failed."
+    },
+    "ShotStatus": {
+      "type": "string",
+      "enum": ["pending", "still-rendered", "still-approved", "rendered", "failed"],
+      "description": "Where one shot of a job stands: pending, still-rendered (awaiting review), still-approved, rendered or failed."
+    },
+    "JobShot": {
+      "type": "object",
+      "description": "Where one shot of the job stands.",
+      "additionalProperties": false,
+      "required": ["id", "key", "status", "manifestPath", "stillPath", "rounds"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The shot id as the shot spec names it, unique within the job, for example \"s01\"."
+        },
+        "key": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Shot hash as 64 lowercase hex characters (ADR 0006, decision 8), the same value the render manifest records; names the cache folder."
+        },
+        "status": { "$ref": "#/$defs/ShotStatus" },
+        "manifestPath": {
+          "type": ["string", "null"],
+          "description": "Absolute path of the shot's render manifest once a render started, for example C:/vf/cache/<key>/manifest.json; null before."
+        },
+        "stillPath": {
+          "type": ["string", "null"],
+          "description": "Absolute path of the latest still rendered for the gate, for example C:/vf/out/k7f2q9x1/stills/s01-r1.png; null before the first still."
+        },
+        "rounds": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of still review rounds completed, 0 or more, for example 1; the retry cap is 3."
+        }
+      }
+    }
+  }
+}
