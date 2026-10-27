@@ -14,6 +14,32 @@ The first run on `main` printed "Node.js 20 is deprecated. The following actions
 
 Result: run 40410446831 (commit 4bd4b78) passed on all four jobs: windows-2025 / node 24 in 52 s, windows-2025 / node 26 in 1 m 3 s, ubuntu-24.04 / node 24 in 26 s, ubuntu-24.04 / node 26 in 27 s. The two tests that failed on Linux in the first run (`tests/harness/static-roots.test.ts` treating `C:\Windows\win.ini` as absolute, `tests/process/child-process-runner.test.ts` using a Windows path for the shell-shim case) were platform-specific test expectations, not code defects, and were split by platform.
 
+## Update after the M1 run (2026-10-27, runs 40438685381, 40441114654 and 40441503367)
+
+The M1 push (commit 012ac3a) passed both Windows jobs and failed both Ubuntu jobs. `setup-ffmpeg` installs the johnvansickle `ffmpeg-release-amd64-static` build on Linux, which was 7.0.2 and has no `drawtext` filter; the Windows jobs run the Gyan 9.0.2 full build. Reproducing on the owner's machine with the Gyan 7.0.2 full build (downloaded from the `GyanD/codexffmpeg` 7.0.2 release and checked against the SHA-256 in the winget manifest, `0AA623FE…`) showed that every Linux failure was an ffmpeg-version difference, not a Linux one:
+
+| Symptom on 7.0.2 | Cause | Fix |
+| --- | --- | --- |
+| every plan with a transition failed to encode (`libx264 … -22 Invalid argument`) | `xfade` on 7.0 refuses an input whose frame rate is unknown, and `setpts` leaves it unknown ("current rate of 1/0 is invalid"); 9.0 tolerates it | each normalized clip ends with `fps=<fps>` again (`src/assemble/normalize.ts`) |
+| hero-still-match measured SSIM 0.82 against the frame's own extraction | `ssim` on 7.0 pairs a one-image input with the wrong frame when the frame is selected inside the same graph; `setpts` and `trim` did not help | frame k is extracted to a PNG first and two images are compared (`src/qa/still-match.ts`) |
+| a second encode with grain was not byte-identical (2 to 5 frames differed; `-filter_complex_threads 1` made it identical) | the `noise` filter on 7.0 slices across threads in an order that varies run to run; 9.0 is reproducible either way | `threads=1` on the noise filter only (`src/finishing/finishing-chain.ts`) |
+| `doctor` closed the html lane, `sheet` crashed inside ffmpeg | `drawtext` was in the lane-required filter set | `drawtext` and `tile` form a contact-sheet set that doctor reports without closing lanes; `sheet` names the gap from `tools.json` |
+
+Four tests hard-coded Windows paths (`C:\vf\out\film.mp4` joined on POSIX) or Edge; they are platform-neutral now. Edge 155 on `ubuntu-24.04` times out in `launchPersistentContext` after 30 s while Chrome launches and reports SwiftShader WebGL2; `doctor` records that as a problem sentence and the capability test requires one working browser, not every browser.
+
+The Linux job now downloads a BtbN GPL build instead of using the action:
+
+| Item | Value |
+| --- | --- |
+| Release | `BtbN/FFmpeg-Builds` tag `autobuild-2026-10-26-14-25` (2026-10-26T14:26Z) |
+| Asset | `ffmpeg-n8.1.3-24-g92611900bb-linux64-gpl-8.1.tar.xz`, 150,312,288 bytes |
+| SHA-256 | `d113aa5b57ab0dcfee171d835240ce3ea5db826a0ee80ed7528c8d26a61e87a4`, read from the asset's `digest` field through `gh release view autobuild-2026-10-26-14-25 --repo BtbN/FFmpeg-Builds --json assets` and checked with `sha256sum --check` in the workflow before extraction |
+| Reported version | `n8.1.3-24-g92611900bb-20261026`; `parseFfmpegVersion` drops the leading `n` |
+
+The action remains for Windows (`if: runner.os == 'Windows'`). Moving to a newer BtbN tag means reading the new asset name and digest the same way and changing the two `env` values in `ci.yml`.
+
+Result: run 40441114654 (commit 1e5eed0) passed three of the four jobs; `ubuntu-24.04 / node 24` failed one assertion, the doctor profile of Edge (which times out at launch there) still being present when the test looked, while `ubuntu-24.04 / node 26` passed the same test. The test now requires a removed profile only for a browser whose check ran (commit 1561578). Run 40441503367 (commit 1561578) passed on all four jobs: windows-2025 node 24 in 2 m 24 s, node 26 in 2 m 26 s, ubuntu-24.04 node 24 in 1 m 17 s, node 26 in 49 s.
+
 The table and procedure below are the original M0b record.
 
 Recorded 2026-10-26T20:47Z for `.github/workflows/ci.yml` by reading the GitHub API with a fetch tool and confirming with `git ls-remote --tags` from the owner's machine. Nothing was installed and no workflow was run.

@@ -29,7 +29,7 @@ GitHub refuses ordinary files larger than 100 MiB, and the project rule is to ca
 | Program | Why | Windows 11 | macOS | Linux |
 | --- | --- | --- | --- | --- |
 | Node.js 24.12 or newer | runs the TypeScript directly (no build step) | `winget install --id OpenJS.NodeJS.LTS --exact` | `brew install node@24` | distribution packages or nodejs.org |
-| ffmpeg and ffprobe | assembly, finishing grade, loudness, quality checks | `winget install --id Gyan.FFmpeg --exact` | `brew install ffmpeg` | `sudo apt install ffmpeg` |
+| ffmpeg and ffprobe, 7.0 or newer | assembly, finishing grade, loudness, quality checks; contact sheets need `drawtext` (a build with libfreetype) | `winget install --id Gyan.FFmpeg --exact` | `brew install ffmpeg` | `sudo apt install ffmpeg` |
 | Microsoft Edge or Google Chrome | headless rendering of the `html` and `three` lanes | Edge ships with Windows 11 | Chrome or Edge | Chrome or Chromium |
 | Blender 5.2 LTS (optional) | the `blender` lane | `winget install --id BlenderFoundation.Blender --version 5.2.3 --exact` (asks for administrator approval) | `brew install --cask blender` then confirm the version is 5.2.x | `sudo snap install blender --classic`, then confirm `blender --version` starts with 5.2 (the snap has no 5.2 track), or the blender.org 5.2 LTS archive |
 
@@ -52,6 +52,7 @@ Narration uses Kokoro-82M on the CPU through `kokoro-js`. It is not installed wi
 ## Troubleshooting
 
 - **`doctor` says Blender is missing after installing it**: open a new terminal so PATH is refreshed, or set `BLENDER` to the full path of `blender.exe`. Microsoft Store builds are not supported; use the winget or blender.org installer.
+- **`doctor` warns that ffmpeg is missing `drawtext` or `tile`**: the lanes still run; only `sheet` (contact sheets) needs them. Static builds without libfreetype lack `drawtext`; install a full build (the Gyan build on Windows, Homebrew's ffmpeg on macOS, the distribution package or a BtbN GPL build on Linux) and run `doctor` again.
 - **`doctor` refuses the Blender version**: only 5.2.x is supported. Install 5.2.3 with the command above; two versions can coexist.
 - **Blender renders fail with "Cannot initialize the GPU"**: EEVEE needs an interactive desktop session. Over some SSH or scheduled-task sessions only Cycles works; the still gate falls back to it and says so.
 - **The `three` lane reports a software renderer**: headless Edge and Chrome use the GPU by default on Windows; a mismatch means the driver or an enterprise policy blocked it. The renderer policy can be set to `software` explicitly.

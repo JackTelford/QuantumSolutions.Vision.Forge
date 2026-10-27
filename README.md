@@ -18,7 +18,7 @@ The repository ships source only. These programs are installed separately and ca
 | Program | Purpose | Install on Windows 11 | Size |
 | --- | --- | --- | --- |
 | Node.js 24.12 or newer | runs everything; no build step | `winget install --id OpenJS.NodeJS.LTS --exact` | about 60 MB |
-| ffmpeg and ffprobe | assembly, finishing, quality checks | `winget install --id Gyan.FFmpeg --exact` | about 90 MB |
+| ffmpeg and ffprobe, 7.0 or newer | assembly, finishing, quality checks; contact sheets need a build with `drawtext` (libfreetype), which the full builds below have | `winget install --id Gyan.FFmpeg --exact` | about 90 MB |
 | Microsoft Edge or Google Chrome | renders the `html` and `three` lanes headlessly | Edge ships with Windows 11 | — |
 | Blender 5.2 LTS | renders the `blender` lane (optional; the other lanes work without it) | `winget install --id BlenderFoundation.Blender --version 5.2.3 --exact` | about 350 MB |
 
