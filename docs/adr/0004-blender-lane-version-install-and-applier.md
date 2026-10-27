@@ -1,6 +1,6 @@
 # ADR 0004: Blender lane — 5.2 LTS only, installed by the user, driven by a logic-free applier
 
-Status: accepted, 2026-10-26. Owner decisions recorded the same day: install through winget, 5.2 LTS only.
+Status: accepted, 2026-10-26. Owner decisions recorded the same day: install through winget, 5.2 LTS only. Amended 2026-10-26: decision 2 now states the implemented `doctor` contract (a missing Blender is a warning, not exit 1).
 
 ## Context
 
@@ -13,7 +13,7 @@ From the 5.2 source: background mode on Windows creates an offscreen WGL context
 ## Decision
 
 1. **Version**: 5.2.x only. `doctor` parses `blender.exe --version` and rejects any other major.minor with the exact install command.
-2. **Install**: the user runs `Setup-VisionForge.cmd` / `scripts/setup.ps1 -Install` (winget, UAC prompt, ~350 MB) or `scripts/setup.sh` (brew cask on macOS; apt or snap hint on Linux). `doctor` exits 1 with the same command when Blender is missing. SKILL.md tells Claude to run `doctor` first and to continue with the html and three lanes when Blender is absent.
+2. **Install**: the user runs `Setup-VisionForge.cmd` / `scripts/setup.ps1 -Install` (winget, UAC prompt, ~350 MB) or `scripts/setup.sh` (brew cask on macOS; apt or snap hint on Linux). `doctor` exits 0, lists Blender in `missing` with `required: false` and the install command as the hint, and reports `lanes.blender: false`; `--require blender` turns that into exit 1 with code `tool-missing`. SKILL.md tells Claude to run `doctor` first and to continue with the html and three lanes when Blender is absent.
 3. **Discovery order**: `BLENDER` environment variable → `%ProgramFiles%\Blender Foundation\Blender 5.2\blender.exe` → registry ProgID command with `blender-launcher.exe` replaced by `blender.exe` → PATH. Paths under `\WindowsApps\` are rejected. `doctor` records the path, version and SHA-256 of `blender.exe` in `tools.json`.
 4. **Invocation** (golden-tested argv): `blender.exe -b --factory-startup --disable-autoexec -noaudio --offline-mode --gpu-backend <opengl|vulkan> --python-exit-code 3 [--python-expr "import gpu; gpu.init()"] -P blender/apply_scene.py -- <scene.json> <outdir>` with `BLENDER_USER_RESOURCES` pointed at our data directory so user preferences and add-ons cannot change renders. The `gpu.init()` preflight is appended by TypeScript only for EEVEE attempts; Cycles attempts need no GPU context.
 5. **Applier**: `blender/apply_scene.py` reads a fully resolved `scene.json` (closed schema: every property required, no defaults, units in descriptions) and makes bpy calls with one comment per call. No math, no decisions, no version checks. A test parses the file and fails on branching tokens.
