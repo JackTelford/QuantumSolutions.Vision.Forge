@@ -2,6 +2,90 @@
 
 The single source of truth for where this repository stands. Newest milestone first. Every claim here points at a test or a file under `docs/evidence/`; anything else is listed under "Untested".
 
+## M1: contracts, doctor, assemble, QA and contact sheets (2026-10-27)
+
+### Done
+
+- **Contracts** (`schemas/`, `src/shared/contracts/`): six new schemas (`brief`, `treatment`, `shot-spec`, `look-bible`, `job`, `assets-ledger`) beside the three from M0b and the two from M1 groundwork (`assembly-plan`, `qa-report`); `schemas/vocabulary.json` holds every shared enumeration once (30 entries: lanes, use cases, aspects, frame rates, shot sizes, the 26 camera moves, easing tokens, focal lengths, lighting presets, looks, fonts, text animations, transitions, codecs, statuses) and style rule 16 plus `tests/schema/vocabulary.test.ts` keep every schema's copy identical to it. The QA report's subject kind is named `QaSubjectKind` so it does not collide with the brief's `SubjectKind`. Eleven generated contract files are committed and drift-checked.
+- **`validate <file>`** (`src/cli/commands/validate.ts`, `src/schema/checks/`): schema validation followed by the semantic rules of the kind, one file per kind with a shared `Rule<T>` shape: brief (5 rules: even dimensions, aspect within 1 percent, duration, music path versus policy, assets in the ledger), treatment (3), shot spec (9: unique ids, frames inside the shot, legal move per lane, text in the title-safe area, focus distance, assets in the ledger, render profile only after the still gate), look bible (4, including WCAG 4.5:1 text contrast through `src/shared/color/contrast.ts`), job (3), assets ledger (2: unique and sorted ids), assembly plan (1: the transition-series math). Every problem is one sentence; the error's hint names the rule file.
+- **`doctor`** (`src/cli/commands/doctor.ts`, `src/tools/`): finds Node, ffmpeg and ffprobe (version, filter and encoder lists checked against the required sets), Edge and Chrome (version, then a headless WebGL capability page: renderer string, WebGL2, `EXT_color_buffer_float`, hardware or software), the GPU (nvidia-smi or Win32_VideoController), the desktop session, long-path support and Blender (`BLENDER`, the known folder, the registry ProgID with the launcher swapped for `blender.exe`, PATH; Store builds refused; 5.2.x only; an optional `--python-expr` probe for engines, devices, the action-slot API and `media_type`, parsed from one `PROBE {json}` line). Writes `tools.json` (schema extended with `Browser.webgl`, the Blender probe fields and a root `problems[]`), prints one line per tool and decides the four lanes (`html`, `three`, `blender`, `audio`). A missing Blender is a warning with the install command, not a failure; `--require <lane>` makes a closed lane exit 1 with code `tool-missing` (ADR 0004 amended).
+- **Setup scripts** (`Setup-VisionForge.cmd`, `scripts/setup.ps1`, `scripts/setup.sh`): check mode by default with a table and the exact install command under each missing row; `-Install` / `--install` installs through winget (exact ids, Blender 5.2.3 pinned), Homebrew or apt and snap; `-SkipBlender`; then `npm ci --ignore-scripts` and `doctor`. No prompts; exit 1 with a next-step sentence when a required program is missing.
+- **`assemble --plan <file>`** (`src/assemble/`, `src/finishing/`, `src/shared/grade/`): every clip is normalized (fps, size, square pixels, yuv420p), joined with `concat` or `xfade` per the plan's transition list, mixed (narration lines placed by frame, music ducked under narration with `sidechaincompress`, two-pass `loudnorm` to the plan's LUFS and true-peak targets), captioned (SRT sidecar, burned in when asked), graded (the look-bible grade baked by TypeScript into a 33-point `.cube` applied by `lut3d` in 16-bit RGB, then vignette and seeded grain), tagged BT.709 and encoded (H.264 CRF with `+faststart`, HEVC or ProRes 422 HQ). The delivery is probed back and must match the plan's frame count exactly, its rate, size and square pixels. A scratch folder beside the output keeps the three ffmpeg logs on failure.
+- **`qa --video <file>`** (`src/qa/`): eleven measured checks written as a `qa-report` document: dimensions, fps and duration against the plan; black frames (`blackdetect`), frozen frames (`freezedetect`, a planned hold at a clip tail tolerated), pops (adjacent-frame SSIM below 0.6 away from a planned cut), exposure drift (`signalstats` YAVG between clips or one-second windows), text contrast (frames extracted and the luma behind each text box turned into a WCAG ratio against the text colour, one shared implementation), loudness and true peak (`ebur128`), hero-still match (SSIM of the approved still against its frame). Exit 1 with code `qa-failed` names the failing checks and lists the report as evidence; `--no-fail` writes the report and exits 0.
+- **`sheet --frames <dir or json>`** (`src/sheet/`): labelled thumbnails tiled with `scale`, `drawtext` and `xstack` into one PNG; a system font is passed explicitly because the Windows ffmpeg build crashes on two `drawtext` filters without one.
+- **Shared** (`src/shared/color/contrast.ts`, `src/shared/grade/grade.ts`): WCAG 2.2 luminance and contrast; the grade as ASC CDL (offset, slope, power) plus saturation, contrast around a pivot and split toning, sampled into a `.cube` LUT; the grade's TypeScript type is the generated look-bible contract.
+- **Docs**: README (status, commands table, quick start with the setup flags, layout, verified list, limits), `docs/SETUP.md` (setup script flags, file locations, the font note), `SKILL.md` (how to read `doctor`'s result, the commands available now, the Blender rule), `schemas/README.md` (rule 16, the kinds table).
+- Process: four modules were built by parallel agents from written briefs, each reviewed adversarially and fixed (64 findings: contracts 14, doctor 19, assemble 17, QA 14; 63 applied, 12 skipped and either done by the integrator or recorded below), then the integrator resolved the seams between them (one WCAG implementation, the grade type, the plan loader shared by `assemble` and `qa`, evidence on failed results, the required manifest fields) and read the command files again.
+
+### Evidence
+
+| Claim | Number | Where |
+| --- | --- | --- |
+| Type checks pass under both configurations | `npm run typecheck` exit 0 | run locally 2026-10-27 |
+| House rules hold across the repository | `npm run lint`: no findings in 214 files | same |
+| Generated contracts match the schemas | `npm run schema:check`: 11 files up to date | same |
+| Every installed package is on the license allowlist | `npm run licenses`: 32 packages checked, 0 failed | same |
+| Unit and integration tests pass (ffmpeg 9.0.2 present, so every ffmpeg integration test ran) | `npm test`: 836 tests in 184 suites, 0 failures, 2 skipped (both need macOS or Linux) | same |
+| `doctor` on this machine | exit 0; lanes html, three and audio open, blender closed; Edge 156.0.4314.42 and Chrome 156.0.8078.48 both report WebGL2 on `ANGLE (NVIDIA, NVIDIA GeForce RTX 2060 ... D3D11)`, hardware; ffmpeg 9.0.2; RTX 2060 driver 610.88; interactive session; long paths off; Blender listed under `missing` with the winget command, `required: false` | run 2026-10-27, `tests/cli/doctor.test.ts` repeats it |
+| Every schema follows the style guide and matches the vocabulary | 99 style-guide tests over 11 schemas, 17 vocabulary tests | `tests/schema/` |
+| Semantic rules fire once per problem and stay quiet on a valid example of every kind | `tests/schema/checks/`, `tests/schema/documents/` (one shared valid example per kind) | same |
+| `validate` end to end: exit 0 with `{ kind, path, checks }`, exit 1 `schema-validation` with the problem in the message, ledger lookup through `--data-dir`, exit 1 `data-file` on a malformed ledger, exit 2 usage | 8 tests spawning `scripts/cli.ts` | `tests/cli/validate.test.ts` |
+| Tool discovery, version parsing, capability page, Blender gate and probe, registry, GPU, session, lane rules | 85 tests (fake file trees and scripted runners; the capability tests launch the real Edge) | `tests/tools/` |
+| Setup scripts parse and check | 9 tests (PowerShell parse of `setup.ps1`, `bash -n` of `setup.sh`, `-CheckOnly` run on Windows) | `tests/setup/` |
+| Assembly frame counts are exact: cut 60, dissolve of 10 over two 30-frame clips 50, wipe 15 plus fade-black 15 over three clips 60 | integration tests against synthetic 320x180 sources | `tests/assemble/assembler.integration.test.ts` |
+| Loudness lands on target | two sine narration lines over a tone bed: measured -23.25 LUFS in, -16.0 LUFS out, within 1 LU | same |
+| Grade is applied, not dropped | identity cube: PSNR 57.99 dB against the ungraded delivery; a non-identity cube and vignette or grain above 0: PSNR under 40 dB; vignette and grain byte-identical across two runs | same |
+| Captions burn in | SSIM 0.9787 against the sidecar-free delivery with "Hello captions" rendered | same |
+| HEVC and ProRes encode and probe back with square pixels; a source one PNG short fails verification | integration cases (h), (i), (j) | same |
+| Assemble argv builders, graph, audio mix, normalization, probe parsing, finishing chain, `.cube` text | 99 tests across the assemble set | `tests/assemble/`, `tests/finishing/`, `tests/shared/grade/`, `tests/cli/assemble.test.ts` |
+| QA finds the planted faults in synthetic clips: black frames at [30], frozen frames at [30, 45] without a plan and [45] with one, a pop at a cut only when unplanned, exposure drift between two patterns, a text box below 4.5:1, a quiet track below target | 86 tests in `tests/qa/`, 19 in `tests/cli/qa*.test.ts` | `tests/qa/`, `tests/cli/` |
+| Contact sheet from six PNGs with labels, custom columns and thumbnail width | 17 tests | `tests/sheet/`, `tests/cli/sheet.test.ts` |
+| WCAG contrast matches published figures (#767676 on white 4.54, #808080 on white 3.95) | `tests/shared/contrast.test.ts` | same |
+
+### Untested
+
+- Nothing has run in a real Blender: it is not installed here. Discovery walked a faked file tree and a faked registry; the probe expression was syntax-checked by CPython 3.14 but never executed by Blender's Python; the exit-code matrix (3 for a Python exception, the 0xC0000005 teardown crash) is handled by parsing only. M5 starts with the acceptance probes.
+- `setup.ps1 -Install` and both `setup.sh` modes were not executed (parse tests and `-CheckOnly` on Windows only); the Linux snap fallback rests on today's snapcraft listing, which shows no 5.2 track.
+- macOS and Linux discovery (app bundles, PATH names, `/snap/bin`) and font lookup are verified with fake directory trees only. Continuous integration on ubuntu-24.04 runs on this push and is recorded in `docs/evidence/m0/ci-actions.md` when green.
+- Ducking is not measured (only the final loudness is); `sidechaincompress` at threshold 0.05 may not duck under quiet narration.
+- A non-identity LUT is checked for effect (PSNR), not against a reference look; `vignetteSoftness` is accepted by the schema and ignored by the chain (ffmpeg's `vignette` has a fixed falloff).
+- `loudnorm` on deliveries under about 3 s falls back to its dynamic mode; only a 3 s delivery was measured. Cancellation through `AbortSignal` is not tested in assemble. The probe time budget (100 ms per frame) is an estimate.
+- Every ffmpeg line format (`blackdetect`, `freezedetect`, `ebur128`, `signalstats`) is verified against ffmpeg 9.0.2 only; the exposure-drift threshold (40 YAVG) and the pop threshold (SSIM 0.6) are as specified, not calibrated on real material. `qa` has only seen synthetic 320x180 clips.
+- `validate` with the per-OS default data directory (no `--data-dir`) was not exercised; every test passes an explicit one.
+- The fix that `assemble` keeps its scratch folder when `loudnorm` prints no final measurement is covered by a scripted runner, not a real ffmpeg.
+
+### Risks
+
+- `validate` on a brief or shot spec requires every named asset id to be in `<dataDir>/assets.json`: run before `assets` has downloaded anything, it exits 1 by design. The `plan` command (M2) must download or stub assets before validating, or M3's `assets` must come first in the skill's order.
+- `tools.json` records every ffmpeg filter and encoder name (hundreds of strings). Harmless, but a reader of the file sees noise; trimming to the required sets is a one-line change in `src/tools/ffmpeg-info.ts` when wanted.
+- The Windows ffmpeg build (gyan) has no fontconfig: two `drawtext` filters without a font file crash with an access violation. `sheet` passes Segoe UI, Arial or Helvetica, or DejaVu Sans; a machine without any of them fails inside ffmpeg with a hint, and M3's text plates must never rely on `drawtext` defaults.
+- The grade's gamma is applied as an ASC CDL power (above 1 darkens midtones) after the review round; no look bible exists yet, so nothing had to be regenerated, but the look presets written in M4 must be judged on rendered swatches, not assumed from the numbers.
+- `doctor` records `hardware: false` when the browser reports SwiftShader or WARP; on the ubuntu CI runner that is expected, and the doctor test tolerates it. The `three` lane stays open there, so CI renders in M4 will be software renders with relaxed thresholds, as planned.
+
+### Deliberately not done
+
+- No real media: every test source is synthetic (`testsrc2`, `color`, `sine`, generated PNGs). The first rendered frames arrive with M3.
+- `plan`, `still`, `render`, `assets` and `audio` still answer `not-implemented` with their milestone.
+- Blender is not installed; installing it is M5's first, consented step.
+- `doctor` hashes `blender.exe` only; ffmpeg's SHA-256 is not computed, to keep `doctor` fast.
+- The review found that the assembly chain feeds the 16-bit LUT and the 10-bit ProRes mezzanine from 8-bit 4:2:0 normalized clips; a true 10-bit path is deferred until a lane produces more than 8 bits.
+
+### Review guide
+
+Read these five in order (about 1,100 lines):
+
+1. `src/tools/tools-manifest.ts`: how `doctor` turns what it found into lanes and problem sentences.
+2. `src/assemble/invocation.ts`: the three ffmpeg argv builders (mix, measure, encode) and the filter graph; every golden test pins them.
+3. `src/shared/grade/grade.ts`: the colour math behind the `.cube`.
+4. `src/qa/motion-checks.ts`: black frames, frozen frames and pops judged against the plan.
+5. `src/schema/checks/shot-spec.ts`: the richest set of semantic rules, with the frame and title-safe conventions in its header.
+
+Then, if time allows, `scripts/setup.ps1` (the install story a new user meets first).
+
+### Next: M2
+
+Camera, easing, timeline and the composition solver as pure TypeScript under `src/shared/` with numeric tests: the 26 camera moves of `references/cinematography/camera-moves.md` baked per frame from one physical camera model, the easing tokens of `references/motion/easing-grammar.md` with one canonical spring, sequence and stagger combinators with named time events, and the solver of `references/composition/rules.md` (subject bounds plus shot size and lens to camera placement, grid anchoring, safe areas, headroom, text overlap). The calibration fixture for M4 is defined there too.
+
 ## M0b: core infrastructure, checks and packaging (2026-10-26)
 
 ### Done

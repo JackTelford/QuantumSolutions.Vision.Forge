@@ -4,10 +4,10 @@
 
 1. Use Windows 11 (first class), macOS or Linux with a GPU driver installed. Allow about 1 GB of disk for the programs below plus render output; 16 GB RAM is recommended. An NVIDIA, AMD or Intel GPU makes the `three` lane and EEVEE fast; everything still runs on software rendering, slower.
 2. Clone this repository into a short path such as `C:\Code\QuantumSolutions.Vision.Forge`. Windows limits paths to 260 characters unless long paths are enabled, and render output lives under short job folders to stay inside that limit.
-3. Run `Setup-VisionForge.cmd` (milestone M1). It reports which programs are present, prints the exact install command for each missing one, and installs them only with `-Install`. It then runs `npm ci`.
-4. Run `node scripts\cli.ts doctor` (milestone M1). Exit code 0 means every required program was found; the output lists which lanes are available.
+3. Run `Setup-VisionForge.cmd`. It prints a table of the programs below with the exact install command under each missing one, installs them only with `-Install` (add `-SkipBlender` to leave Blender out), and when every required program is present runs `npm ci --ignore-scripts` and `node scripts\cli.ts doctor`. `-CheckOnly` prints the table and stops with exit code 0 or 1. It never asks for input. On macOS and Linux run `scripts/setup.sh` with `--install`, `--skip-blender` or `--check-only`; there `--install` calls `sudo`, which may ask for your password.
+4. Run `node scripts\cli.ts doctor` whenever a program changes. Exit code 0 means every required program was found; the output lists which lanes (`html`, `three`, `blender`, `audio`) are available, and `tools.json` under the data directory records every path and version.
 
-Until M1 lands, install the programs by hand with the commands below and run `npm ci` in the clone.
+To install by hand instead, use the commands below and run `npm ci --ignore-scripts` in the clone.
 
 ## What comes with this repository
 
@@ -16,7 +16,7 @@ Until M1 lands, install the programs by hand with the commands below and run `np
 | TypeScript source under `scripts/` and `src/` | the command-line program, the render harness and the shared camera, timeline and composition code |
 | `blender/apply_scene.py` | the one Python file Blender runs; it applies a resolved scene and makes no decisions |
 | `skills/cinematic-studio/` | the Claude Code skill, its creative knowledge base, bundled OFL fonts and CC0 HDRIs (from M3) |
-| `schemas/` | JSON Schema contracts for every document the pipeline exchanges (from M1) |
+| `schemas/` | JSON Schema contracts for every document the pipeline exchanges, and `vocabulary.json` with every shared enumeration |
 | `docs/` | decisions (`adr/`), research with sources, probe evidence with numbers, this guide, the handoff log |
 | `package.json` and `package-lock.json` | exact dependency pins; `npm ci` installs them |
 
@@ -31,7 +31,7 @@ GitHub refuses ordinary files larger than 100 MiB, and the project rule is to ca
 | Node.js 24.12 or newer | runs the TypeScript directly (no build step) | `winget install --id OpenJS.NodeJS.LTS --exact` | `brew install node@24` | distribution packages or nodejs.org |
 | ffmpeg and ffprobe | assembly, finishing grade, loudness, quality checks | `winget install --id Gyan.FFmpeg --exact` | `brew install ffmpeg` | `sudo apt install ffmpeg` |
 | Microsoft Edge or Google Chrome | headless rendering of the `html` and `three` lanes | Edge ships with Windows 11 | Chrome or Edge | Chrome or Chromium |
-| Blender 5.2 LTS (optional) | the `blender` lane | `winget install --id BlenderFoundation.Blender --version 5.2.3 --exact` (asks for administrator approval) | `brew install --cask blender` then confirm the version is 5.2.x | `snap install blender --channel=5.2/stable --classic` or the blender.org 5.2 LTS archive |
+| Blender 5.2 LTS (optional) | the `blender` lane | `winget install --id BlenderFoundation.Blender --version 5.2.3 --exact` (asks for administrator approval) | `brew install --cask blender` then confirm the version is 5.2.x | `sudo snap install blender --classic`, then confirm `blender --version` starts with 5.2 (the snap has no 5.2 track), or the blender.org 5.2 LTS archive |
 
 Blender 5.2.3 installs to `C:\Program Files\Blender Foundation\Blender 5.2\blender.exe` on Windows. The MSI's SHA-256 is `a103d4ece8d9acffd2a95c9d8860355b1f209977cc983b4a3d1e1cfb441c8605`, the same value published in `blender-5.2.3.sha256` on download.blender.org; winget verifies it. Only 5.2.x is supported, because 4.5 and 5.x differ in the Python API in five places (see `docs/adr/0004-blender-lane-version-install-and-applier.md`). The skill never downloads Blender itself.
 
@@ -42,6 +42,8 @@ Environment variables `FFMPEG`, `BLENDER` and `CHROME` override discovery when a
 - Programs: wherever their installer put them; `doctor` records the resolved paths in `tools.json` under the data directory.
 - Data directory (caches, tool manifest, optional narration component, browser profiles): `%LOCALAPPDATA%\VisionForge` on Windows, `~/Library/Application Support/VisionForge` on macOS, `~/.local/share/vision-forge` on Linux, or the `--data-dir` argument. When Claude runs the skill it passes its own plugin data directory as `--data-dir`, so a command you run by hand without `--data-dir` keeps a separate tool manifest and cache. To share them, pass the same `--data-dir` the skill uses (Claude Code shows it as `${CLAUDE_PLUGIN_DATA}`), or set `VISION_FORGE_DATA`.
 - Render output: the `--out` argument, default `out/` under the current folder. Frames, logs and profiles stay under the data directory with short paths; only deliverables go to `out/`.
+- `assemble` writes the delivery at the plan's output path, a `<name>.srt` beside it when the plan has captions, and a `.assemble-<name>/` scratch folder beside it holding `mix.wav`, `mix.log`, `loudnorm.log` and `encode.log`; the folder is removed on success and kept on failure, and the error names it. On failure the half-written delivery and the copied `.srt` are removed. The folder is also kept when loudness normalization prints no final measurement; a warning then names `encode.log`.
+- `qa` writes its report to `--report`, by default `<out>/qa/<video name>.qa.json`. `sheet` writes `<out>/sheets/<source name>.png` unless `--output` names a file.
 
 ## Narration (optional)
 
@@ -56,5 +58,6 @@ Narration uses Kokoro-82M on the CPU through `kokoro-js`. It is not installed wi
 - **Edge refuses to start headless**: an enterprise policy can disallow headless mode; `doctor` then uses Chrome.
 - **Paths too long**: keep the clone and `--out` short, or enable long paths in Windows. The program refuses early with a hint rather than failing mid-render.
 - **`npm ci` fails**: use Node 24.12 or newer (`node --version`) and delete `node_modules` before retrying.
+- **`sheet` fails inside ffmpeg with an access violation or a fontconfig error**: the Windows ffmpeg build has no fontconfig configuration and crashes when two or more `drawtext` filters run without a font file. The contact sheet passes a system font automatically (Segoe UI from `%WINDIR%\Fonts` on Windows, Arial or Helvetica on macOS, DejaVu Sans on Linux); on a machine without that font, install one of them.
 
 Installer runs still depend on winget, network access and normal installer permissions. The setup script changes nothing without `-Install`.

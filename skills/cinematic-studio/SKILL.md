@@ -51,9 +51,16 @@ Exit codes: `0` success, `1` failure, `2` usage or not yet implemented (a `usage
 
 ## First step: doctor
 
-The first command of every session is `doctor`. It finds ffmpeg, a browser and, optionally, Blender, records their paths and versions, and lists which lanes are available. Until it reports `ok: true`, do not plan or render.
+The first command of every session is `doctor`. It finds ffmpeg and ffprobe, Microsoft Edge or Google Chrome, the GPU and, optionally, Blender 5.2, records their paths and versions in `tools.json` under the data directory, and lists which lanes can run. Until it reports `ok: true`, do not plan or render.
 
-`doctor` is not implemented yet: it arrives with milestone M1. In the current state (M0b) only `help` and `version` run; every other command exits 2 with a `not-implemented` error that names its milestone. Tell the user so and stop; do not improvise with other tools.
+Read its result as follows. `data.lanes` has one boolean per lane (`html`, `three`, `blender`, `audio`); plan only with lanes that are `true`. `data.missing` lists `{ tool, hint, required }` for every program it did not find; Blender is `required: false`. `data.problems` holds warnings in plain sentences, such as an unsupported Blender version, a software WebGL renderer or a non-interactive desktop session; repeat them to the user when they touch the piece being made. `ok: false` with code `tool-missing` means a required program is absent: repeat the hint, which is the exact install command, and stop. Pass `--require <lane>` when the piece needs one lane in particular; the command then fails with the same code when that lane cannot run.
+
+## Commands available now
+
+- `validate <file>`: checks any pipeline document (brief, treatment, shot spec, look bible, job, assembly plan, QA report, assets ledger) against its schema and the semantic rules of its kind; the error lists every problem as a sentence. Asset ids named in a brief or shot spec must already be in the ledger under the data directory.
+- `assemble --plan <assembly-plan.json>`: joins the clips with their transitions, mixes narration and music, applies the finishing grade and encodes the delivery. `artifacts` holds the delivery and its `.srt` when the plan has captions; `data.verified` holds the probed frame count, frame rate and size.
+- `qa --video <file> [--plan <file>] [--text-boxes <json>] [--still <png> --still-frame <k>] [--report <file>] [--loudness-target <LUFS>] [--no-fail]`: measures the delivery and writes a QA report (`evidence[0]`, by default `<out>/qa/<video name>.qa.json`). Exit 1 with code `qa-failed` names the failing checks unless `--no-fail` is given. Read the report's `checks[]` and repeat each failing check's `detail` to the user; never pass a piece the report failed.
+- `sheet --frames <dir of PNGs or JSON list> [--output <png>] [--columns <n>] [--thumb-width <px>]`: tiles labelled frames into one contact sheet (`artifacts[0]`). Look at the sheet before judging a shot.
 
 ## Behavior rules
 
@@ -67,11 +74,11 @@ The first command of every session is `doctor`. It finds ffmpeg, a browser and, 
 
 ## Blender rule
 
-Run `doctor` first. If Blender is missing or is not 5.2.x, say so, offer the setup script (`Setup-VisionForge.cmd` or `scripts/setup.ps1 -Install` on Windows, `scripts/setup.sh` elsewhere; it asks for approval and installs about 350 MB) and continue with the `html` and `three` lanes. Never download Blender yourself and never run a Blender build the user did not install. The setup scripts arrive with M1.
+Run `doctor` first. If Blender is missing or is not 5.2.x, say so, offer the setup script (`Setup-VisionForge.cmd` or `scripts/setup.ps1 -Install` on Windows, `scripts/setup.sh` elsewhere; it asks for approval and installs about 350 MB) and continue with the `html` and `three` lanes. Never download Blender yourself and never run a Blender build the user did not install. When the user declines Blender, pass `-SkipBlender` (or `--skip-blender`) so the script installs only what the other lanes need.
 
 ## Status
 
-Implemented today (M0b): `help` and `version`. Planned: `doctor`, `validate`, `assemble`, `qa` (M1); `plan` (M2); `still`, `render`, `sheet`, `assets` (M3); `audio` (M6). `help` prints the live table. The state of the whole repository, with what is and is not verified, is in `docs/handoff.md` at the plugin root: `${CLAUDE_PLUGIN_ROOT}/docs/handoff.md`.
+Implemented today (M1): `help`, `version`, `doctor`, `validate`, `assemble`, `qa` and `sheet`. Planned: `plan` (M2); `still`, `render`, `assets` (M3); `audio` (M6); each exits 2 with a `not-implemented` error naming its milestone until then. `help` prints the live table with every option. The state of the whole repository, with what is and is not verified, is in `docs/handoff.md` at the plugin root: `${CLAUDE_PLUGIN_ROOT}/docs/handoff.md`.
 
 ## Knowledge base
 
