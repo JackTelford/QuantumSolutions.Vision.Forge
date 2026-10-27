@@ -7,8 +7,8 @@ import { captionFilter, copySidecar, samePath, sidecarPath } from '../../src/ass
 
 describe('sidecarPath', () => {
   it('puts the SRT next to the delivery under its base name', () => {
-    assert.equal(sidecarPath('C:\\vf\\out\\film.mp4'), join('C:\\vf\\out', 'film.srt'));
-    assert.equal(sidecarPath('C:\\vf\\out\\film.mov'), join('C:\\vf\\out', 'film.srt'));
+    assert.equal(sidecarPath(join('C:\\vf\\out', 'film.mp4')), join('C:\\vf\\out', 'film.srt'));
+    assert.equal(sidecarPath(join('C:\\vf\\out', 'film.mov')), join('C:\\vf\\out', 'film.srt'));
   });
 });
 

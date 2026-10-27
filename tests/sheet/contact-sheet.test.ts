@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -10,6 +11,8 @@ import { FakeProcessRunner, matchProgram, okResult } from '../fakes/fake-process
 import { ffmpegPath, ffprobePath, makeFramePngs, never, runner } from '../qa/synthetic-clips.ts';
 
 const ffmpeg = findFfmpeg();
+const hasDrawtext = ffmpeg !== undefined && spawnSync(ffmpeg.path, ['-hide_banner', '-filters'], { encoding: 'utf8' }).stdout.includes(' drawtext ');
+const skipWithoutDrawtext = ffmpeg === undefined ? 'ffmpeg is not installed' : hasDrawtext ? false : 'ffmpeg has no drawtext filter';
 
 describe('drawtext label escaping', () => {
   it('backslash-escapes a space twice so the parsers keep it', () => {
@@ -91,7 +94,7 @@ describe('sheet layout and request', () => {
   });
 });
 
-describe('contact sheet from six PNGs', { skip: ffmpeg === undefined ? 'ffmpeg is not installed' : false }, () => {
+describe('contact sheet from six PNGs', { skip: skipWithoutDrawtext }, () => {
   let dir = '';
   let frames: { readonly path: string; readonly label: string }[] = [];
   before(async () => {

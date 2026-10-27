@@ -262,7 +262,7 @@ export interface Browser {
   /**
    * What a WebGL context in this browser reported when doctor launched it headless with a 640x360 viewport at device scale factor 1; null when the check was skipped (--skip-browser-check) or failed.
    */
-  webgl?: {
+  webgl: {
     /**
      * UNMASKED_RENDERER_WEBGL as the browser reports it, for example "ANGLE (NVIDIA, NVIDIA GeForce RTX 2060 (0x00001F08) Direct3D11 vs_5_0 ps_5_0, D3D11)".
      */

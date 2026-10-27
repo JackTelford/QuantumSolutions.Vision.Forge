@@ -23,7 +23,7 @@ describe('finishingFilters', () => {
       'format=rgb24',
       'vignette=angle=PI/8',
       'format=gbrp',
-      'noise=all_seed=7:all_strength=6:all_flags=t+u',
+      'noise=all_seed=7:all_strength=6:all_flags=t+u:threads=1',
       bt709Scale,
       'format=yuv420p',
     ]);
@@ -50,9 +50,9 @@ describe('grainFilter', () => {
   it('rounds the amount times 40 to the noise strength and keeps the seed', () => {
     assert.equal(grainFilter(0, 7), undefined);
     assert.equal(grainFilter(0.01, 7), undefined);
-    assert.equal(grainFilter(0.15, 7), 'noise=all_seed=7:all_strength=6:all_flags=t+u');
-    assert.equal(grainFilter(1, 123), 'noise=all_seed=123:all_strength=40:all_flags=t+u');
-    assert.equal(grainFilter(3, 1), 'noise=all_seed=1:all_strength=40:all_flags=t+u');
+    assert.equal(grainFilter(0.15, 7), 'noise=all_seed=7:all_strength=6:all_flags=t+u:threads=1');
+    assert.equal(grainFilter(1, 123), 'noise=all_seed=123:all_strength=40:all_flags=t+u:threads=1');
+    assert.equal(grainFilter(3, 1), 'noise=all_seed=1:all_strength=40:all_flags=t+u:threads=1');
   });
 });
 

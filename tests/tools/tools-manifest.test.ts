@@ -8,7 +8,7 @@ import { DataFileError, SchemaValidationError } from '../../src/errors/vision-fo
 import type { Browser, FfmpegProgram, ToolsManifest } from '../../src/shared/contracts/tools.ts';
 import { blenderProbeArgs } from '../../src/tools/blender-probe.ts';
 import type { CapabilityCheck, WebglReport } from '../../src/tools/browser-capabilities.ts';
-import { requiredEncoders, requiredFilters } from '../../src/tools/ffmpeg-info.ts';
+import { requiredEncoders, requiredFilters, sheetFilters } from '../../src/tools/ffmpeg-info.ts';
 import { buildToolsManifest, computeLanes, describeFailedWebglCheck, describeSoftwareRenderer, ffmpegComplete, narrationState, operatingSystem, readToolsManifest, toolsManifestPath, writeToolsManifest } from '../../src/tools/tools-manifest.ts';
 import type { CapabilityReader, ManifestContext } from '../../src/tools/tools-manifest.ts';
 import { FakeProcessRunner, failedResult, matchProgram, okResult } from '../fakes/fake-process-runner.ts';
@@ -21,7 +21,7 @@ function touch(path: string, content = ''): string {
   return path;
 }
 
-const fullFfmpeg: FfmpegProgram = { path: 'C:\\ffmpeg\\bin\\ffmpeg.exe', version: '9.0.2', filters: [...requiredFilters], encoders: [...requiredEncoders] };
+const fullFfmpeg: FfmpegProgram = { path: 'C:\\ffmpeg\\bin\\ffmpeg.exe', version: '9.0.2', filters: [...requiredFilters, ...sheetFilters], encoders: [...requiredEncoders] };
 const ffprobe = { path: 'C:\\ffmpeg\\bin\\ffprobe.exe', version: '9.0.2' };
 const edgeHardware: Browser = { channel: 'msedge', path: 'C:\\Edge\\msedge.exe', version: '156.0.4314.42', webgl: { renderer: 'ANGLE (NVIDIA ...)', vendor: 'Google Inc. (NVIDIA)', webgl2: true, hardware: true, extColorBufferFloat: true } };
 const edgeUnchecked: Browser = { channel: 'msedge', path: 'C:\\Edge\\msedge.exe', version: '156.0.4314.42', webgl: null };
@@ -155,7 +155,7 @@ describe('buildToolsManifest with fake programs', () => {
     runner.expect(matchProgram('powershell.exe'), okResult('True\r\n'));
     runner.expect(matchProgram('reg.exe', ['query', 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\FileSystem', '/v', 'LongPathsEnabled']), okResult('    LongPathsEnabled    REG_DWORD    0x1\r\n'));
     runner.expect(matchProgram('ffmpeg.exe', ['-version']), okResult('ffmpeg version 9.0.2-full_build-www.gyan.dev Copyright\n'));
-    runner.expect(matchProgram('ffmpeg.exe', ['-hide_banner', '-filters']), okResult(requiredFilters.map((name) => ` .. ${name}  V->V  x`).join('\n')));
+    runner.expect(matchProgram('ffmpeg.exe', ['-hide_banner', '-filters']), okResult([...requiredFilters, ...sheetFilters].map((name) => ` .. ${name}  V->V  x`).join('\n')));
     runner.expect(matchProgram('ffmpeg.exe', ['-hide_banner', '-encoders']), okResult([...requiredEncoders, 'libx265'].map((name) => ` V....D ${name}  x`).join('\n')));
     runner.expect(matchProgram('ffprobe.exe', ['-version']), okResult('ffprobe version 9.0.2-full_build-www.gyan.dev Copyright\n'));
     runner.expect(matchProgram('powershell.exe'), okResult('156.0.4314.42\r\n'));

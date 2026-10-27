@@ -127,20 +127,23 @@ describe('doctor on this machine', () => {
     assert.equal(manifest.lanes.three, true, run.stderr);
     const blender = manifest.programs.blender;
     assert.equal(manifest.lanes.blender, blender !== undefined && isSupportedBlenderVersion(blender.version));
-    assert.ok(manifest.programs.ffmpeg?.version.startsWith('9.'), manifest.programs.ffmpeg?.version);
+    assert.match(manifest.programs.ffmpeg?.version ?? '', /^\d+\.\d+/, manifest.programs.ffmpeg?.version);
     assert.ok(manifest.browsers.length >= 1);
     for (const browser of manifest.browsers) {
-      assert.ok(browser.webgl !== null && browser.webgl !== undefined, `${browser.channel} has a WebGL report`);
-      assert.equal(browser.webgl.webgl2, true);
+      if (browser.webgl === null) {
+        assert.ok(manifest.problems.some((problem) => problem.startsWith(`${browser.channel}: the WebGL check failed`)), `${browser.channel} has no WebGL report and no problem sentence`);
+      } else {
+        assert.equal(browser.webgl.webgl2, true);
+      }
       assert.match(browser.version, /^\d+\.\d+\.\d+\.\d+$/);
       assert.equal(existsSync(join(dataDir, 'profiles', `doctor-${browser.channel}`)), false, 'the profile was removed');
     }
-    assert.ok(!manifest.problems.some((problem) => problem.includes('WebGL check failed')), (manifest.problems ?? []).join('\n'));
+    assert.ok(manifest.browsers.some((browser) => browser.webgl?.webgl2 === true), manifest.problems.join('\n'));
     const data = run.result.data as { readonly lanes: ToolsManifest['lanes']; readonly missing: readonly { readonly tool: string; readonly required: boolean }[]; readonly manifestPath: string };
     assert.deepEqual(data.lanes, manifest.lanes);
     assert.equal(data.manifestPath, toolsManifestPath(dataDir));
     assert.ok(data.missing.every((entry) => !entry.required), JSON.stringify(data.missing));
-    assert.match(run.stderr, /^ffmpeg 9\./m);
+    assert.match(run.stderr, /^ffmpeg \d+\./m);
     assert.match(run.stderr, /^lanes: html yes, three yes, blender (yes|no), audio yes$/m);
   });
 

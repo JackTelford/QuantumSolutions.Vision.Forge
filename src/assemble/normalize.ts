@@ -29,8 +29,10 @@ export function clipInputArguments(clip: Clip, fps: number): readonly string[] {
  * even dimensions, pad to it with black, pin the sample aspect ratio to 1:1
  * (an inexact fit otherwise leaves a non-square SAR, which concat refuses
  * and xfade silently stamps on the delivery), force the frame rate,
- * yuv420p, trim to the clip's length in frames, and restart timestamps at
- * zero. Labelled `[c<index>]`.
+ * yuv420p, trim to the clip's length in frames, restart timestamps at
+ * zero, and pin the frame rate once more: ffmpeg 7.0's setpts leaves the
+ * stream's rate unknown and its xfade then refuses the input ("current rate
+ * of 1/0 is invalid"); 9.0 tolerates it. Labelled `[c<index>]`.
  */
 export function clipFilter(plan: AssemblyPlan, clip: Clip, index: number): string {
   const { width, height, fps } = plan;
@@ -43,6 +45,7 @@ export function clipFilter(plan: AssemblyPlan, clip: Clip, index: number): strin
     'format=yuv420p',
     `trim=end_frame=${clip.durationFrames}`,
     'setpts=PTS-STARTPTS',
+    `fps=${fps}`,
   ];
   return `[${index}:v]${steps.join(',')}${clipLabel(index)}`;
 }

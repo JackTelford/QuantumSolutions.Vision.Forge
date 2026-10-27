@@ -285,7 +285,7 @@
       "type": "object",
       "description": "A browser that was found and can be launched, with what its WebGL context reported.",
       "additionalProperties": false,
-      "required": ["channel", "path", "version"],
+      "required": ["channel", "path", "version", "webgl"],
       "properties": {
         "channel": { "$ref": "#/$defs/Channel" },
         "path": {

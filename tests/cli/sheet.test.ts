@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -10,6 +11,8 @@ import { findFfmpeg, runFfmpeg } from '../../src/tools/ffmpeg.ts';
 import { ffprobePath, makeFramePngs, never, runner } from '../qa/synthetic-clips.ts';
 
 const ffmpeg = findFfmpeg();
+const hasDrawtext = ffmpeg !== undefined && spawnSync(ffmpeg.path, ['-hide_banner', '-filters'], { encoding: 'utf8' }).stdout.includes(' drawtext ');
+const skipWithoutDrawtext = ffmpeg === undefined ? 'ffmpeg is not installed' : hasDrawtext ? false : 'ffmpeg has no drawtext filter';
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const cliPath = join(repoRoot, 'scripts', 'cli.ts');
 
@@ -32,7 +35,7 @@ async function dimensions(path: string): Promise<readonly [number, number]> {
   return [width ?? 0, height ?? 0];
 }
 
-describe('sheet command', { skip: ffmpeg === undefined ? 'ffmpeg is not installed' : false }, () => {
+describe('sheet command', { skip: skipWithoutDrawtext }, () => {
   let dataDir = '';
   let framesDir = '';
   before(async () => {

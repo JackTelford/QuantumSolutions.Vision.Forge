@@ -8,9 +8,12 @@
  * usual font file when one exists.
  */
 import { basename, extname, join, resolve } from 'node:path';
+import { ToolMissingError, VisionForgeError } from '../../errors/vision-forge-error.ts';
 import { buildContactSheet, findSheetFont } from '../../sheet/contact-sheet.ts';
 import { readFrameList } from '../../sheet/frame-list.ts';
 import { requireFfmpeg } from '../../tools/ffmpeg.ts';
+import { fullBuildAdvice, missingSheetFilters } from '../../tools/ffmpeg-info.ts';
+import { readToolsManifest } from '../../tools/tools-manifest.ts';
 import type { Command, CommandContext } from '../command.ts';
 import type { ParsedArguments } from '../arguments.ts';
 import type { CommandOutput } from '../result.ts';
@@ -23,6 +26,25 @@ export interface SheetData {
   readonly count: number;
   readonly columns: number;
   readonly rows: number;
+}
+
+/**
+ * Throws ToolMissingError when tools.json under the data directory records an
+ * ffmpeg without drawtext or tile, so the user reads the install advice
+ * instead of an ffmpeg parse error. Without a readable manifest (doctor not
+ * run yet, or a stale file) nothing is checked and ffmpeg itself decides.
+ */
+export function assertSheetFilters(dataDir: string): void {
+  let filters: readonly string[] | undefined;
+  try {
+    filters = readToolsManifest(dataDir).programs.ffmpeg?.filters;
+  } catch (error: unknown) {
+    if (error instanceof VisionForgeError) return;
+    throw error;
+  }
+  if (filters === undefined) return;
+  const gaps = missingSheetFilters(filters);
+  if (gaps.length > 0) throw new ToolMissingError(`the ffmpeg filter${gaps.length === 1 ? '' : 's'} ${gaps.join(' and ')}, which contact sheets need,`, `${fullBuildAdvice[0]?.toUpperCase() ?? ''}${fullBuildAdvice.slice(1)}, then run doctor again.`);
 }
 
 /** Where the sheet goes when --output is absent: <out>/sheets/<source name>.png. */
@@ -43,6 +65,7 @@ export const command: Command = {
     const columns = args.number('columns');
     const thumbWidth = args.number('thumb-width');
     const fontFile = findSheetFont();
+    assertSheetFilters(context.dataDir);
     const ffmpegPath = requireFfmpeg();
     const result = await buildContactSheet(context.runner, ffmpegPath, {
       frames,

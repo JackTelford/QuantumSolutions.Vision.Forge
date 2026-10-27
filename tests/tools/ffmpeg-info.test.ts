@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { ChildProcessRunner } from '../../src/process/child-process-runner.ts';
 import { findFfmpeg } from '../../src/tools/ffmpeg.ts';
-import { describeFfmpegGaps, ffmpegEncoders, ffmpegFilters, ffmpegVersion, missingEncoders, missingFilters, missingOptionalEncoders, optionalEncoders, parseEncoderNames, parseFfmpegVersion, parseFilterNames, queryLabel, requiredEncoders, requiredFilters } from '../../src/tools/ffmpeg-info.ts';
+import { describeFfmpegGaps, ffmpegEncoders, ffmpegFilters, ffmpegVersion, missingEncoders, missingFilters, missingOptionalEncoders, missingSheetFilters, optionalEncoders, parseEncoderNames, parseFfmpegVersion, parseFilterNames, queryLabel, requiredEncoders, requiredFilters, sheetFilters } from '../../src/tools/ffmpeg-info.ts';
 import { FakeProcessRunner, failedResult, matchProgram, okResult } from '../fakes/fake-process-runner.ts';
 
 const never = new AbortController().signal;
@@ -75,6 +75,8 @@ describe('parseFfmpegVersion', () => {
     assert.equal(parseFfmpegVersion(versionOutput), '9.0.2-full_build-www.gyan.dev');
     assert.equal(parseFfmpegVersion('ffmpeg version 7.1.1 Copyright (c) 2000-2025 the FFmpeg developers\n'), '7.1.1');
     assert.equal(parseFfmpegVersion('ffprobe version 9.0.2-full_build-www.gyan.dev Copyright'), '9.0.2-full_build-www.gyan.dev');
+    assert.equal(parseFfmpegVersion('ffmpeg version n8.1.3-24-g92611900bb-20261026 Copyright (c) 2000-2025 the FFmpeg developers'), '8.1.3-24-g92611900bb-20261026');
+    assert.equal(parseFfmpegVersion('ffmpeg version 7.0.2-static https://johnvansickle.com/ffmpeg/  Copyright'), '7.0.2-static');
   });
 
   it('returns undefined for output that is not a version banner', () => {
@@ -95,7 +97,8 @@ describe('parseFilterNames and parseEncoderNames', () => {
 
 describe('required sets', () => {
   it('name the filters and encoders probe P6 proved and nothing missing from a complete build', () => {
-    assert.equal(requiredFilters.length, 26);
+    assert.equal(requiredFilters.length, 24);
+    assert.deepEqual(sheetFilters, ['drawtext', 'tile']);
     assert.deepEqual(requiredEncoders, ['libx264', 'aac', 'pcm_s16le']);
     assert.deepEqual(optionalEncoders, ['libx265', 'prores_ks', 'libopus']);
     assert.deepEqual(missingFilters(requiredFilters), []);
@@ -107,11 +110,20 @@ describe('required sets', () => {
     assert.deepEqual(missingFilters(['scale', 'xfade']), requiredFilters.filter((name) => name !== 'scale' && name !== 'xfade'));
     assert.deepEqual(missingEncoders(['aac']), ['libx264', 'pcm_s16le']);
     assert.deepEqual(missingOptionalEncoders(['libopus']), ['libx265', 'prores_ks']);
-    const problems = describeFfmpegGaps(requiredFilters.filter((name) => name !== 'lut3d'), ['libx264']);
+    const problems = describeFfmpegGaps([...requiredFilters.filter((name) => name !== 'lut3d'), ...sheetFilters], ['libx264']);
     assert.equal(problems.length, 2);
     assert.match(problems[0] ?? '', /missing the required filter lut3d; install a full build/);
     assert.match(problems[1] ?? '', /missing the required encoders aac, pcm_s16le/);
-    assert.deepEqual(describeFfmpegGaps(requiredFilters, requiredEncoders), []);
+    assert.deepEqual(describeFfmpegGaps([...requiredFilters, ...sheetFilters], requiredEncoders), []);
+  });
+
+  it('keep the lanes open without drawtext and tile, and say the contact sheet needs them', () => {
+    assert.deepEqual(missingFilters(requiredFilters), []);
+    assert.deepEqual(missingSheetFilters(requiredFilters), ['drawtext', 'tile']);
+    assert.deepEqual(missingSheetFilters([...requiredFilters, 'drawtext']), ['tile']);
+    const problems = describeFfmpegGaps(requiredFilters, requiredEncoders);
+    assert.equal(problems.length, 1);
+    assert.match(problems[0] ?? '', /missing the filters drawtext, tile that contact sheets \(sheet\) need; the lanes still run/);
   });
 });
 
@@ -121,9 +133,10 @@ describe('ffmpegVersion, ffmpegFilters and ffmpegEncoders through a runner', () 
     runner.expect(matchProgram('ffmpeg.exe', ['-version']), okResult(versionOutput));
     runner.expect(matchProgram('ffmpeg.exe', ['-hide_banner', '-filters']), okResult(filtersOutput));
     runner.expect(matchProgram('ffmpeg.exe', ['-hide_banner', '-encoders']), okResult(encodersOutput));
-    assert.equal(await ffmpegVersion(runner, 'C:\\ffmpeg\\bin\\ffmpeg.exe', never), '9.0.2-full_build-www.gyan.dev');
-    assert.ok((await ffmpegFilters(runner, 'C:\\ffmpeg\\bin\\ffmpeg.exe', never)).includes('xfade'));
-    assert.ok((await ffmpegEncoders(runner, 'C:\\ffmpeg\\bin\\ffmpeg.exe', never)).includes('pcm_s16le'));
+    const ffmpeg = join('C:\\ffmpeg\\bin', 'ffmpeg.exe');
+    assert.equal(await ffmpegVersion(runner, ffmpeg, never), '9.0.2-full_build-www.gyan.dev');
+    assert.ok((await ffmpegFilters(runner, ffmpeg, never)).includes('xfade'));
+    assert.ok((await ffmpegEncoders(runner, ffmpeg, never)).includes('pcm_s16le'));
     runner.assertAllUsed();
     assert.ok(runner.invocations.every((spec) => spec.label === 'ffmpeg'));
   });

@@ -25,7 +25,7 @@ function clip(id: string, path: string, durationFrames = 30): Clip {
 }
 
 function normalized(index: number, durationFrames: number): string {
-  return `[${index}:v]scale=iw*sar:ih,scale=320:180:force_original_aspect_ratio=decrease:force_divisible_by=2,pad=320:180:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,fps=30,format=yuv420p,trim=end_frame=${durationFrames},setpts=PTS-STARTPTS[c${index}]`;
+  return `[${index}:v]scale=iw*sar:ih,scale=320:180:force_original_aspect_ratio=decrease:force_divisible_by=2,pad=320:180:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,fps=30,format=yuv420p,trim=end_frame=${durationFrames},setpts=PTS-STARTPTS,fps=30[c${index}]`;
 }
 
 function twoClipDissolve(outputDir: string, overrides: Partial<AssemblyPlan> = {}): AssemblyPlan {

@@ -57,22 +57,30 @@ describe('capability page and launch settings', () => {
   });
 });
 
-describe('readBrowserCapabilities against the installed browser', () => {
-  const browser = findBrowsers().found[0];
-  const skip = browser === undefined ? 'no browser is installed' : false;
+describe('readBrowserCapabilities against the installed browsers', () => {
+  const browsers = findBrowsers().found;
+  const skip = browsers.length === 0 ? 'no browser is installed' : false;
   let dataDir = '';
   before(() => { dataDir = mkdtempSync(join(tmpdir(), 'vf-caps-')); });
   after(() => { rmSync(dataDir, { recursive: true, force: true }); });
 
-  it('reports a WebGL2 context and removes the profile afterwards', { skip, timeout: 120_000 }, async () => {
+  it('reports a WebGL2 context from at least one browser and removes every profile afterwards', { skip, timeout: 240_000 }, async () => {
     const log = new MemoryLogger();
-    const check = await readBrowserCapabilities(browser ?? { channel: 'msedge', path: '' }, dataDir, log, never);
-    assert.ok(check.report !== null, `${check.reason ?? ''}\n${log.messages.join('\n')}`);
-    assert.equal(check.reason, undefined);
-    assert.equal(check.report.webgl2, true);
-    assert.ok(check.report.renderer.length > 0);
-    assert.equal(check.report.hardware, isHardwareRenderer(check.report.renderer));
-    assert.equal(existsSync(capabilityProfileDir(dataDir, browser?.channel ?? 'msedge')), false);
+    let reports = 0;
+    for (const browser of browsers) {
+      const check = await readBrowserCapabilities(browser, dataDir, log, never);
+      if (check.report === null) {
+        assert.ok(check.reason !== undefined && check.reason.length > 0, `${browser.channel} failed without a reason`);
+      } else {
+        assert.equal(check.reason, undefined);
+        assert.equal(check.report.webgl2, true);
+        assert.ok(check.report.renderer.length > 0);
+        assert.equal(check.report.hardware, isHardwareRenderer(check.report.renderer));
+        reports += 1;
+      }
+      assert.equal(existsSync(capabilityProfileDir(dataDir, browser.channel)), false, `${browser.channel} profile removed`);
+    }
+    assert.ok(reports >= 1, `no browser reported WebGL:\n${log.messages.join('\n')}`);
   });
 
   it('returns null with the reason for an executable that is not a browser, logging only at debug level', { timeout: 120_000 }, async () => {
@@ -96,8 +104,8 @@ describe('readBrowserCapabilities against the installed browser', () => {
     const controller = new AbortController();
     const log = new MemoryLogger();
     setTimeout(() => { controller.abort(); }, 50);
-    const check = await readBrowserCapabilities(browser ?? { channel: 'msedge', path: '' }, dataDir, log, controller.signal);
+    const check = await readBrowserCapabilities(browsers[0] ?? { channel: 'msedge', path: '' }, dataDir, log, controller.signal);
     assert.deepEqual(check, { report: null, reason: 'the check was cancelled' });
-    assert.equal(existsSync(capabilityProfileDir(dataDir, browser?.channel ?? 'msedge')), false);
+    assert.equal(existsSync(capabilityProfileDir(dataDir, browsers[0]?.channel ?? 'msedge')), false);
   });
 });

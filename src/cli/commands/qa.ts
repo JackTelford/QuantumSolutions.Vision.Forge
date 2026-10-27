@@ -114,7 +114,7 @@ export async function runChecks(context: CommandContext, request: QaRequest, ffm
     const [loudness, truePeak] = await checkAudio(context.runner, ffmpegPath, ffprobePath, request.videoPath, request.loudnessTarget, request.truePeakCeiling, context.signal);
     record(loudness);
     record(truePeak);
-    if (request.still !== undefined) record(await checkHeroStillMatch(context.runner, ffmpegPath, request.still.path, request.videoPath, request.still.frame, context.signal));
+    if (request.still !== undefined) record(await checkHeroStillMatch(context.runner, ffmpegPath, request.still.path, request.videoPath, request.still.frame, workDir, context.signal));
   } finally {
     rmSync(workDir, { recursive: true, force: true });
   }

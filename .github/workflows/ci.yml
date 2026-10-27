@@ -42,14 +42,32 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: npm
 
-      # A static ffmpeg build from GitHub releases on both runners: apt-get on
-      # ubuntu-24.04 hung on the first run and choco is slow; the action is
-      # pinned by commit SHA (docs/evidence/m0/ci-actions.md).
-      - name: Install ffmpeg
+      # Windows: the Gyan full build through the SHA-pinned setup-ffmpeg
+      # action (apt-get on ubuntu-24.04 hung on the first run and choco is
+      # slow; docs/evidence/m0/ci-actions.md).
+      - name: Install ffmpeg (Windows)
+        if: runner.os == 'Windows'
         uses: FedericoCarboni/setup-ffmpeg@37062fbf7149fc5578d6c57e08aed62458b375d6 # v3.1
         with:
           ffmpeg-version: release
           github-token: ${{ github.token }}
+
+      # Linux: the static build the action offers (johnvansickle 7.0.2) has no
+      # drawtext filter, so the BtbN GPL build is taken from one pinned
+      # release and checked against the SHA-256 GitHub publishes for the asset
+      # (docs/evidence/m0/ci-actions.md records how both were read).
+      - name: Install ffmpeg (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        env:
+          FFMPEG_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-10-26-14-25/ffmpeg-n8.1.3-24-g92611900bb-linux64-gpl-8.1.tar.xz
+          FFMPEG_SHA256: d113aa5b57ab0dcfee171d835240ce3ea5db826a0ee80ed7528c8d26a61e87a4
+        run: |
+          mkdir -p "$RUNNER_TEMP/ffmpeg"
+          curl -sSL --retry 3 -o "$RUNNER_TEMP/ffmpeg/ffmpeg.tar.xz" "$FFMPEG_URL"
+          echo "$FFMPEG_SHA256  $RUNNER_TEMP/ffmpeg/ffmpeg.tar.xz" | sha256sum --check
+          tar -xJf "$RUNNER_TEMP/ffmpeg/ffmpeg.tar.xz" -C "$RUNNER_TEMP/ffmpeg" --strip-components=1
+          echo "$RUNNER_TEMP/ffmpeg/bin" >> "$GITHUB_PATH"
 
       - name: Report tool versions
         shell: bash

@@ -31,11 +31,11 @@ describe('clipFilter', () => {
   it('squares the pixels, scales inside the delivery to even sizes, pads with black, pins SAR 1:1, forces fps and yuv420p, trims to the length and restarts timestamps', () => {
     assert.equal(
       clipFilter(plan, frames, 0),
-      '[0:v]scale=iw*sar:ih,scale=1920:1080:force_original_aspect_ratio=decrease:force_divisible_by=2,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,fps=30,format=yuv420p,trim=end_frame=90,setpts=PTS-STARTPTS[c0]',
+      '[0:v]scale=iw*sar:ih,scale=1920:1080:force_original_aspect_ratio=decrease:force_divisible_by=2,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,fps=30,format=yuv420p,trim=end_frame=90,setpts=PTS-STARTPTS,fps=30[c0]',
     );
     assert.equal(
       clipFilter(plan, video, 1),
-      '[1:v]scale=iw*sar:ih,scale=1920:1080:force_original_aspect_ratio=decrease:force_divisible_by=2,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,fps=30,format=yuv420p,trim=end_frame=45,setpts=PTS-STARTPTS[c1]',
+      '[1:v]scale=iw*sar:ih,scale=1920:1080:force_original_aspect_ratio=decrease:force_divisible_by=2,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,fps=30,format=yuv420p,trim=end_frame=45,setpts=PTS-STARTPTS,fps=30[c1]',
     );
   });
 

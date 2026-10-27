@@ -49,7 +49,10 @@ export function vignetteFilter(amount: number): string | undefined {
 export function grainFilter(amount: number, seed: number): string | undefined {
   const strength = Math.min(100, Math.round(clamp01(amount) * grainStrengthScale));
   if (strength === 0) return undefined;
-  return `noise=all_seed=${Math.max(0, Math.floor(seed))}:all_strength=${strength}:all_flags=t+u`;
+  // threads=1 keeps the noise filter on one thread: ffmpeg 7.0 slices it
+  // across threads in an order that varies run to run, so the same seed gave
+  // different grain on a second encode; 9.0 is reproducible either way.
+  return `noise=all_seed=${Math.max(0, Math.floor(seed))}:all_strength=${strength}:all_flags=t+u:threads=1`;
 }
 
 /**

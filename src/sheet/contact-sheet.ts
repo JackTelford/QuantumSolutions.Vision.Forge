@@ -12,7 +12,7 @@
  * violation (one filter only warns). findSheetFont supplies the file.
  */
 import { existsSync, mkdirSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, posix, win32 } from 'node:path';
 import { UsageError, VisionForgeError } from '../errors/vision-forge-error.ts';
 import type { ProcessRunner } from '../process/process-runner.ts';
 import { filterPath, runFfmpeg } from '../tools/ffmpeg.ts';
@@ -81,10 +81,10 @@ export function escapeDrawtextLabel(label: string): string {
  */
 export function findSheetFont(platform: NodeJS.Platform = process.platform, env: Readonly<Record<string, string | undefined>> = process.env, exists: (path: string) => boolean = existsSync): string | undefined {
   const candidates = platform === 'win32'
-    ? [join(env['WINDIR'] ?? 'C:\\Windows', 'Fonts', 'segoeui.ttf')]
+    ? [win32.join(env['WINDIR'] ?? 'C:\\Windows', 'Fonts', 'segoeui.ttf')]
     : platform === 'darwin'
       ? ['/System/Library/Fonts/Supplemental/Arial.ttf', '/System/Library/Fonts/Helvetica.ttc']
-      : ['/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'];
+      : [posix.join('/usr/share/fonts/truetype/dejavu', 'DejaVuSans.ttf')];
   return candidates.find((candidate) => exists(candidate));
 }
 

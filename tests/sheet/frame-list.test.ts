@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import { DataFileError } from '../../src/errors/vision-forge-error.ts';
 import { framesInDirectory, parseFrameList, readFrameList } from '../../src/sheet/frame-list.ts';
@@ -30,8 +30,9 @@ describe('frame list', () => {
 
   it('resolves relative paths in a JSON list against the list file', () => {
     const listPath = join(dir, 'list.json');
-    const frames = parseFrameList([{ path: 'frames/f000002.png', label: 'two' }, { path: 'C:\\abs\\x.png', label: 'abs' }], listPath);
-    assert.deepEqual(frames, [{ path: join(dir, 'frames', 'f000002.png'), label: 'two' }, { path: 'C:\\abs\\x.png', label: 'abs' }]);
+    const absolute = resolve('/abs/x.png');
+    const frames = parseFrameList([{ path: 'frames/f000002.png', label: 'two' }, { path: absolute, label: 'abs' }], listPath);
+    assert.deepEqual(frames, [{ path: join(dir, 'frames', 'f000002.png'), label: 'two' }, { path: absolute, label: 'abs' }]);
   });
 
   it('names the first bad entry of a JSON list', () => {
