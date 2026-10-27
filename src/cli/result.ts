@@ -49,8 +49,8 @@ export function successResult(command: string, output: CommandOutput): CliResult
   };
 }
 
-/** Builds a failed result. */
-export function failureResult(command: string, exitCode: ExitCode, error: CliResultError): CliResult {
+/** Builds a failed result; evidence lists reports the command wrote before it failed (a QA report), so the reader can open them. */
+export function failureResult(command: string, exitCode: ExitCode, error: CliResultError, evidence: readonly string[] = []): CliResult {
   return {
     kind: 'cli-result',
     version: 1,
@@ -59,7 +59,7 @@ export function failureResult(command: string, exitCode: ExitCode, error: CliRes
     exitCode,
     data: null,
     artifacts: [],
-    evidence: [],
+    evidence: [...evidence],
     errors: [error],
   };
 }

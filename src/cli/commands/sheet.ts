@@ -1,17 +1,58 @@
 /**
- * `sheet`: placeholder until milestone M1 delivers it.
+ * `sheet`: tiles labelled frame thumbnails into one PNG for review.
+ *
+ * `--frames <source>` is a JSON list of `{ path, label }` entries or a
+ * directory whose PNG files are taken in name order. `--output <png>`
+ * names the sheet (default `<out>/sheets/<source name>.png`); `--columns`
+ * (4) and `--thumb-width` (480) set the layout. Labels use the platform's
+ * usual font file when one exists.
  */
+import { basename, extname, join, resolve } from 'node:path';
+import { buildContactSheet, findSheetFont } from '../../sheet/contact-sheet.ts';
+import { readFrameList } from '../../sheet/frame-list.ts';
+import { requireFfmpeg } from '../../tools/ffmpeg.ts';
 import type { Command, CommandContext } from '../command.ts';
 import type { ParsedArguments } from '../arguments.ts';
 import type { CommandOutput } from '../result.ts';
-import { NotImplementedError } from '../../errors/vision-forge-error.ts';
 
-/** The sheet command (not implemented yet). */
+/** Shape of the sheet payload. */
+export interface SheetData {
+  /** Absolute path of the PNG that was written. */
+  readonly outputPath: string;
+  /** Frames on the sheet. */
+  readonly count: number;
+  readonly columns: number;
+  readonly rows: number;
+}
+
+/** Where the sheet goes when --output is absent: <out>/sheets/<source name>.png. */
+export function defaultSheetPath(outDir: string, source: string): string {
+  return join(outDir, 'sheets', `${basename(source, extname(source))}.png`);
+}
+
+/** The sheet command. */
 export const command: Command = {
   name: 'sheet',
-  summary: 'Not implemented yet.',
-  options: { strings: [], flags: [] },
-  run(_context: CommandContext, _args: ParsedArguments): Promise<CommandOutput> {
-    return Promise.reject(new NotImplementedError('sheet', 'M1'));
+  summary: 'Tile labelled frame thumbnails into one PNG contact sheet.',
+  options: { strings: ['frames', 'output', 'columns', 'thumb-width'], flags: [] },
+  async run(context: CommandContext, args: ParsedArguments): Promise<CommandOutput> {
+    const source = resolve(context.cwd, args.requireString('frames', 'a JSON list of { path, label } entries or a directory of PNG frames'));
+    const frames = readFrameList(source);
+    const outputOption = args.string('output');
+    const output = outputOption === undefined ? defaultSheetPath(context.outDir, source) : resolve(context.cwd, outputOption);
+    const columns = args.number('columns');
+    const thumbWidth = args.number('thumb-width');
+    const fontFile = findSheetFont();
+    const ffmpegPath = requireFfmpeg();
+    const result = await buildContactSheet(context.runner, ffmpegPath, {
+      frames,
+      output,
+      ...(columns === undefined ? {} : { columns }),
+      ...(thumbWidth === undefined ? {} : { thumbWidth }),
+      ...(fontFile === undefined ? {} : { fontFile }),
+    }, context.signal);
+    context.log.info(`sheet: wrote ${result.outputPath} (${result.count} frames, ${result.columns}x${result.rows})`);
+    const data: SheetData = { outputPath: result.outputPath, count: result.count, columns: result.columns, rows: result.rows };
+    return { data, artifacts: [result.outputPath] };
   },
 };

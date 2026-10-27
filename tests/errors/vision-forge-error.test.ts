@@ -57,9 +57,16 @@ describe('VisionForgeError', () => {
 });
 
 describe('describeError', () => {
+  it('carries the evidence a VisionForgeError lists and none for any other error', () => {
+    const withReport = new VisionForgeError({ code: 'qa-failed', message: 'm', hint: 'h', evidence: ['C:\\out\\qa\\film.qa.json'] });
+    assert.deepEqual(describeError(withReport).evidence, ['C:\\out\\qa\\film.qa.json']);
+    assert.deepEqual(describeError(new UsageError('bad', 'fix')).evidence, []);
+    assert.deepEqual(describeError(new Error('boom')).evidence, []);
+  });
+
   it('passes through a VisionForgeError', () => {
     const described = describeError(new UsageError('bad', 'fix'));
-    assert.deepEqual(described, { message: 'bad', hint: 'fix', code: 'usage', exitCode: 2 });
+    assert.deepEqual(described, { message: 'bad', hint: 'fix', code: 'usage', exitCode: 2, evidence: [] });
   });
 
   it('wraps a plain Error as unexpected with exit code 1', () => {

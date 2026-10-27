@@ -24,6 +24,8 @@ export interface VisionForgeErrorFields {
   readonly hint: string;
   readonly exitCode?: ExitCode;
   readonly cause?: unknown;
+  /** Absolute paths of reports written before the failure, for the result's evidence list (a QA report, a contact sheet). */
+  readonly evidence?: readonly string[];
 }
 
 /** Base class: an actionable failure with a code, a hint and an exit code. */
@@ -31,6 +33,8 @@ export class VisionForgeError extends Error {
   readonly code: string;
   readonly hint: string;
   readonly exitCode: ExitCode;
+  /** Reports written before the failure; empty for most errors. */
+  readonly evidence: readonly string[];
 
   constructor(fields: VisionForgeErrorFields) {
     super(fields.message);
@@ -38,6 +42,7 @@ export class VisionForgeError extends Error {
     this.code = fields.code;
     this.hint = fields.hint;
     this.exitCode = fields.exitCode ?? ExitCodes.failure;
+    this.evidence = [...(fields.evidence ?? [])];
     if (fields.cause !== undefined) {
       this.cause = fields.cause;
     }
@@ -142,7 +147,7 @@ export class ProcessTimeoutError extends VisionForgeError {
     super({
       code: 'process-timeout',
       message: `${tool} did not finish within ${Math.round(timeoutMs / 1000)} s and was stopped.`,
-      hint: 'Reduce the shot size or sample count, or raise the budget with --max-minutes.',
+      hint: 'Run the command again; if it keeps timing out, reduce the shot size, the sample count or the clip length.',
     });
     this.tool = tool;
     this.timeoutMs = timeoutMs;
@@ -223,13 +228,22 @@ export class PathTooLongError extends VisionForgeError {
   }
 }
 
+/** What the CLI reports about a thrown value: message, hint, code, exit code and any evidence written before the failure. */
+export interface DescribedError {
+  readonly message: string;
+  readonly hint: string;
+  readonly code: string;
+  readonly exitCode: ExitCode;
+  readonly evidence: readonly string[];
+}
+
 /** Returns the error's message and hint for display, for any thrown value. */
-export function describeError(error: unknown): { readonly message: string; readonly hint: string; readonly code: string; readonly exitCode: ExitCode } {
+export function describeError(error: unknown): DescribedError {
   if (error instanceof VisionForgeError) {
-    return { message: error.message, hint: error.hint, code: error.code, exitCode: error.exitCode };
+    return { message: error.message, hint: error.hint, code: error.code, exitCode: error.exitCode, evidence: error.evidence };
   }
   if (error instanceof Error) {
-    return { message: error.message, hint: 'This was not expected. The stack trace is in the log file under the data directory.', code: 'unexpected', exitCode: ExitCodes.failure };
+    return { message: error.message, hint: 'This was not expected. The stack trace is in the log file under the data directory.', code: 'unexpected', exitCode: ExitCodes.failure, evidence: [] };
   }
-  return { message: String(error), hint: 'This was not expected.', code: 'unexpected', exitCode: ExitCodes.failure };
+  return { message: String(error), hint: 'This was not expected.', code: 'unexpected', exitCode: ExitCodes.failure, evidence: [] };
 }

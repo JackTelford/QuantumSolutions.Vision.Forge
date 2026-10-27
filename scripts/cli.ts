@@ -62,7 +62,7 @@ async function main(): Promise<number> {
     if (described.code === 'unexpected' && error instanceof Error && error.stack !== undefined) {
       process.stderr.write(`${error.stack}\n`);
     }
-    const result = failureResult(commandName, described.exitCode, { code: described.code, message: described.message, hint: described.hint });
+    const result = failureResult(commandName, described.exitCode, { code: described.code, message: described.message, hint: described.hint }, described.evidence);
     process.stdout.write(serializeResult(result, pretty));
     return described.exitCode;
   }
