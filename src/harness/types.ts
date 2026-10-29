@@ -7,7 +7,7 @@
 import { browserLaunchFlags } from '../plan/shot-key.ts';
 import type { RenderProfile, Renderer } from '../shared/contracts/shot-spec.ts';
 import type { Channel } from '../shared/contracts/tools.ts';
-import type { ShotPageSpec } from '../shared/harness/protocol.ts';
+import type { InitReport, ShotPageSpec } from '../shared/harness/protocol.ts';
 
 /** What the caller expects of the renderer (ADR 0006 decision 4); `any` accepts whatever the browser offers. */
 export type RendererPolicy = Renderer | 'any';
@@ -70,6 +70,8 @@ export interface CaptureRequest {
   readonly frames: readonly number[];
   /** The absolute PNG path for a frame. */
   readonly framePath: (frame: number) => string;
+  /** Called once with the page's init report after it passed the harness's checks, before the first frame. */
+  readonly onInit?: (report: InitReport) => void;
 }
 
 /** A browser that renders shot pages: one launch, many captures, one close. */

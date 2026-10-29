@@ -264,6 +264,7 @@ class PlaywrightRenderer implements BrowserRenderer {
       throw new PageInitError(request.pageUrl, `The page has ${String(report.animations)} running animation(s) after init; a page renders by frame number only (ADR 0006 decision 1).`, consoleTail);
     }
     this.log.debug(`browser: page ready, fonts ${report.fonts.length === 0 ? 'none' : report.fonts.join(', ')}, WebGL ${report.webglRenderer ?? 'none'}`);
+    request.onInit?.(report);
   }
 
   private async captureFrame(page: Page, request: CaptureRequest, frame: number, signal: AbortSignal, consoleTail: readonly string[]): Promise<CapturedFrame> {

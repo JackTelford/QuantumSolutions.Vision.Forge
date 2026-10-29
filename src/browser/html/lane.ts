@@ -7,13 +7,14 @@
  */
 import type { CameraFrame } from '../../shared/camera/types.ts';
 import type { TextElement } from '../../shared/contracts/shot-spec.ts';
-import type { ShotPageSpec } from '../../shared/harness/protocol.ts';
+import type { ShotPageSpec, TextOverflow } from '../../shared/harness/protocol.ts';
 import { moteField, moteStyle } from '../../shared/html/motes.ts';
 import type { Mote } from '../../shared/html/motes.ts';
 import { backdropStyle, hazeStyle, shadowStyle, stageGeometry, stageStyle, viewportStyle } from '../../shared/html/stage.ts';
 import type { StageGeometry } from '../../shared/html/stage.ts';
 import { standInContainerStyle, standInPartNames, standInParts } from '../../shared/html/stand-in.ts';
 import { textBoxStyle, textElementVisible, textOverlayStyle, textPlate, textPlateStyle, textSpanContent, textSpanStates, textSpanStyle, textSpans } from '../../shared/html/text.ts';
+import { shownState } from '../../shared/typography/text-animation.ts';
 import { shotLightingRig } from '../../shared/lighting/rigs.ts';
 import type { LightingRig } from '../../shared/lighting/rigs.ts';
 import type { LaneModule } from '../runtime/lane-module.ts';
@@ -74,6 +75,31 @@ export class HtmlLane implements LaneModule {
     if (camera === undefined) throw new Error(`Frame ${String(frame)} has no baked camera; the shot has ${String(built.spec.camera.length)} frames.`);
     renderStage(built, camera);
     for (const text of built.texts) renderText(built, text, frame);
+  }
+
+  /**
+   * Styles every text element as fully shown and measures its plate
+   * against its box, so the harness learns about text the estimate in
+   * typography/fit.ts could not keep inside the box. The next render
+   * restores the frame's styles.
+   */
+  measureText(): readonly TextOverflow[] {
+    const built = this.built;
+    if (built === undefined) throw new Error('The html lane has not been initialised.');
+    return built.texts.map((text) => {
+      const { spec } = built;
+      setStyle(text.box, textBoxStyle(text.element, spec, spec.look));
+      setStyle(text.plate, textPlateStyle(textPlate(text.element.role), spec.look.palette, spec.height));
+      text.spans.forEach((span, index) => {
+        const word = text.words[index];
+        if (word === undefined) return;
+        setStyle(span, textSpanStyle(shownState, text.element, spec.look));
+        span.textContent = textSpanContent(text.element, word, shownState);
+      });
+      const box = text.box.getBoundingClientRect();
+      const plate = text.plate.getBoundingClientRect();
+      return { id: text.element.id, overflowXPx: Math.max(0, plate.right - box.right), overflowYPx: Math.max(0, plate.bottom - box.bottom) };
+    });
   }
 }
 

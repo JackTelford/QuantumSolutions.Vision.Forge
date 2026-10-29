@@ -6,7 +6,7 @@
  * a report as JSON and never throw: the harness prints the page's own
  * sentence when something is wrong.
  */
-import type { InitReport, SeekReport, ShotPageSpec } from '../../shared/harness/protocol.ts';
+import type { InitReport, SeekReport, ShotPageSpec, TextOverflow } from '../../shared/harness/protocol.ts';
 import { pageGlobalNames, rootElementId } from '../../shared/harness/protocol.ts';
 import { HtmlLane } from '../html/lane.ts';
 import { checkDom } from './dom-check.ts';
@@ -48,6 +48,7 @@ async function init(specJson: string): Promise<InitReport> {
   let fonts: readonly string[] = [];
   let webglRenderer: string | null = null;
   let animations = 0;
+  let textOverflows: readonly TextOverflow[] = [];
   // A second init replaces the page, so the lane of the first must not be sought even when the second fails.
   state = undefined;
   try {
@@ -59,17 +60,18 @@ async function init(specJson: string): Promise<InitReport> {
     if (root === null) throw new Error(`The page has no #${rootElementId} element.`);
     const lane = laneFor(spec);
     lane.init(spec, root);
-    // Frame 0 is drawn before the DOM check so the check sees the full page.
+    // The text is measured in its shown state first; frame 0 is then drawn before the DOM check so the check sees the full page.
+    textOverflows = lane.measureText === undefined ? [] : lane.measureText();
     lane.render(0);
     const check = checkDom(document);
     animations = check.animations;
-    if (fontResult.failed.length > 0) return { ok: false, error: `The font face ${fontResult.failed.join(', ')} did not load.`, fonts, animations, webglRenderer };
-    if (check.problem !== null) return { ok: false, error: check.problem, fonts, animations, webglRenderer };
+    if (fontResult.failed.length > 0) return { ok: false, error: `The font face ${fontResult.failed.join(', ')} did not load.`, fonts, animations, webglRenderer, textOverflows };
+    if (check.problem !== null) return { ok: false, error: check.problem, fonts, animations, webglRenderer, textOverflows };
     // Only a page that passed both verdicts may be sought, so the report and the page agree.
     state = { spec, lane };
-    return { ok: true, error: '', fonts, animations, webglRenderer };
+    return { ok: true, error: '', fonts, animations, webglRenderer, textOverflows };
   } catch (error: unknown) {
-    return { ok: false, error: messageOf(error), fonts, animations, webglRenderer };
+    return { ok: false, error: messageOf(error), fonts, animations, webglRenderer, textOverflows };
   }
 }
 

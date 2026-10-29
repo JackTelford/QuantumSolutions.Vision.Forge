@@ -10,7 +10,9 @@ import type { LookBible } from '../contracts/look-bible.ts';
 import type { ShotPageSpec } from '../harness/protocol.ts';
 import { rgbaCss } from '../look/css-tokens.ts';
 import type { Palette } from '../look/css-tokens.ts';
-import { bundledFonts, roleFamily, roleLineHeights, roleSizePx, roleTrackingEm, roleUppercase, roleWeight, tabularRoles } from '../typography/scale.ts';
+import { textFloorPx } from '../composition/checks.ts';
+import { fitTextSize } from '../typography/fit.ts';
+import { bundledFonts, roleFamily, roleLineHeights, roleTrackingEm, roleUppercase, roleWeight, tabularRoles } from '../typography/scale.ts';
 import { counterText, splitWords, textState } from '../typography/text-animation.ts';
 import type { TextStyleState } from '../typography/text-animation.ts';
 import { num, px } from './styles.ts';
@@ -69,6 +71,7 @@ export function textOverlayStyle(): StyleMap {
 export function textBoxStyle(element: TextElement, spec: ShotPageSpec, look: LookBible): StyleMap {
   const role = element.role;
   const family = roleFamily(role, look.typography);
+  const fontSizePx = fittedFontSizePx(element, spec, look);
   const style: Record<string, string> = {
     position: 'absolute',
     left: px(element.box.x * spec.width),
@@ -81,7 +84,7 @@ export function textBoxStyle(element: TextElement, spec: ShotPageSpec, look: Loo
     'justify-content': justifyFor(textAlign(spec.shot)),
     'text-align': textAlign(spec.shot),
     'font-family': `'${bundledFonts[family].cssFamily}'`,
-    'font-size': px(roleSizePx(role, look.typography.scaleRatio, spec.height)),
+    'font-size': px(fontSizePx),
     'font-weight': String(roleWeight(role, family)),
     'line-height': num(roleLineHeights[role]),
     color: look.palette.text,
@@ -90,6 +93,19 @@ export function textBoxStyle(element: TextElement, spec: ShotPageSpec, look: Loo
   if (roleUppercase(role)) style['text-transform'] = 'uppercase';
   if (tabularRoles.has(role)) style['font-variant-numeric'] = 'tabular-nums';
   return style;
+}
+
+/**
+ * The font size of an element: the role's scale size shrunk to fit the
+ * box's inner size (the box less the plate's padding on both sides), never
+ * below the composition floor (typography/fit.ts), so the planner's check
+ * and the lane agree.
+ */
+export function fittedFontSizePx(element: TextElement, spec: ShotPageSpec, look: LookBible): number {
+  const padding = textPlate(element.role) === 'none' ? 0 : 2 * platePaddingPx * (spec.height / 1080);
+  const widthPx = Math.max(1, element.box.w * spec.width - padding);
+  const heightPx = Math.max(1, element.box.h * spec.height - padding);
+  return fitTextSize(element.content, element.role, widthPx, heightPx, look.typography, spec.height, textFloorPx(element.role, spec.height)).fontSizePx;
 }
 
 /** The plate behind the words: the surface colour with an accent bar for a lower third, a translucent background scrim for a caption, nothing else otherwise. */

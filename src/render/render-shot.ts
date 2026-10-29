@@ -15,6 +15,7 @@ import { existsSync } from 'node:fs';
 import type { Logger } from '../cli/logger.ts';
 import { ensureDirectory } from '../fs/paths.ts';
 import type { BrowserRenderer, CapturedFrame } from '../harness/types.ts';
+import type { InitReport } from '../shared/harness/protocol.ts';
 import type { ProcessRunner } from '../process/process-runner.ts';
 import type { RenderSpec } from '../shared/camera/types.ts';
 import type { LookBible } from '../shared/contracts/look-bible.ts';
@@ -51,6 +52,8 @@ export interface RenderShotInputs {
   readonly log: Logger;
   readonly signal: AbortSignal;
   readonly now: () => Date;
+  /** Receives the page's init report when a browser session is opened for this shot (not when every frame is reused). */
+  readonly onInit?: (report: InitReport) => void;
 }
 
 /** What renderShot reports. */
@@ -193,6 +196,7 @@ export async function renderShot(inputs: RenderShotInputs): Promise<RenderShotRe
         spec: buildShotPageSpec(inputs.shot, inputs.look, inputs.spec),
         frames: toCapture,
         framePath: (frame: number): string => framePath(framesDirectory, frame),
+        ...(inputs.onInit === undefined ? {} : { onInit: inputs.onInit }),
       };
       try {
         await inputs.renderer.capture(request, inputs.signal, onFrame);

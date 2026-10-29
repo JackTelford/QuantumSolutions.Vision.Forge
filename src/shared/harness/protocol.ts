@@ -38,6 +38,15 @@ export interface ShotPageSpec {
   readonly assetsUrl: string;
 }
 
+/** How far a text element's laid-out content spills past its box, measured by the browser after init; 0 and 0 when it fits. */
+export interface TextOverflow {
+  readonly id: string;
+  /** Pixels the content extends past the box's right edge. */
+  readonly overflowXPx: number;
+  /** Pixels the content extends past the box's bottom edge. */
+  readonly overflowYPx: number;
+}
+
 /** What `__vfInit` reports once the page is ready to seek. */
 export interface InitReport {
   readonly ok: boolean;
@@ -49,6 +58,8 @@ export interface InitReport {
   readonly animations: number;
   /** UNMASKED_RENDERER_WEBGL of the lane's context, or null for a lane without WebGL. */
   readonly webglRenderer: string | null;
+  /** One entry per text element with its content shown, as the browser laid it out; absent from pages without text. */
+  readonly textOverflows?: readonly TextOverflow[];
 }
 
 /** What `__vfSeek(frame)` reports after render(frame) ran synchronously. */

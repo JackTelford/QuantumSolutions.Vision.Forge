@@ -26,6 +26,7 @@ import { baseFrame } from '../shared/composition/framing.ts';
 import { solveBasePose } from '../shared/composition/solver.ts';
 import type { LookBible } from '../shared/contracts/look-bible.ts';
 import type { Shot } from '../shared/contracts/shot-spec.ts';
+import type { TextOverflow } from '../shared/harness/protocol.ts';
 
 /** The ids of the gate's checks, in the order they run. */
 export type StillGateCheckId = 'composition' | 'text-contrast' | 'exposure';
@@ -59,6 +60,8 @@ export interface StillGateInputs {
   /** Scratch folder for the signalstats side files; the caller removes it. */
   readonly workDir: string;
   readonly signal: AbortSignal;
+  /** The browser's own measurement of each text box, from the page's init report; absent when no browser session was opened. */
+  readonly textOverflows?: readonly TextOverflow[];
 }
 
 /** The gate report's path for a still: the still's path with `.gate.json` in place of `.png`. */
@@ -66,9 +69,15 @@ export function gateReportPath(finishedPng: string): string {
   return finishedPng.replace(/\.png$/i, '') + '.gate.json';
 }
 
-/** Check (a): the solver's geometric checks on the base framing; measured is the problem count. */
-export function compositionCheck(shot: Shot, spec: RenderSpec): StillGateCheck {
-  const problems = compositionProblems(shot, spec, baseFrame(shot, solveBasePose(shot, spec)));
+/** The sentences for text the browser laid out past its box: one per element with any overflow, in pixels. */
+export function overflowProblems(overflows: readonly TextOverflow[] | undefined): readonly string[] {
+  return (overflows ?? []).filter((entry) => entry.overflowXPx > 0 || entry.overflowYPx > 0)
+    .map((entry) => `Text ${entry.id} spills past its box by ${Math.ceil(entry.overflowXPx)} px to the right and ${Math.ceil(entry.overflowYPx)} px below, as the browser laid it out.`);
+}
+
+/** Check (a): the solver's geometric checks on the base framing (with the look's type scale for the text fit) plus the browser's text measurement; measured is the problem count. */
+export function compositionCheck(shot: Shot, spec: RenderSpec, typography?: LookBible['typography'], overflows?: readonly TextOverflow[]): StillGateCheck {
+  const problems = [...compositionProblems(shot, spec, baseFrame(shot, solveBasePose(shot, spec)), typography), ...overflowProblems(overflows)];
   return {
     id: 'composition',
     ok: problems.length === 0,
@@ -123,7 +132,7 @@ export async function exposureCheck(inputs: StillGateInputs): Promise<StillGateC
 /** Runs the three checks, writes the report beside the still and returns it. */
 export async function runStillGate(inputs: StillGateInputs): Promise<StillGateReport> {
   ensureDirectory(inputs.workDir);
-  const checks: StillGateCheck[] = [compositionCheck(inputs.shot, inputs.spec), await textContrastCheck(inputs), await exposureCheck(inputs)];
+  const checks: StillGateCheck[] = [compositionCheck(inputs.shot, inputs.spec, inputs.look.typography, inputs.textOverflows), await textContrastCheck(inputs), await exposureCheck(inputs)];
   const report: StillGateReport = { passed: checks.every((check) => check.ok), checks };
   writeJsonAtomic(gateReportPath(inputs.finishedPng), report);
   return report;

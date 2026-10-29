@@ -36,6 +36,7 @@ import { reviewRoundCap } from '../../schema/checks/job.ts';
 import type { RenderSpec } from '../../shared/camera/types.ts';
 import type { RenderProfile, Shot } from '../../shared/contracts/shot-spec.ts';
 import type { ParsedArguments } from '../arguments.ts';
+import type { TextOverflow } from '../../shared/harness/protocol.ts';
 import type { Command, CommandContext } from '../command.ts';
 import type { CommandOutput } from '../result.ts';
 
@@ -181,9 +182,11 @@ export const command: Command = {
       const pageDirectory = ensureDirectory(pageDir(cacheDir));
       harness = await seams.startHarness({ pageDir: pageDirectory, dataDir: context.dataDir, log: context.log, signal: context.signal });
       const manifestFingerprint = await seams.manifestFingerprint({ renderer, lane, ffmpegVersion: tools.ffmpeg.version, runner: context.runner, signal: context.signal });
+      let textOverflows: readonly TextOverflow[] | undefined;
       const result = await renderShot({
         renderer, page: seams, harnessUrl: harness.url, pageDir: pageDirectory, shot: pinnedShot, look, spec, frames: [frame], cacheDir, key,
         fingerprint: manifestFingerprint, runner: context.runner, ffmpegPath: tools.ffmpeg.path, log: context.log, signal: context.signal, now: context.now,
+        onInit: (report): void => { textOverflows = report.textOverflows; },
       });
       copyFileSync(framePath(result.framesDir, frame), paths.raw);
       await finishStill(context.runner, tools.ffmpeg.path, paths.raw, paths.still, look, context.signal);
@@ -197,7 +200,7 @@ export const command: Command = {
         context.log.info(`wrote ${scaled}`);
       }
 
-      const report = await runStillGate({ runner: context.runner, ffmpegPath: tools.ffmpeg.path, shot: pinnedShot, look, spec, finishedPng: paths.still, workDir: paths.workDir, signal: context.signal });
+      const report = await runStillGate({ runner: context.runner, ffmpegPath: tools.ffmpeg.path, shot: pinnedShot, look, spec, finishedPng: paths.still, workDir: paths.workDir, signal: context.signal, ...(textOverflows === undefined ? {} : { textOverflows }) });
       const reportPath = gateReportPath(paths.still);
       for (const check of report.checks) context.log.info(`gate ${check.id}: ${check.ok ? 'ok' : 'FAILED'}; ${check.detail}`);
       const pinned = await pinRenderProfile(folder, loaded.shotSpec, shotId, profile, look, fingerprint);

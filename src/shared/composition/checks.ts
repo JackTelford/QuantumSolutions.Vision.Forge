@@ -12,7 +12,9 @@
  */
 import { project, projectBox } from '../camera/project.ts';
 import type { CameraFrame, FrameBox, RenderSpec } from '../camera/types.ts';
+import type { LookBible } from '../contracts/look-bible.ts';
 import type { Shot, TextElement, TextRole } from '../contracts/shot-spec.ts';
+import { fitTextSize } from '../typography/fit.ts';
 import { framingPoint, subjectAnchor, verticalPlacement } from './framing.ts';
 import { anchorToleranceFraction, boxesOverlap, gridPoint, insideBox, safeAreas } from './grid.ts';
 import { headroomRange, shotSizeRanges } from './sizes.ts';
@@ -118,12 +120,26 @@ function headroomInRange(shot: Shot, subjectBox: FrameBox): readonly string[] {
   return [`The headroom above the subject is ${percent(headroom)} of the frame height; a ${shot.size} needs ${percent(range.min)} to ${percent(range.max)}.`];
 }
 
-/** Check 5 for one text element: the box height in pixels against the role's floor, the line count, the line lengths and orphans. */
-function textLegible(text: TextElement, spec: RenderSpec): readonly string[] {
+/** The floor of a role in pixels at a frame height. */
+export function textFloorPx(role: TextRole, heightPx: number): number {
+  return (textHeightFloorsPx[role] * heightPx) / referenceHeightPx;
+}
+
+/**
+ * Check 5 for one text element: the box height in pixels against the
+ * role's floor, then (with the look's type scale) whether the content fits
+ * the box at or above the floor as typography/fit.ts estimates it, the
+ * line count, the line lengths and orphans.
+ */
+function textLegible(text: TextElement, spec: RenderSpec, typography: LookBible['typography'] | undefined): readonly string[] {
   const problems: string[] = [];
   const heightPx = text.box.h * spec.height;
-  const floorPx = (textHeightFloorsPx[text.role] * spec.height) / referenceHeightPx;
+  const floorPx = textFloorPx(text.role, spec.height);
   if (heightPx < floorPx) problems.push(`Text ${text.id} (${text.role}) is ${heightPx.toFixed(1)} px tall; the floor for its role at ${spec.height} px is ${floorPx.toFixed(1)} px.`);
+  if (typography !== undefined) {
+    const fit = fitTextSize(text.content, text.role, text.box.w * spec.width, heightPx, typography, spec.height, floorPx);
+    if (!fit.fits) problems.push(`Text ${text.id} (${text.role}) does not fit its box even at the ${Math.round(floorPx)} px floor (${fit.lines.length} estimated line${fit.lines.length === 1 ? '' : 's'} at the look's type scale); widen or heighten the box or shorten the text.`);
+  }
   const lines = textLines(text);
   if (lines.length > maxLines) problems.push(`Text ${text.id} (${text.role}) has ${lines.length} lines; at most ${maxLines} are allowed.`);
   const limit = maxCharactersPerLine(text.role);
@@ -143,7 +159,7 @@ function textLegible(text: TextElement, spec: RenderSpec): readonly string[] {
  * subject is taller than the frame by definition. Pure: the same inputs
  * give the same sentences in the same order.
  */
-export function compositionProblems(shot: Shot, spec: RenderSpec, frame: CameraFrame): readonly string[] {
+export function compositionProblems(shot: Shot, spec: RenderSpec, frame: CameraFrame, typography?: LookBible['typography']): readonly string[] {
   const aspect = spec.width / spec.height;
   const subjectBox = projectBox(shot.subject.boundsM, subjectAnchor, frame, aspect);
   const problems: string[] = [];
@@ -157,7 +173,7 @@ export function compositionProblems(shot: Shot, spec: RenderSpec, frame: CameraF
     problems.push(...textBoxesClear(shot, subjectBox));
     problems.push(...headroomInRange(shot, subjectBox));
   }
-  for (const text of shot.text) problems.push(...textLegible(text, spec));
+  for (const text of shot.text) problems.push(...textLegible(text, spec, typography));
   return problems;
 }
 

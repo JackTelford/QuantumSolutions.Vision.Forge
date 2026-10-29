@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { TextElement } from '../../../src/shared/contracts/shot-spec.ts';
-import { textAlign, textBoxStyle, textElementVisible, textPlate, textPlateStyle, textSpanContent, textSpanStates, textSpanStyle, textSpans } from '../../../src/shared/html/text.ts';
+import { textAlign, textBoxStyle, textElementVisible, textPlate, textPlateStyle, textSpanContent, textSpanStates, textSpanStyle, textSpans, fittedFontSizePx } from '../../../src/shared/html/text.ts';
 import { hiddenState, shownState, textTiming } from '../../../src/shared/typography/text-animation.ts';
 import { htmlPageSpec, htmlShot } from './fixtures.ts';
 
@@ -39,7 +39,9 @@ describe('textBoxStyle', () => {
     assert.equal(style['width'], '768.000px');
     assert.equal(style['height'], '129.600px');
     assert.equal(style['font-family'], "'Playfair Display'");
-    assert.equal(style['font-size'], '140.000px');
+    // The 140 px scale size wraps "Now in 500 ml" to two lines in a 768 x 129.6 px box, so the fit shrinks it to one line (typography/fit.ts).
+    assert.equal(style['font-size'], `${fittedFontSizePx(title, spec, look).toFixed(3)}px`);
+    assert.ok(fittedFontSizePx(title, spec, look) < 140 && fittedFontSizePx(title, spec, look) >= 72);
     assert.equal(style['font-weight'], '700');
     assert.equal(style['line-height'], '1.100');
     assert.equal(style['color'], look.palette.text);
@@ -61,7 +63,8 @@ describe('textBoxStyle', () => {
 
   it('scales with the frame height', () => {
     const small = textBoxStyle(title, { ...spec, width: 480, height: 270 }, look);
-    assert.equal(small['font-size'], '35.000px');
+    assert.equal(small['font-size'], `${fittedFontSizePx(title, { ...spec, width: 480, height: 270 }, look).toFixed(3)}px`);
+    assert.ok(fittedFontSizePx(title, { ...spec, width: 480, height: 270 }, look) <= 35);
     assert.equal(small['left'], '48.000px');
   });
 });
