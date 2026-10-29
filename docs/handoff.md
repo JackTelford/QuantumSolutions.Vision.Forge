@@ -27,7 +27,7 @@ The single source of truth for where this repository stands. Newest milestone fi
 | Lookdev | 21 stills; Blender stills within 1 to 9 code values of the three lane's luma per look, two outside their look's band (studio-clean 163.5, sunset-gradient 42.3, the same two as the three lane) | `docs/evidence/m5/lookdev-sheet.png`, `lookdev.md` |
 | HDRI orientation | a stripe HDRI rendered unrotated and turned: the lit side agrees with the key after the fix (gray card 98.8 on the key side against 57.6 with the old convention) | the resolver review and fix reports, `src/lanes/blender/world.ts` |
 | Motion blur at batch edges | a one-frame still with the margin keyframes differs from the same without (peak 12 code values along the moving edge); without them the still equalled a render with motion blur off | the resolver fix report, `src/lanes/blender/camera.ts` `keyframeFrames` |
-| Continuous integration | run RUN_ID_PLACEHOLDER: RESULT_PLACEHOLDER (the runners have no Blender; the lane's unit tests run through the fake runner) | GitHub Actions |
+| Continuous integration | run 40965291809 on eb41ac2: Windows green, ubuntu red on three Windows-only assumptions in the new tests (a Windows fake path through basename, the winget hint expected everywhere, the npm-cli join); fixed in 40bfec9: run 40966438650 green on all four jobs (the runners have no Blender; the lane's unit tests run through the fake runner) | GitHub Actions |
 
 ### Untested
 
