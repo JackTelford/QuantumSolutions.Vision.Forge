@@ -19,7 +19,7 @@ import { round, runAnalysis } from '../qa/check.ts';
 import { exposureFilter } from '../qa/exposure.ts';
 import { contrastRatio, relativeLuminanceOfHex, relativeLuminanceOfLuma } from '../qa/luminance.ts';
 import { parseSignalstatsYavg } from '../qa/parse.ts';
-import { boxLumaFilter, contrastThreshold, pixelBox } from '../qa/text-contrast.ts';
+import { boxLumaFilter, contrastThreshold, pixelBox, rgbToLumaConversion } from '../qa/text-contrast.ts';
 import type { RenderSpec } from '../shared/camera/types.ts';
 import { compositionProblems } from '../shared/composition/checks.ts';
 import { baseFrame } from '../shared/composition/framing.ts';
@@ -122,7 +122,7 @@ export async function textContrastCheck(inputs: StillGateInputs): Promise<StillG
 export async function exposureCheck(inputs: StillGateInputs): Promise<StillGateCheck> {
   const statsPath = join(inputs.workDir, 'gate-exposure.txt');
   // The still is RGB; the explicit format step puts the conversion to YUV where the box filter has it, so both checks read the same luma.
-  const yavg = await measureYavg(inputs, `format=yuv420p,${exposureFilter(statsPath)}`, statsPath);
+  const yavg = await measureYavg(inputs, `${rgbToLumaConversion},${exposureFilter(statsPath)}`, statsPath);
   const { yavgMin, yavgMax } = inputs.look.qa;
   if (yavg === undefined) return { id: 'exposure', ok: false, measured: null, threshold: null, detail: 'signalstats printed no luma for the still' };
   const ok = yavg >= yavgMin && yavg <= yavgMax;

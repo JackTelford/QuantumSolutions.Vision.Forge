@@ -5,6 +5,7 @@ import type { CameraFrame } from '../../../src/shared/camera/types.ts';
 import {
   compositionProblems,
   compositionWarnings,
+  focusWarnings,
   hasOrphan,
   headroomEpsilon,
   maxCharactersPerLine,
@@ -150,5 +151,23 @@ describe('compositionWarnings', () => {
     const modest = makeText({ id: 't2', role: 'caption', box: { x: 0.55, y: 0.55, w: 0.3, h: 0.03 } });
     assert.deepEqual(compositionWarnings(makeShot({ text: [title, modest] })), []);
     assert.deepEqual(compositionWarnings(makeShot({ text: [title] })), []);
+  });
+});
+
+describe('focusWarnings', () => {
+  it('warns when the lens focuses well in front of the solved subject distance and names the distance to set', () => {
+    const shot = makeShot({ lens: { focalMm: 85, fStop: 2.8, focusDistanceM: 0.9, shutterAngleDeg: 180 } });
+    const distanceM = solveBasePose(shot, renderSpec).distanceM;
+    const warnings = focusWarnings(shot, renderSpec);
+    assert.equal(warnings.length, 1);
+    assert.ok(warnings[0]?.includes(`Set lens.focusDistanceM to ${distanceM.toFixed(2)}`), warnings[0]);
+  });
+
+  it('stays quiet when the lens focuses on the subject, and for a rack-focus move', () => {
+    const shot = makeShot({});
+    const focused = { ...shot, lens: { ...shot.lens, focusDistanceM: solveBasePose(shot, renderSpec).distanceM } };
+    assert.deepEqual(focusWarnings(focused, renderSpec), []);
+    const racked = { ...shot, lens: { ...shot.lens, focusDistanceM: 0.9 }, move: { ...shot.move, preset: 'rack-focus' as const } };
+    assert.deepEqual(focusWarnings(racked, renderSpec), []);
   });
 });

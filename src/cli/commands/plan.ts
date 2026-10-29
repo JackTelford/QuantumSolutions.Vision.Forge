@@ -21,7 +21,7 @@ import { CrossDocumentError } from '../../plan/plan-error.ts';
 import { carryPinnedProfiles } from '../../plan/pinned-profiles.ts';
 import { laneFingerprint, shotKey } from '../../plan/shot-key.ts';
 import type { RenderFingerprint } from '../../plan/shot-key.ts';
-import { compositionProblems, compositionWarnings } from '../../shared/composition/checks.ts';
+import { compositionProblems, compositionWarnings, focusWarnings } from '../../shared/composition/checks.ts';
 import { baseFrame } from '../../shared/composition/framing.ts';
 import { solveBasePose } from '../../shared/composition/solver.ts';
 import { totalFrames } from '../../schema/checks/shot-spec.ts';
@@ -101,9 +101,10 @@ export async function laneFingerprints(dataDir: string, shotSpec: ShotSpec): Pro
   return fingerprints;
 }
 
-/** The composition warnings (competing text boxes) of every shot, prefixed with the shot id. */
+/** The composition warnings (competing text boxes, a lens focused away from the subject) of every shot, prefixed with the shot id. */
 export function compositionWarningsOf(shotSpec: ShotSpec): readonly string[] {
-  return shotSpec.shots.flatMap((shot) => compositionWarnings(shot).map((warning) => `shot "${shot.id}": ${warning}`));
+  const spec = { fps: shotSpec.fps, width: shotSpec.width, height: shotSpec.height };
+  return shotSpec.shots.flatMap((shot) => [...compositionWarnings(shot), ...focusWarnings(shot, spec)].map((warning) => `shot "${shot.id}": ${warning}`));
 }
 
 /** The plan command. */

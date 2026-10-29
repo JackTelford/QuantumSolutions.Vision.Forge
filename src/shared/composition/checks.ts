@@ -10,12 +10,14 @@
  * 1: its subject is 1.5 to 2.5 frame heights tall by definition, so the
  * frame sits inside the subject and the check is skipped for that size.
  */
+import { circleOfConfusionFraction } from '../camera/bokeh.ts';
 import { project, projectBox } from '../camera/project.ts';
 import type { CameraFrame, FrameBox, RenderSpec } from '../camera/types.ts';
 import type { LookBible } from '../contracts/look-bible.ts';
 import type { Shot, TextElement, TextRole } from '../contracts/shot-spec.ts';
 import { fitTextSize } from '../typography/fit.ts';
 import { framingPoint, subjectAnchor, verticalPlacement } from './framing.ts';
+import { solveBasePose } from './solver.ts';
 import { anchorToleranceFraction, boxesOverlap, gridPoint, insideBox, safeAreas } from './grid.ts';
 import { headroomRange, shotSizeRanges } from './sizes.ts';
 
@@ -198,4 +200,28 @@ export function compositionWarnings(shot: Shot): readonly string[] {
     if (boxArea(text.box) > limit) warnings.push(`Text ${text.id} (${text.role}) covers ${percent(boxArea(text.box))} of the frame, more than a third of the largest text ${largest.id} (${percent(boxArea(largest.box))}); one element should dominate.`);
   }
   return warnings;
+}
+
+/**
+ * The largest circle of confusion, as a fraction of the frame height, at
+ * which the subject still reads as sharp: 0.2 percent is about two pixels
+ * at 1080p, the BokehPass radius below which the blur is invisible.
+ */
+export const sharpFocusFraction = 0.002;
+
+/**
+ * The focus warning of a shot: the lens focuses somewhere else than the
+ * subject the solver placed, so the three and blender lanes (the html lane
+ * has no depth of field) render it soft. A rack-focus move means it, so
+ * it is not warned; every other move keeps the focus plane at its offset
+ * from the subject throughout the move (pose-moves.ts withTrackedFocus),
+ * so the base pose's distance is the one that matters. Warnings do not
+ * fail a still.
+ */
+export function focusWarnings(shot: Shot, spec: RenderSpec): readonly string[] {
+  if (shot.move.preset === 'rack-focus') return [];
+  const distanceM = solveBasePose(shot, spec).distanceM;
+  const fraction = circleOfConfusionFraction(shot.lens.focalMm, shot.lens.fStop, shot.lens.focusDistanceM, distanceM, spec.width / spec.height);
+  if (fraction <= sharpFocusFraction) return [];
+  return [`The lens focuses at ${shot.lens.focusDistanceM.toFixed(2)} m while the subject stands ${distanceM.toFixed(2)} m from the camera, a circle of confusion of ${(fraction * 100).toFixed(1)} percent of the frame height: the subject renders out of focus on the three and blender lanes. Set lens.focusDistanceM to ${distanceM.toFixed(2)} unless the shot means to rack focus.`];
 }

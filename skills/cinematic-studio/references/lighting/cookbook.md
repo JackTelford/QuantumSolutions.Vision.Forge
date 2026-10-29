@@ -29,9 +29,11 @@ Per-shot overrides: `keyIntensity` (1 = the rig's own), `fillRatio`, `rimIntensi
 
 | Lane | Key / fill / rim | Environment | Shadows |
 | --- | --- | --- | --- |
-| blender | area lights, `shape = 'RECTANGLE'`, size and `size_y` from the rig, power in watts = intensity × calibration scalar, colour from Kelvin via blackbody | world HDRI (bundled studio HDRI at the rig's Kelvin) at the rig's ambient strength | soft shadows on, `shadow_soft_size` from the light size |
-| three | `RectAreaLight` per softbox (PBR materials only, no shadows) plus one `DirectionalLight` shadow caster aligned with the key, `RectAreaLightUniformsLib.init()` first | PMREM from the bundled HDRI or `RoomEnvironment`, `environmentIntensity` from the rig | PCF shadow map from the key's directional light |
+| blender | area lights, `shape = 'RECTANGLE'`, size and `size_y` from the rig, power in watts = intensity × calibration scalar × d² (the same irradiance rule as three), colour from Kelvin balanced to the key | world HDRI (bundled studio HDRI at the rig's Kelvin) at the rig's ambient strength | soft shadows on, `shadow_soft_size` from the light size |
+| three | `RectAreaLight` per softbox (PBR materials only, no shadows) with radiance = intensity × `keyIntensityScalar` × d² / A, so the relative intensity is an irradiance on the subject (`src/shared/three/lights.ts`), plus one `DirectionalLight` shadow caster aligned with the key at `shadowKeyShare` of it, `RectAreaLightUniformsLib.init()` first | PMREM from the bundled HDRI or `RoomEnvironment`; `environmentIntensity` is the rig's ambient (1 / fill ratio) when the rig has no key and `keyedEnvironmentIntensity` (0.05) when it has one | PCF shadow map from the key's directional light |
 | html | a background gradient whose angle follows the key azimuth, `box-shadow` offset opposite the key, a specular sheen gradient on cards | — | — |
+
+Every lane balances its lights to the rig's key (its first rim when there is no key): the key renders neutral white, a warmer fill stays warm and a cooler rim blue, as a camera white-balanced to the key records them (`whiteBalancedKelvinRgb` in `src/shared/look/css-tokens.ts`, ADR 0008 decision 2). The scalars live in `src/shared/three/calibration-scalars.ts` and are set by measurement (`docs/evidence/m4/calibration-tuning.md`).
 
 ## Choosing a rig
 

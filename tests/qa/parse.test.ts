@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { parseBlackdetect, parseEbur128Summary, parseFreezedetect, parseSignalstatsYavg, parseSsimStats, parseSsimSummary } from '../../src/qa/parse.ts';
+import { parseBlackdetect, parseEbur128Summary, parseFreezedetect, parsePsnrSummary, parseSignalstatsYavg, parseSsimStats, parseSsimSummary } from '../../src/qa/parse.ts';
 
 const blackdetectLog = 'frame=  105 fps=0.0\n[Parsed_blackdetect_0 @ 0000024e1eb2c700] black_start:1 black_end:1.5 black_duration:0.5\n[Parsed_blackdetect_0 @ 0000024e1eb2c700] black_start:2.5 black_end:3 black_duration:0.5\n';
 
@@ -67,6 +67,12 @@ describe('ffmpeg output parsers', () => {
     const silent = parseEbur128Summary('Summary:\n    I:         -inf LUFS\n    Peak:      -inf dBFS\n');
     assert.equal(silent?.integrated, Number.NEGATIVE_INFINITY);
     assert.equal(silent?.truePeak, Number.NEGATIVE_INFINITY);
+  });
+
+  it('reads the average PSNR from the summary line, infinity for identical frames', () => {
+    assert.equal(parsePsnrSummary('[Parsed_psnr_0 @ 1] PSNR r:inf g:inf b:99.256854 average:104.028066 min:104.028066 max:104.028066\n'), 104.028066);
+    assert.equal(parsePsnrSummary('[Parsed_psnr_0 @ 1] PSNR r:inf g:inf b:inf average:inf min:inf max:inf\n'), Number.POSITIVE_INFINITY);
+    assert.equal(parsePsnrSummary('frame=1 fps=0.0'), undefined);
   });
 
   it('reads the overall SSIM from the summary line', () => {

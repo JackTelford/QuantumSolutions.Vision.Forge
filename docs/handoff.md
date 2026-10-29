@@ -2,6 +2,80 @@
 
 The single source of truth for where this repository stands. Newest milestone first. Every claim here points at a test or a file under `docs/evidence/`; anything else is listed under "Untested".
 
+## M4: the three lane, the calibration parity and the lookdev sheet (2026-10-29)
+
+### Done
+
+- **Seams** (hand-written before the fan-out): the subject as primitives (`src/shared/subject/primitives.ts`), the lighting placement in world space (`src/shared/lighting/placement.ts`: azimuth around the subject from the camera, elevation, a sphere whose radius grows with the subject, the fill opposite the key), the thin-lens bokeh (`src/shared/camera/bokeh.ts`), the environment reference in the page spec and its resolution from the data directory (`src/render/environment.ts`: the rig's HDRI when `assets --fetch` installed it, else null and the lane's built-in room environment), `scene: 'calibration'` in the page spec.
+- **The three lane in the browser** (`src/browser/three/`, every number computed in `src/shared/three/` so Node tests hold it): a `WebGLRenderer` on one canvas (no antialias, no alpha, drawing buffer preserved, sRGB output, AgX or linear tone mapping per the look, PCF shadow map); a 36 mm film-gauge `PerspectiveCamera` set per (sub-)frame from the baked camera through `setFocalLength`, so `projectThroughPose` agrees with `project.ts` to 1e-9; the stage (floor, wall, quarter-cylinder cyc, one `MeshStandardMaterial` in the palette's surface colour); the subject's parts as meshes (box, cylinder, sphere, capsule, torus) in the look's materials; the rig as one `RectAreaLight` per placed light with radiance = intensity × scalar × d² / A (the relative intensity is an irradiance on the subject, so the fill lights it at a third of the key as the ratio says) plus a shadow-casting `DirectionalLight` along the key; the key orbit of the light-sweep move re-places the lights per sub-frame; PMREM from the HDRI (`HDRLoader`) or `RoomEnvironment`; seeded motes as `Points` drifting as a pure function of the fractional frame; the post pipeline (`SSAARenderPass`, `UnrealBloomPass` when the look has halation, `BokehPass` with the thin-lens aperture, `OutputPass`, then an accumulation pass that sums N sub-frames across the shutter window into a float target and presents the sum once per frame: six sub-frames at 1080p, one at 640 px and below); `dispose()` frees every target, geometry, material and the context, and the runtime disposes the previous lane before building the next.
+- **Calibration parity** (`src/calibration/`, `scripts/probes/m4-calibration.ts`, `tests/calibration/parity.integration.test.ts`): the calibration scene of ADR 0008 laid out on the camera's anchor plane in the three lane (every patch's corners project onto its box to 1e-9) and as flat patches in the html lane; the measurement (crop + BT.709 conversion + `signalstats` for YAVG, an area-scaled 1x1 crop for the mean RGB, hexcone hue and saturation for the swatches); the probe that renders both lanes under both tone mappings, with the studio HDRI and with the room environment, at 1080p and 480x270, and writes `docs/evidence/m4/calibration.md`; the parity test that renders both lanes at 480x270 through the real browser and holds the gray card to 117.3 ± 5 in both lanes and the two lanes' gray cards within 6 of each other (10 tests, 13 s).
+- **Light scalars by measurement** (`src/shared/three/calibration-scalars.ts`, `docs/evidence/m4/calibration-tuning.md`): keyIntensityScalar agx 2.57, standard 3.25, shadowKeyShare 0.6, keyedEnvironmentIntensity 0.05, set in three trials.
+- **White balance** (both lanes, `whiteBalancedKelvinRgb` in `src/shared/look/css-tokens.ts`; the integrator's fix for the review's finding that the three lane's gray card read 125, 115, 109 under a 5600 K key): every light's black-body colour is divided by the rig's key colour and scaled to a largest channel of 255, so the key renders neutral, a warmer fill warm and a cooler rim blue, as a camera balanced to its key records them; the three lane's neutrals now read 117, 117, 117. ADR 0008 decision 2 amended.
+- **Luma measured with BT.709** (`rgbToLumaConversion` in `src/qa/text-contrast.ts`, used by the still gate's exposure and text-contrast checks and by the calibration measurement): `scale=out_color_matrix=bt709` before `format=yuv420p`, since ffmpeg's BT.601 default put the html lane's coloured swatches up to 22 YAVG from the expectation the delivery's tag implies; the html lane's nine patches now sit within tolerance. ADR 0008 decision 3 amended.
+- **Focus warning in `plan`** (`focusWarnings` in `src/shared/composition/checks.ts`): when the lens focuses away from the solved subject distance by more than a circle of confusion of 0.2 percent of the frame and the move is not a rack focus, the warning names the distance to set. Found because every three-lane lookdev still was at the bokeh cap with the fixture's old 1.2 m focus; the fixture now focuses at 1.68 m.
+- **Look presets as data** (`src/shared/look/presets.ts`): the seven looks of the look bible, each validated against the schema and the semantic checks, every text colour at 4.5:1 or more over the background and the surface.
+- **Lookdev sheet** (`scripts/probes/m4-lookdev.ts`, `docs/evidence/m4/lookdev-sheet.png`, `lookdev.md`): the html title card and the three product shot for every look at 960x540, graded, with each still's YAVG against the look's band, one sentence per still written after looking at the sheet, and the six questions for the owner with the default taken for each.
+- **Goldens for both lanes** (`tests/render/determinism.integration.test.ts`, `tests/goldens/html/`, `tests/goldens/three/`): ten fresh launches per lane; the html lane byte-identical; the three lane identical to within GPU noise (a run whose hash differs must keep PSNR ≥ 80 dB against the first; `VF_KEEP_RUNS=1` keeps the frames for a diff). ADR 0006 decision 6 amended.
+- **The three lane end to end** through the CLI in a fresh data directory: doctor, `assets --fetch hdri:studio_small_09-1k`, plan, still for the two three shots and the html shot (all three passed the gate), approve, render (315 frames at 1080p in 39.7 s through one browser). `docs/evidence/m4/README.md`.
+- Docs: ADR 0006 and 0008 amended as above, the cookbook's per-lane table (irradiance rule, environment intensity, white balance), SKILL.md status, README, `docs/evidence/m4/`, this section, the milestone note.
+- Process: two stages of the fan-out (the three lane; then the calibration, parity and lookdev tooling), each built, adversarially reviewed and fixed: 20 findings, 20 applied. The second fix agent died before reporting with every edit on disk; the integrator pass picked up where it stopped (the refocused lookdev stills and their sentences), then closed the seams above.
+
+### Evidence
+
+| Claim | Number | Where |
+| --- | --- | --- |
+| Type checks, house rules, schema drift, licenses | `npm run check` exit 0 (405 files linted) | run locally 2026-10-29 |
+| Unit and integration tests | `npm test`: see the CI row below for the count on this commit; 1474 tests, 0 failures, 3 skipped before the integrator's last changes | same |
+| The three camera matches the pinhole projection | `projectThroughPose` agrees with `project()` to 1e-9 over five moves and four frames | `tests/shared/three/camera-mapping.test.ts` |
+| Gray card parity | html 117.0; three 116.6 (agx) and 117.2 (standard) under the studio HDRI, 119.8 and 120.2 under the room environment, against 117.3 ± 5; three's neutrals 117, 117, 117 | `docs/evidence/m4/calibration.md`, `tests/calibration/parity.integration.test.ts` |
+| html patches | 9 of 9 within tolerance under both tone mappings (BT.709 measurement) | `docs/evidence/m4/calibration.md` |
+| Three-lane determinism | 10 fresh launches: frames 0, 26, 60, 104 of s01 at 480x270 one hash each in the committed run; across three batches 2 of 180 captures differed by one pixel one code value (PSNR 104 dB) | `docs/evidence/m4/determinism-three.md`, `tests/render/determinism.integration.test.ts` |
+| html-lane determinism after the white balance | 10 fresh launches byte-identical; golden rewritten (the sheen is now neutral under the 5600 K key), SSIM 1.00000 on the check run | `docs/evidence/m4/determinism-html.md` |
+| Goldens | `tests/goldens/three/product-shot-480x270-f060.png`, `tests/goldens/html/title-card-480x270-f026.png`, each with a fingerprint sidecar | same test |
+| The three lane end to end | still s01 7.1 s including the launch, gate passed (exposure 44.7 in 24 to 140); render 105 + 90 + 120 frames in 39.7 s at 1080p: 125.4, 104.7 and 124.0 ms per frame | `docs/evidence/m4/README.md` |
+| Cost per frame | calibration scene 1080p with four sub-frames and SSAA 2: 75 to 84 ms (html 49 ms); 480x270: 20 ms; lookdev 960x540: 46.7 ms (html 48.9) | `docs/evidence/m4/calibration.md`, `lookdev.md` |
+| Lookdev | fourteen stills, seven looks; two three-lane stills outside their look's band (studio-clean 168.6, sunset-gradient 48.7) | `docs/evidence/m4/lookdev-sheet.png`, `lookdev.md` |
+| Continuous integration | run RUN_ID_PLACEHOLDER: RESULT_PLACEHOLDER | GitHub Actions |
+
+### Untested
+
+- The three lane has run only on this machine's hardware renderer; the software renderer (SwiftShader) has not rendered the three lane here. The ubuntu CI job renders the three golden on SwiftShader and compares loosely (SSIM ≥ 0.95); the float accumulation target uses nearest filtering so a renderer without `OES_texture_float_linear` still presents.
+- The scalars are measured under the product-studio rig; the other fifteen rigs reuse them unmeasured, so a rig whose lights stand at another distance inherits whatever the d²/A rule gives it.
+- The rig's own `exposureEv` (high-key's +1 EV in `lighting/rigs.ts`) is applied by neither lane; the three lane's exposure is the look's EV plus the baked frame's (which already carries the shot's offset).
+- The white and black patches of the three lane are reported, not gated (AgX rolls the white to 172; the environment lifts the black to 56 to 62); the parity test's bands for them are wider than the scene's tolerances, as its test names say.
+- Only the studio_small_09 HDRI has been rendered; the other nine catalogue entries and the room environment for the rigs that name them have not been looked at beyond the lookdev sheet.
+- The lookdev sentences are one reader's look at the sheet; nobody has scored the stills against the vision rubric (M7).
+- The look bible's QA bands have not been reconciled with what a lit product shot can reach (two three-lane stills miss their bands; sunset-gradient's band is unreachable for its violet palette).
+
+### Risks
+
+- `BokehPass` (three's addon) leaves a thin bright halo along in-focus edges over the blurred wall and ring-shaped near-focus motes, from its fixed kernel; the blur is capped at 1.5 percent of the frame to keep the halo small. A depth-aware blur is a later option. Its depth pass clears with the scene background instead of white, harmless while the wall covers the frame.
+- Under AgX the scene background is tone mapped, so the three lane's surround is the look's background only approximately while the html lane's is exact; a cut between the lanes on a flat background will show it unless the three shot's background is a stage, which it is for every non-calibration shot.
+- The GPU noise on the three lane means a re-rendered shot can differ from its cached frames by a pixel; the render cache compares by hash and would treat such a frame as changed only if someone re-hashed it, which nothing does today. The hero-still comparison (SSIM ≥ 0.98) is unaffected.
+- The three lane's 1080p frame costs 105 to 125 ms with six sub-frames; a minute of film is about four minutes of render. The sub-frame count is tied to the width, not a quality setting.
+- The html lane's sheen and gradient changed colour with the white balance (neutral under a 5600 K key where they were warm); the M3 golden was rewritten for it, and any M3 still a reader kept will differ slightly.
+
+### Deliberately not done
+
+- The blender lane (M5), the assembly plan from the job (M7), narration (M6).
+- A depth-aware bokeh; volumetric haze in three (the atmosphere is motes only).
+- Per-rig scalars; a `gated` flag on the calibration patches.
+- Text in the three lane: text is the html lane's and is composited at assembly (ADR 0008 decision 4).
+
+### Review guide
+
+Read these five in order (about 900 lines):
+
+1. `src/shared/three/lights.ts` and `src/shared/look/css-tokens.ts` (`whiteBalancedKelvinRgb`): the irradiance rule and the white balance, the two decisions that make the lanes agree.
+2. `src/browser/three/lane.ts` and `src/browser/three/post.ts`: init, the sub-frame loop and the accumulation.
+3. `src/shared/three/sub-frame.ts` and `src/shared/three/camera-mapping.ts`: how a baked frame becomes a three camera, and how sub-frames are interpolated.
+4. `src/calibration/measure.ts` and `tests/calibration/parity.integration.test.ts`: what the parity numbers mean and what gates them.
+5. `docs/evidence/m4/lookdev-sheet.png` with `lookdev.md`: the six questions for the owner and the defaults taken.
+
+### Next: M5
+
+The blender lane: the resolver from shot, look, bake and environment to the closed `blender-scene` document (`schemas/blender-scene.schema.json`, already committed with `blender/apply_scene.py` and the axis mapping of ADR 0008), the runner with the attempt ladder inside `still` (EEVEE opengl → vulkan → Cycles OptiX → CUDA → CPU for stills only), the success predicate (exit code, every frame present, frame 0 not black, no new crash log), the estimator and resumable batches, `still` and `render` dispatching blender shots, the lane code hash covering `src/lanes/blender/`, the acceptance evidence under `docs/evidence/m5/` (engine list, devices, one-frame renders per engine with timings, the exit-code matrix, a 1080p still, a 30-frame clip, a 5 s turntable, the Blender column on the lookdev sheet) and an honest quality assessment.
+
 ## M3: the browser harness, the html lane, the still gate and the still, render and assets commands (2026-10-29)
 
 ### Done

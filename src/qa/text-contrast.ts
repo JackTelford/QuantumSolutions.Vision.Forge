@@ -93,10 +93,13 @@ export function pixelBox(box: NormalizedBox, width: number, height: number): Pix
   return { x, y, w, h };
 }
 
-/** The crop + signalstats graph that prints the average luma of a rectangle of a still to a file. */
+/** The crop + signalstats graph that prints the average luma of a rectangle of a still to a file; the RGB still is converted with the BT.709 matrix the delivery is tagged with (ADR 0008 decision 3), not ffmpeg's BT.601 default, so a coloured box measures the luma a player shows. */
 export function boxLumaFilter(box: PixelBox, statsPath: string): string {
-  return `crop=${box.w}:${box.h}:${box.x}:${box.y},format=yuv420p,signalstats,metadata=mode=print:key=lavfi.signalstats.YAVG:file=${filterPath(statsPath)}`;
+  return `crop=${box.w}:${box.h}:${box.x}:${box.y},${rgbToLumaConversion},signalstats,metadata=mode=print:key=lavfi.signalstats.YAVG:file=${filterPath(statsPath)}`;
 }
+
+/** The RGB-to-YUV step the measurements share: the BT.709 matrix, then yuv420p for signalstats. */
+export const rgbToLumaConversion = 'scale=out_color_matrix=bt709,format=yuv420p';
 
 interface BoxResult {
   readonly index: number;

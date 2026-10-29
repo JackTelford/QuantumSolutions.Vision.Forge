@@ -41,7 +41,7 @@ describe('text boxes file', () => {
     assert.deepEqual(pixelBox(whiteBox.box, 320, 180), { x: 32, y: 36, w: 128, h: 72 });
     assert.deepEqual(pixelBox({ x: 0.99, y: 0.99, w: 0.5, h: 0.5 }, 320, 180), { x: 317, y: 178, w: 3, h: 2 });
     assert.deepEqual(pixelBox({ x: 0, y: 0, w: 0.001, h: 0.001 }, 320, 180), { x: 0, y: 0, w: 1, h: 1 });
-    assert.equal(boxLumaFilter({ x: 32, y: 36, w: 128, h: 72 }, 'C:\\w\\box.txt'), "crop=128:72:32:36,format=yuv420p,signalstats,metadata=mode=print:key=lavfi.signalstats.YAVG:file='C\\:/w/box.txt'");
+    assert.equal(boxLumaFilter({ x: 32, y: 36, w: 128, h: 72 }, 'C:\\w\\box.txt'), "crop=128:72:32:36,scale=out_color_matrix=bt709,format=yuv420p,signalstats,metadata=mode=print:key=lavfi.signalstats.YAVG:file='C\\:/w/box.txt'");
   });
 });
 

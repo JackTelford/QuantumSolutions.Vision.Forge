@@ -118,3 +118,14 @@ export function parseSsimSummary(stderr: string): number | undefined {
   const match = /SSIM [^\n]*\bAll:([0-9.]+)/.exec(stderr);
   return match === null ? undefined : Number(match[1]);
 }
+
+/**
+ * The average PSNR in dB from ffmpeg's `psnr` summary line, for example
+ * `[Parsed_psnr_0 @ ...] PSNR r:inf g:inf b:99.256854 average:104.028066 min:... max:...`;
+ * Infinity for identical frames, undefined when the filter compared nothing.
+ */
+export function parsePsnrSummary(stderr: string): number | undefined {
+  const match = /PSNR [^\n]*\baverage:(inf|[0-9.]+)/.exec(stderr);
+  if (match === null) return undefined;
+  return match[1] === 'inf' ? Number.POSITIVE_INFINITY : Number(match[1]);
+}

@@ -23,6 +23,11 @@ export function heroStillArgs(stillPath: string, framePath: string): readonly st
   return ['-i', stillPath, '-i', framePath, '-filter_complex', '[0:v]format=gbrp[a];[1:v]format=gbrp[b];[a][b]ssim'];
 }
 
+/** The ffmpeg arguments that compare two PNGs in planar RGB and print the PSNR summary (`parsePsnrSummary`). */
+export function psnrArgs(aPath: string, bPath: string): readonly string[] {
+  return ['-i', aPath, '-i', bPath, '-filter_complex', '[0:v]format=gbrp[a];[1:v]format=gbrp[b];[a][b]psnr'];
+}
+
 /** Where frame `frame` of the video is written for the comparison. */
 export function heroFramePath(workDir: string, frame: number): string {
   return join(workDir, `hero-frame-${frame}.png`);

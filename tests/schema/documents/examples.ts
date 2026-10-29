@@ -108,7 +108,7 @@ export function shotExample(id: string, durationFrames: number, lane: Lane): Sho
     size: 'MCU',
     angle: 'eye',
     dutchDegrees: 0,
-    lens: { focalMm: 85, fStop: 2.8, focusDistanceM: 1.2, shutterAngleDeg: 180 },
+    lens: { focalMm: 85, fStop: 2.8, focusDistanceM: 1.68, shutterAngleDeg: 180 },
     move: { preset: 'push-in', amplitude: 0.4, easing: 'standard-decelerate', startFrame: 0, endFrame: null },
     lighting: { preset: 'product-studio', keyIntensity: 1, fillRatio: 4, rimIntensity: 0.8, kelvin: 5600 },
     exposureOffsetEv: 0,

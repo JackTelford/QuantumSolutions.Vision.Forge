@@ -62,8 +62,8 @@ describe('still gate with a scripted ffmpeg', () => {
     assert.equal(readGateReport(gateReportPath(gate.finishedPng)).passed, true);
     assert.equal(gateReportPath(gate.finishedPng), join(dir, 'pass.gate.json'));
     // The box filter crops the text box of the 480x270 frame; the exposure filter sees the whole still.
-    assert.match(runner.invocations[0]?.args.join(' ') ?? '', /crop=192:32:48:189,format=yuv420p,signalstats/);
-    assert.match(runner.invocations[1]?.args.join(' ') ?? '', /-vf format=yuv420p,signalstats,metadata/);
+    assert.match(runner.invocations[0]?.args.join(' ') ?? '', /crop=192:32:48:189,scale=out_color_matrix=bt709,format=yuv420p,signalstats/);
+    assert.match(runner.invocations[1]?.args.join(' ') ?? '', /-vf scale=out_color_matrix=bt709,format=yuv420p,signalstats,metadata/);
     runner.assertAllUsed();
   });
 

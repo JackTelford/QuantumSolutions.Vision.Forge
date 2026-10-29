@@ -1,0 +1,21 @@
+# M4 calibration tuning log
+
+How the three lane's light scalars in `src/shared/three/calibration-scalars.ts` were set on 2026-10-29 (Windows 11, Edge 156.0.4314.50 on the RTX 2060 through ANGLE D3D11, ffmpeg 9.0.2). The target is the 18 percent gray card at 117.3 ± 5 YAVG (ADR 0008 decision 2) under both tone mappings, with the studio_small_09 HDRI installed and with the built-in room environment, since the parity test runs without an HDRI. Every trial rendered the calibration scene of `src/shared/calibration/scene.ts` under the product-studio rig at 0 EV, no halation, and measured the card with the still gate's crop + signalstats filter (`src/calibration/measure.ts`). The html lane read 117.0 on every run and needed no tuning.
+
+| Trial | keyIntensityScalar agx / standard | keyedEnvironmentIntensity | Lens focus | Gray card YAVG agx HDRI / room | standard HDRI / room | Verdict |
+| --- | --- | --- | --- | --- | --- | --- |
+| 0 (as handed over by the three-lane build) | 2.8 / 3.55 | 0.1 | the fixture's 1.2 m, subject at 2.2 m (every patch edge blurred by the bokeh pass) | 115.3 / 121.2 | 115.6 / 121.3 | within ±5, but the blur mixed the dark background into every box; not a measurement of the lights |
+| 1 (lens focused on the card, `focusedAtSubject` in `src/calibration/shots.ts`) | 2.8 / 3.55 | 0.1 | 2.2 m, the solver's distance | 116.7 / 122.6 | 117.2 / 122.9 | HDRI on target; room 5.3 and 5.6 over, outside ±5 |
+| 2 | 2.9 / 3.66 | 0.05 | 2.2 m | 115.9 / 119.1 | 116.6 / 119.5 | both environments within ±5, the largest miss 2.2; but the gray card was warm (mean RGB 125, 115, 109): the key's black-body colour tinted every surface |
+| 3 (adopted; lights white-balanced to the key, so the key is neutral) | 2.57 / 3.25 | 0.05 | 2.2 m | 116.6 / 119.8 | 117.2 / 120.2 | both environments within ±5, the largest miss 2.9; gray card 117, 117, 117 and white 228, 228, 228 under standard: neutral. The scalars are trial 2's divided by 1.128, the linear luma the warm key lost to the balance |
+
+Trials 1 and 2 were measured at 480x270 (the parity test's size, one sub-frame, SSAA level 1); trial 0 at 1920x1080. The 1080p and 480x270 renders of the same scalars agreed to 0.1 YAVG in `calibration.md`, so the size does not enter the number.
+
+What the trials say about the lane:
+
+- The room environment is about three times brighter than the studio HDRI on the card at the same `environmentIntensity` (the three-lane build measured 0.088 against 0.031 scene-linear at 0.25); at 0.1 the two environments sat 6 code values apart, at 0.05 about 3. The keyed share stays a touch of ambient either way.
+- Under agx the 90 percent white patch reads about 172 against the display-referred 224.7: AgX rolls the highlight off, as ADR 0008 and the scene's own note expect, and nothing clips (235 is the limited-range white). Under the standard (linear) output it reads 209 to 215.
+- The 2 percent black patch reads 56 to 62 against 49.5 in both tone mappings: the environment and the fill lift the toe by 7 to 12 code values. Reported, not gated (the scene gates the gray card only).
+- The swatches keep their hue within 8° under the standard output (magenta +8.0° the largest), and turn up to 18° under agx (blue -17.6°, green -14.9°, magenta +9.9°, yellow -7.2°, red +5.0°, cyan -4.0°) while agx also desaturates them (saturation 0.46 to 0.89 against 0.85 to 0.88 under standard; the tables in `calibration.md`). Their YAVG misses are the measurement's BT.601 luma matrix, not the lanes (see the skipped seam in the M4 report).
+- Trial 2's neutral patches were not neutral: the rig's 5600 K lights were coloured by `kelvinToRgb` (255, 239, 225), so the gray card's mean RGB was about 125, 115, 109 where the html lane reads 119, 119, 119. The lanes now balance every light to the rig's key (`whiteBalancedKelvinRgb`, ADR 0008 decision 2 amended 2026-10-29): the key is neutral, a warmer fill stays warm, a cooler rim blue, and trial 3's gray card reads 117, 117, 117 with the white at 228, 228, 228 under the standard output (`calibration.md`).
+- The swatch YAVG rows are measured with the BT.709 matrix since the same day (`scale=out_color_matrix=bt709` in the gate's filter); the html lane's nine patches then all sit within tolerance. Earlier runs measured with ffmpeg's BT.601 default and missed the coloured swatches by up to 22.
