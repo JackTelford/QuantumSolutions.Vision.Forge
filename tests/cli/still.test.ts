@@ -1,20 +1,27 @@
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { parseArguments } from '../../src/cli/arguments.ts';
+import type { CommandContext } from '../../src/cli/command.ts';
 import type { ApproveData, StillData } from '../../src/cli/commands/still.ts';
-import { scaledStillPath, stillPaths } from '../../src/cli/commands/still.ts';
+import { command as stillCommand, scaledStillPath, stillPaths } from '../../src/cli/commands/still.ts';
+import { MemoryLogger } from '../../src/cli/logger.ts';
 import type { CliResult } from '../../src/cli/result.ts';
+import { BlenderRenderError } from '../../src/errors/blender-errors.ts';
 import { readJsonFile, writeJsonAtomic } from '../../src/fs/atomic-json.ts';
 import { ChildProcessRunner } from '../../src/process/child-process-runner.ts';
 import { gateReportPath } from '../../src/render/still-gate.ts';
 import type { StillGateReport } from '../../src/render/still-gate.ts';
 import type { Job } from '../../src/shared/contracts/job.ts';
 import type { ShotSpec } from '../../src/shared/contracts/shot-spec.ts';
+import { writeToolsManifest } from '../../src/tools/tools-manifest.ts';
+import { FakeBlenderRunner } from '../fakes/fake-blender-runner.ts';
 import { preferTestBrowserInManifest, testBrowser } from '../fakes/test-browser.ts';
 import { planBrief, planLook, planShotSpec, planTreatment } from '../plan/fixtures.ts';
+import { edgeExample, toolsManifestExample } from '../render/fixtures.ts';
 import { mutated } from '../schema/documents/examples.ts';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -83,13 +90,19 @@ describe('still command without a browser', () => {
     assert.equal(badScale.exitCode, 2);
   });
 
-  it('refuses a blender shot with code lane-unavailable before touching any tool', async () => {
+  it('asks for doctor on a blender shot without tools.json, and for Blender with the install command when tools.json has none', async () => {
     const spec = readJsonFile(join(jobDir, 'shot-spec.json')) as ShotSpec;
     writeJsonAtomic(join(jobDir, 'shot-spec.json'), mutated(spec, (copy) => { copy.shots[1]!.lane = 'blender'; }));
-    const run = await cli(['still', '--job', jobDir, '--shot', 's02'], dataDir);
-    assert.equal(run.exitCode, 1);
-    assert.equal(run.result.errors[0]?.code, 'lane-unavailable');
-    assert.match(run.result.errors[0]?.hint ?? '', /M5/);
+    const noTools = await cli(['still', '--job', jobDir, '--shot', 's02'], dataDir);
+    assert.equal(noTools.exitCode, 1);
+    assert.equal(noTools.result.errors[0]?.code, 'data-file');
+    assert.match(noTools.result.errors[0]?.hint ?? '', /Run doctor/);
+    const blenderless = join(dir, 'blenderless');
+    writeToolsManifest(blenderless, toolsManifestExample('C:\\tools\\ffmpeg.exe', [edgeExample]));
+    const noBlender = await cli(['still', '--job', jobDir, '--shot', 's02'], blenderless);
+    assert.equal(noBlender.exitCode, 1);
+    assert.equal(noBlender.result.errors[0]?.code, 'tool-missing');
+    assert.match(noBlender.result.errors[0]?.hint ?? '', /winget install --id BlenderFoundation\.Blender/);
     writeJsonAtomic(join(jobDir, 'shot-spec.json'), spec);
   });
 
@@ -137,6 +150,96 @@ describe('still command without a browser', () => {
     const twice = await cli(['still', '--job', jobDir, '--shot', 's03', '--approve'], dataDir);
     assert.equal(twice.result.errors[0]?.code, 'still-not-rendered');
   });
+});
+
+describe('still command on a blender shot through a fake Blender', () => {
+  let dir = '';
+  let dataDir = '';
+  let jobDir = '';
+  before(async () => {
+    dir = mkdtempSync(join(tmpdir(), 'vf-still-blender-'));
+    dataDir = join(dir, 'data');
+    jobDir = await planJob(dir, dataDir, 480, 270);
+    const manifest = toolsManifestExample('C:\\tools\\ffmpeg.exe', [edgeExample]);
+    writeToolsManifest(dataDir, { ...manifest, programs: { ...manifest.programs, blender: { path: 'C:\\Blender\\blender.exe', version: '5.2.3', devices: [{ name: 'RTX 2060', type: 'OPTIX' }, { name: 'RTX 2060', type: 'CUDA' }, { name: 'i7', type: 'CPU' }] } } });
+    const spec = readJsonFile(join(jobDir, 'shot-spec.json')) as ShotSpec;
+    writeJsonAtomic(join(jobDir, 'shot-spec.json'), mutated(spec, (copy) => { copy.shots[1]!.lane = 'blender'; }));
+  });
+  after(() => { rmSync(dir, { recursive: true, force: true }); });
+
+  /** Runs the still command in this process with the fake runner standing in for Blender and ffmpeg. */
+  function runStill(runner: FakeBlenderRunner, args: readonly string[], log = new MemoryLogger()): ReturnType<typeof stillCommand.run> {
+    const context: CommandContext = { dataDir, outDir: join(dataDir, 'out'), cwd: repoRoot, runner, signal: never, log, now: (): Date => new Date() };
+    return stillCommand.run(context, parseArguments(['--job', jobDir, '--shot', 's02', ...args], stillCommand.options));
+  }
+
+  it('reports the bottom rung\'s failure when every rung fails, keeps the scratch folder with the scene documents and leaves the job as it was', async () => {
+    const before = readJsonFile(join(jobDir, 'job.json')) as Job;
+    const failure = { exitCode: 1, writeFrames: false, stderr: 'Error: boom' };
+    const runner = new FakeBlenderRunner([failure, failure, failure, failure, failure]);
+    const log = new MemoryLogger();
+    await assert.rejects(runStill(runner, [], log), (error: unknown) => error instanceof BlenderRenderError && error.code === 'blender-render' && /boom/.test(error.message));
+    assert.equal(runner.blenderRuns.length, 5, 'every rung was tried');
+    const paths = stillPaths(jobDir, 's02', 1);
+    const sceneDir = join(paths.workDir, 'blender', 'cycles-CPU', 'scene', 'cycles-CPU');
+    const batches = readdirSync(sceneDir);
+    assert.equal(batches.length, 1, 'one batch of one frame');
+    assert.ok(existsSync(join(sceneDir, batches[0]!, 'scene.json')), 'the scene documents stay for a reader');
+    assert.ok(log.messages.some((message) => /kept under/.test(message)));
+    assert.deepEqual(readJsonFile(join(jobDir, 'job.json')), before);
+  });
+
+  it('renders the still with the first rung of the ladder, grades it, runs the gate, pins eevee on opengl and re-keys the shot without caching the frame', async () => {
+    const planned = (readJsonFile(join(jobDir, 'job.json')) as Job).shots[1]!;
+    const runner = new FakeBlenderRunner();
+    const log = new MemoryLogger();
+    const output = await runStill(runner, [], log);
+    const data = output.data as StillData;
+    assert.deepEqual(data.renderProfile, { engine: 'eevee', backend: 'opengl', renderer: 'hardware' });
+    assert.equal(data.passed, true);
+    assert.deepEqual(data.checks.map((check) => check.id), ['composition', 'text-contrast', 'exposure']);
+    assert.equal(data.round, 1);
+    const paths = stillPaths(jobDir, 's02', 1);
+    for (const path of [paths.still, paths.raw, gateReportPath(paths.still)]) assert.ok(existsSync(path), path);
+    assert.ok(!existsSync(paths.workDir), 'the scratch folder with the attempts is removed');
+    assert.ok(!existsSync(join(dataDir, 'cache')), 'the still of a blender shot is not cached: a still renders with more samples than a clip');
+    assert.equal(runner.blenderRuns.length, 1);
+    const run = runner.blenderRuns[0]!;
+    assert.deepEqual(run.args.slice(0, 7), ['-b', '--factory-startup', '--disable-autoexec', '-noaudio', '--offline-mode', '--gpu-backend', 'opengl']);
+    assert.equal(run.env?.['BLENDER_USER_RESOURCES'], join(dataDir, 'blender-user'));
+    const job = readJsonFile(join(jobDir, 'job.json')) as Job;
+    assert.equal(job.status, 'stills');
+    assert.equal(job.shots[1]?.status, 'still-rendered');
+    assert.equal(job.shots[1]?.rounds, 1);
+    assert.notEqual(job.shots[1]?.key, planned.key, 'the key changes once at the gate');
+    const spec = readJsonFile(join(jobDir, 'shot-spec.json')) as ShotSpec;
+    assert.deepEqual(spec.shots[1]?.renderProfile, data.renderProfile);
+    assert.ok(log.messages.some((message) => /blender ladder for 480x270: eevee-opengl, eevee-vulkan, cycles-OPTIX, cycles-CUDA, cycles-CPU/.test(message)), log.messages.join('\n'));
+    assert.deepEqual(output.artifacts, [paths.still]);
+    assert.deepEqual(output.evidence, [gateReportPath(paths.still), paths.still]);
+  });
+
+  it('moves down the ladder when a rung fails and pins the rung that rendered', async () => {
+    const runner = new FakeBlenderRunner([{ exitCode: 1, writeFrames: false, stderr: 'gpu.init() failed: no OpenGL context' }]);
+    const log = new MemoryLogger();
+    const output = await runStill(runner, [], log);
+    const data = output.data as StillData;
+    assert.deepEqual(data.renderProfile, { engine: 'eevee', backend: 'vulkan', renderer: 'hardware' });
+    assert.equal(data.round, 2);
+    assert.equal(runner.blenderRuns.length, 2);
+    assert.equal(runner.blenderRuns[1]?.args[6], 'vulkan');
+    assert.ok(log.messages.some((message) => /warn: blender attempt eevee-opengl failed \(blender-render\).*no OpenGL context/.test(message)), log.messages.join('\n'));
+    assert.deepEqual((readJsonFile(join(jobDir, 'shot-spec.json')) as ShotSpec).shots[1]?.renderProfile, data.renderProfile);
+  });
+
+  it('takes the CPU rung alone under --renderer software', async () => {
+    const runner = new FakeBlenderRunner();
+    const data = (await runStill(runner, ['--renderer', 'software'])).data as StillData;
+    assert.deepEqual(data.renderProfile, { engine: 'cycles', backend: 'CPU', renderer: 'software' });
+    assert.equal(runner.blenderRuns.length, 1);
+    assert.ok(!runner.blenderRuns[0]?.args.includes('--gpu-backend'));
+  });
+
 });
 
 // Optional: the whole still path on the real browser. It depends on the harness and the html lane landing

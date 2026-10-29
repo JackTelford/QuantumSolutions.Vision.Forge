@@ -7,7 +7,7 @@
  * and the still shows the difference.
  */
 import { hdriForLighting } from '../assets/catalogue.ts';
-import { isInstalled } from '../assets/fetch.ts';
+import { assetPath, isInstalled } from '../assets/fetch.ts';
 import { AssetLedger, assetLedgerPath } from '../net/asset-ledger.ts';
 import type { Shot } from '../shared/contracts/shot-spec.ts';
 import { assetsUrlPrefix } from '../shared/harness/protocol.ts';
@@ -29,3 +29,15 @@ export function resolveEnvironment(shot: Shot, dataDir: string): EnvironmentRef 
   if (!isInstalled(entry, dataDir, ledger)) return null;
   return { id: entry.id, url: assetUrl(entry.file), kelvin: entry.kelvin };
 }
+
+/** The installed HDRI of the shot's rig for the blender lane (ADR 0004: the world HDRI is read from disk, not served), 2k before 1k, as an absolute path with forward slashes; null when neither is installed. */
+export function blenderHdriPath(shot: Shot, dataDir: string): string | null {
+  const ledger = new AssetLedger(assetLedgerPath(dataDir));
+  ledger.load();
+  for (const resolution of ['2k', '1k'] as const) {
+    const entry = hdriForLighting(shot.lighting.preset, resolution);
+    if (isInstalled(entry, dataDir, ledger)) return assetPath(dataDir, entry).replace(/\\/g, '/');
+  }
+  return null;
+}
+

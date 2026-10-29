@@ -205,7 +205,7 @@ export interface BlenderScene {
      */
     useDof: boolean;
     /**
-     * One keyframe per Blender frame from frameStart to frameEnd, in order; linear interpolation between them.
+     * One keyframe per Blender frame from frameStart to frameEnd, plus the bake's frame before and after the batch when it exists so the motion blur shutter window sees the motion at the batch's ends; in order; linear interpolation between them.
      */
     keyframes: CameraKeyframe[];
   };
@@ -371,7 +371,7 @@ export interface Empty {
   name: string;
   location: Vector;
   /**
-   * The pivot's rotation about Z per Blender frame; empty when it never turns.
+   * The pivot's rotation about Z per Blender frame, with the bake's frame before and after the batch when it exists (the shutter window); empty when it never turns.
    */
   rotationZKeyframes: RotationZKeyframe[];
 }
@@ -487,7 +487,7 @@ export interface AreaLight {
   location: Vector;
   rotationQuaternion: Quaternion;
   /**
-   * The light's location per Blender frame when it moves; empty for a static light.
+   * The light's location per Blender frame when it moves, with the bake's frame before and after the batch when it exists (the shutter window); empty for a static light.
    */
   locationKeyframes: LocationKeyframe[];
 }

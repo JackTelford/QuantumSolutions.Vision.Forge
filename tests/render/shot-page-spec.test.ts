@@ -24,9 +24,9 @@ describe('buildShotPageSpec', () => {
     assert.equal(page.look, lookBibleExample);
   });
 
-  it('refuses the blender lane with code lane-unavailable naming M5', () => {
+  it('refuses the blender lane with code lane-unavailable naming its own renderer', () => {
     const blender = mutated(shotExample('s09', 12, 'html'), (copy) => { copy.lane = 'blender'; });
-    assert.throws(() => browserLaneOf(blender), (error: unknown) => error instanceof LaneUnavailableError && error.code === 'lane-unavailable' && /M5/.test(error.hint) && /"s09"/.test(error.message));
+    assert.throws(() => browserLaneOf(blender), (error: unknown) => error instanceof LaneUnavailableError && error.code === 'lane-unavailable' && /blender-shot/.test(error.hint) && /"s09"/.test(error.message));
     assert.throws(() => buildShotPageSpec(blender, lookBibleExample, spec), LaneUnavailableError);
     assert.equal(browserLaneOf(shotExample('s01', 12, 'three')), 'three');
   });

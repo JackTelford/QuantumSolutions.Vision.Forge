@@ -188,7 +188,7 @@
         },
         "keyframes": {
           "type": "array",
-          "description": "One keyframe per Blender frame from frameStart to frameEnd, in order; linear interpolation between them.",
+          "description": "One keyframe per Blender frame from frameStart to frameEnd, plus the bake's frame before and after the batch when it exists so the motion blur shutter window sees the motion at the batch's ends; in order; linear interpolation between them.",
           "items": { "$ref": "#/$defs/CameraKeyframe" }
         }
       }
@@ -419,7 +419,7 @@
         "location": { "$ref": "#/$defs/Vector" },
         "rotationZKeyframes": {
           "type": "array",
-          "description": "The pivot's rotation about Z per Blender frame; empty when it never turns.",
+          "description": "The pivot's rotation about Z per Blender frame, with the bake's frame before and after the batch when it exists (the shutter window); empty when it never turns.",
           "items": { "$ref": "#/$defs/RotationZKeyframe" }
         }
       }
@@ -558,7 +558,7 @@
         "rotationQuaternion": { "$ref": "#/$defs/Quaternion" },
         "locationKeyframes": {
           "type": "array",
-          "description": "The light's location per Blender frame when it moves; empty for a static light.",
+          "description": "The light's location per Blender frame when it moves, with the bake's frame before and after the batch when it exists (the shutter window); empty for a static light.",
           "items": { "$ref": "#/$defs/LocationKeyframe" }
         }
       }

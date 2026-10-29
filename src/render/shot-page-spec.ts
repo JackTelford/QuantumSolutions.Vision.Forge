@@ -23,14 +23,14 @@ export class LaneUnavailableError extends VisionForgeError {
     super({
       code: 'lane-unavailable',
       message: `Shot "${shotId}" uses the ${lane} lane, which cannot render yet.`,
-      hint: 'The blender lane arrives with milestone M5; until then plan the shot on the html or three lane. See docs/handoff.md.',
+      hint: 'A blender shot renders through src/render/blender-shot.ts, not the browser harness; this path is only reached by mistake. See docs/handoff.md.',
     });
     this.shotId = shotId;
     this.lane = lane;
   }
 }
 
-/** The shot's lane as a browser lane; throws LaneUnavailableError for the blender lane (M5). */
+/** The shot's lane as a browser lane; throws LaneUnavailableError for the blender lane, which has its own renderer and must not reach the browser path. */
 export function browserLaneOf(shot: Shot): BrowserLane {
   if (shot.lane === 'html' || shot.lane === 'three') return shot.lane;
   throw new LaneUnavailableError(shot.id, shot.lane);

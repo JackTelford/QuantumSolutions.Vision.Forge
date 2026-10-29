@@ -6,7 +6,6 @@
  * through the RenderSeams interface, so tests replace exactly these
  * functions and a signature change in a harness module is fixed here.
  */
-import { VisionForgeError } from '../errors/vision-forge-error.ts';
 import { openBrowserRenderer } from '../harness/browser-session.ts';
 import { buildFingerprint, readMachineFingerprint, threeVersion } from '../harness/fingerprint.ts';
 import { HarnessServer } from '../harness/harness-server.ts';
@@ -51,15 +50,8 @@ export async function manifestFingerprint(options: FingerprintOptions): Promise<
   });
 }
 
-/** The lane code hash of a browser lane; the blender lane has no renderer here yet (both commands refuse its shots before asking). */
+/** The lane code hash of a lane's sources (src/lanes/lane-code-hash.ts); the blender commands fold the Blender series in through src/plan/shot-key.ts laneFingerprint, not here. */
 export function browserLaneCodeHash(lane: Lane): Promise<string> {
-  if (lane === 'blender') {
-    return Promise.reject(new VisionForgeError({
-      code: 'lane-unavailable',
-      message: 'The blender lane has no code hash yet, so no key can be computed for its shots.',
-      hint: 'The blender lane arrives with milestone M5; until then plan the shot on the html or three lane. See docs/handoff.md.',
-    }));
-  }
   return laneCodeHash(lane);
 }
 

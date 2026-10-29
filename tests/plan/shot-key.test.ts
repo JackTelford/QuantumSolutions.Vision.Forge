@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, before, describe, it } from 'node:test';
-import { browserLaunchFlags, emptyFingerprint, fingerprintFromManifest, lookContent, majorVersion, renderFingerprint, shotKey, shotKeyInput } from '../../src/plan/shot-key.ts';
+import { blenderLaneCodeHash, blenderSeries, browserLaunchFlags, emptyFingerprint, fingerprintFromManifest, laneFingerprint, lookContent, majorMinorVersion, majorVersion, renderFingerprint, shotKey, shotKeyInput } from '../../src/plan/shot-key.ts';
 import type { RenderFingerprint } from '../../src/plan/shot-key.ts';
 import type { ToolsManifest } from '../../src/shared/contracts/tools.ts';
 import { requiredEncoders, requiredFilters } from '../../src/tools/ffmpeg-info.ts';
@@ -105,5 +105,46 @@ describe('renderFingerprint', () => {
     const unchecked: ToolsManifest = { ...manifest, browsers: manifest.browsers.map((browser) => ({ ...browser, webgl: null })) };
     assert.equal(fingerprintFromManifest(unchecked).browserMajor, majorVersion(manifest.browsers[0]?.version ?? ''));
     assert.equal(fingerprintFromManifest({ ...manifest, browsers: [] }).browserMajor, null);
+  });
+});
+
+describe('laneFingerprint for the blender lane', () => {
+  let dir = '';
+  before(() => { dir = mkdtempSync(join(tmpdir(), 'vf-blender-fingerprint-')); });
+  after(() => { rmSync(dir, { recursive: true, force: true }); });
+
+  it('reads the major.minor of a version', () => {
+    assert.equal(majorMinorVersion('5.2.3'), '5.2');
+    assert.equal(majorMinorVersion('5.2'), '5.2');
+    assert.equal(majorMinorVersion('unknown'), null);
+  });
+
+  it('reads the Blender series from tools.json and null without one', () => {
+    assert.equal(blenderSeries(join(dir, 'no-manifest')), null);
+    const noBlender = join(dir, 'no-blender');
+    writeToolsManifest(noBlender, manifest);
+    assert.equal(blenderSeries(noBlender), null);
+    const withBlender = join(dir, 'blender');
+    writeToolsManifest(withBlender, { ...manifest, programs: { ...manifest.programs, blender: { path: 'C:\\Blender\\blender.exe', version: '5.2.3' } } });
+    assert.equal(blenderSeries(withBlender), '5.2');
+  });
+
+  it('keys a blender shot without a browser and folds the Blender series into its lane code hash, leaving the browser lanes as they were', async () => {
+    const dataDir = join(dir, 'keyed');
+    writeToolsManifest(dataDir, { ...manifest, programs: { ...manifest.programs, blender: { path: 'C:\\Blender\\blender.exe', version: '5.2.3' } } });
+    const blender = await laneFingerprint(dataDir, 'blender');
+    assert.equal(blender.browserMajor, null);
+    assert.deepEqual(blender.browserFlags, []);
+    assert.equal(blender.laneCodeHash, await blenderLaneCodeHash(dataDir));
+    assert.match(blender.laneCodeHash, /^[0-9a-f]{64}$/);
+    const html = await laneFingerprint(dataDir, 'html');
+    assert.equal(html.browserMajor, 157);
+    assert.deepEqual(html.browserFlags, [...browserLaunchFlags]);
+    const otherSeries = join(dir, 'other-series');
+    writeToolsManifest(otherSeries, { ...manifest, programs: { ...manifest.programs, blender: { path: 'C:\\Blender\\blender.exe', version: '5.3.0' } } });
+    assert.notEqual((await laneFingerprint(otherSeries, 'blender')).laneCodeHash, blender.laneCodeHash, 'another Blender series re-keys the blender shots');
+    assert.equal((await laneFingerprint(otherSeries, 'html')).laneCodeHash, html.laneCodeHash, 'and leaves the html keys alone');
+    assert.equal(await blenderLaneCodeHash(dataDir, 'a'.repeat(64)), await blenderLaneCodeHash(dataDir, 'a'.repeat(64)), 'stable for the same code hash and series');
+    assert.notEqual(await blenderLaneCodeHash(dataDir, 'a'.repeat(64)), await blenderLaneCodeHash(dataDir, 'b'.repeat(64)));
   });
 });

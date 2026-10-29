@@ -5,7 +5,10 @@
  * code hash, the browser's major version and the launch-flag set, so a
  * weekly browser patch does not invalidate every cached shot while a change
  * to any input does. The exact browser build is recorded in the render
- * manifest's fingerprint, not here.
+ * manifest's fingerprint, not here. A blender shot has no browser in its
+ * key (null and an empty flag list); the Blender series (major.minor, the
+ * one doctor accepts) enters its lane code hash instead, so the key's
+ * shape stays the same for every lane and no html or three key changes.
  */
 import { existsSync } from 'node:fs';
 import { laneCodeHash } from '../lanes/lane-code-hash.ts';
@@ -62,8 +65,33 @@ export function renderFingerprint(dataDir: string): RenderFingerprint {
   return fingerprintFromManifest(readToolsManifest(dataDir));
 }
 
-/** The render fingerprint of a data directory with the lane's code hash filled in: what plan, still and render all key a shot of that lane with. */
+/** The major.minor of a dotted version such as "5.2.3" ("5.2"); null when the text does not start with two numbers. */
+export function majorMinorVersion(version: string): string | null {
+  const match = /^(\d+)\.(\d+)(?:\.|$)/.exec(version);
+  return match === null ? null : `${match[1]}.${match[2]}`;
+}
+
+/** The Blender series tools.json records (the version's major.minor), or null without a manifest or a Blender in it. */
+export function blenderSeries(dataDir: string): string | null {
+  if (!existsSync(toolsManifestPath(dataDir))) return null;
+  const blender = readToolsManifest(dataDir).programs.blender;
+  return blender === undefined ? null : majorMinorVersion(blender.version);
+}
+
+/** The blender lane's code hash with the Blender series folded in: the lane's sources and applier, and the series whose Python API they were written against. */
+export async function blenderLaneCodeHash(dataDir: string, codeHash?: string): Promise<string> {
+  return contentHash({ laneCodeHash: codeHash ?? await laneCodeHash('blender'), blenderSeries: blenderSeries(dataDir) });
+}
+
+/**
+ * The render fingerprint of a data directory with the lane's code hash
+ * filled in: what plan, still and render all key a shot of that lane
+ * with. A browser lane takes the browser major and the launch flags from
+ * tools.json; the blender lane takes neither (a browser update must not
+ * re-key a Blender shot) and folds the Blender series into its code hash.
+ */
 export async function laneFingerprint(dataDir: string, lane: Lane): Promise<RenderFingerprint> {
+  if (lane === 'blender') return { laneCodeHash: await blenderLaneCodeHash(dataDir), browserMajor: null, browserFlags: [] };
   return { ...renderFingerprint(dataDir), laneCodeHash: await laneCodeHash(lane) };
 }
 

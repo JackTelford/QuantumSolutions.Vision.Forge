@@ -7,7 +7,8 @@
  * src/browser/runtime/, the lane's own folder, the Node-side page document
  * (src/lanes/html/page.ts fixes the background, the root CSS and the
  * @font-face rules) and the bundled font files the text is rasterised
- * from; the blender lane hashes src/shared/ and the one Python applier.
+ * from; the blender lane hashes src/shared/, its own resolver and runner
+ * under src/lanes/blender/ and the one Python applier.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
@@ -33,7 +34,7 @@ export interface HashedDirectory {
 /** The directories a lane hashes, relative to the repository root. */
 export function laneSourceDirectories(lane: HashedLane): readonly HashedDirectory[] {
   const shared: HashedDirectory = { directory: join('src', 'shared'), extension: '.ts' };
-  if (lane === 'blender') return [shared];
+  if (lane === 'blender') return [shared, { directory: join('src', 'lanes', 'blender'), extension: '.ts' }];
   return [
     shared,
     { directory: join('src', 'browser', 'runtime'), extension: '.ts' },
@@ -64,7 +65,7 @@ export function laneSourcePaths(lane: HashedLane, repoRoot: string): readonly st
   for (const { directory, extension } of laneSourceDirectories(lane)) collectFiles(join(repoRoot, directory), extension, absolute);
   for (const file of laneSourceFiles(lane)) {
     const path = join(repoRoot, file);
-    // The applier arrives with M5; a lane hash before that still has to exist.
+    // A test tree may lack the file; a lane hash still has to exist.
     if (existsSync(path)) absolute.push(path);
   }
   return absolute.map((path) => relative(repoRoot, path).split(sep).join('/')).sort();
