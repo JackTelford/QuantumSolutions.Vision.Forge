@@ -35,7 +35,7 @@ The single source of truth for where this repository stands. Newest milestone fi
 | The three lane end to end | still s01 7.1 s including the launch, gate passed (exposure 44.7 in 24 to 140); render 105 + 90 + 120 frames in 39.7 s at 1080p: 125.4, 104.7 and 124.0 ms per frame | `docs/evidence/m4/README.md` |
 | Cost per frame | calibration scene 1080p with four sub-frames and SSAA 2: 75 to 84 ms (html 49 ms); 480x270: 20 ms; lookdev 960x540: 46.7 ms (html 48.9) | `docs/evidence/m4/calibration.md`, `lookdev.md` |
 | Lookdev | fourteen stills, seven looks; two three-lane stills outside their look's band (studio-clean 168.6, sunset-gradient 48.7) | `docs/evidence/m4/lookdev-sheet.png`, `lookdev.md` |
-| Continuous integration | run RUN_ID_PLACEHOLDER: RESULT_PLACEHOLDER | GitHub Actions |
+| Continuous integration | run 40948845323 on 5d64728: success on windows-2025 and ubuntu-24.04, Node 24 and 26 (the three-lane golden and the parity test ran on SwiftShader there) | GitHub Actions |
 
 ### Untested
 
@@ -107,7 +107,7 @@ The blender lane: the resolver from shot, look, bake and environment to the clos
 | still and render end to end at 480x270 | still exit 0 with the gate passed and the profile pinned; render 12 frames, 12 reused on the second run, 120 complete on the whole-shot run, nothing launched when everything is cached | `tests/cli/still.test.ts`, `tests/cli/render.test.ts` |
 | assets | loopback downloads record the ledger, a wrong MD5 records nothing, a modified byte fails `--verify`; the real `hdri:studio_small_09-1k` download: 1615248 bytes, MD5 matched, SHA-256 e7cfda5f…, 0.2 s | `tests/assets/`, `tests/cli/assets.test.ts` |
 | ffmpeg 7.0.2 | the six ffmpeg-dependent M3 suites: 43 tests, 0 failures on the Gyan 7.0.2 full build | run locally 2026-10-29 |
-| Continuous integration | run RUN_ID_PLACEHOLDER: RESULT_PLACEHOLDER | GitHub Actions |
+| Continuous integration | run 40928113469 on 18a1ffc: success on both runners (the first push failed on ubuntu on a case-sensitive browser hint regex, fixed in 18a1ffc) | GitHub Actions |
 
 ### Untested
 
