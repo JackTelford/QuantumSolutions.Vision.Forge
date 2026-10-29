@@ -1,0 +1,12 @@
+{
+  "name": "vision-forge-narration",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The optional narration component of Vision.Forge (ADR 0007): Kokoro-82M through kokoro-js on the CPU. Installed into the data directory by `node scripts/cli.ts audio install`, never into the plugin. See THIRD-PARTY.md for the licenses of what it pulls in.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "dependencies": {
+    "@huggingface/transformers": "3.8.1",
+    "kokoro-js": "1.2.1"
+  }
+}
