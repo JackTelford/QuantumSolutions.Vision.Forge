@@ -26,6 +26,7 @@ The single source of truth for where this repository stands. Newest milestone fi
 | Camera: zero velocity at both ends except turntable and the cut moves, arc keeps its distance within 1e-6, dolly-zoom keeps the projected anchor height constant, same seed same shake, bake equals cameraFrameAt frame by frame, `verticalFovDegrees(50, 16/9) = 22.9`, `cssPerspectivePx(50, 16/9, 1080) = 2667` | 84 tests | `tests/shared/camera/` |
 | Composition: an MS hero on `thirds-left` lands at x 0.333, headroom 10 percent on a CU puts the subject top at 0.10, overlapping text, a 20 px caption, a 4-line body and a 50-character title line are all reported | 39 tests | `tests/shared/composition/` |
 | `plan`: every cross-document rule with a passing and a failing example, keys stable and sensitive to the shot, the look and the browser major, job id stable, statuses kept on rerun, the command end to end (exit 0 with a valid job folder; 1 with `schema-validation`, `cross-document` including a text box on the subject, `data-file`; 2 usage) | 50 tests | `tests/plan/`, `tests/cli/plan.test.ts` |
+| Continuous integration | run 40898208265 (commit 0efd956) passed on all four jobs (windows-2025 and ubuntu-24.04, Node 24 and 26) | GitHub Actions |
 
 ### Untested
 
@@ -34,7 +35,6 @@ The single source of truth for where this repository stands. Newest milestone fi
 - The handheld shake, the spring and the easing curves have not been judged by eye; the lookdev sheet in M4 is where taste enters.
 - Portrait aspects go through the camera model's sensor rule but no composition test uses one; `ground` with MS, MCU or CU fails the headroom check by construction (a level camera at the subject's base frames from below), so the planner pairs `ground` with MLS or wider.
 - Only the bottle fixture (0.08 × 0.25 × 0.08 m at 85 mm) and its variants have gone through the solver; a real planned shot spec arrives with M7's treatment.
-- `plan` was run on this machine only; the ubuntu job covers it on this push.
 
 ### Risks
 
