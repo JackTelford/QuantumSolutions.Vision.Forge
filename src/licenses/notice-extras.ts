@@ -53,7 +53,7 @@ export const narrationComponents: readonly OptionalComponent[] = [
     name: 'onnxruntime-node',
     version: '1.21.0',
     license: 'MIT',
-    notes: 'Bundles DirectML.dll under Microsoft\'s proprietary license; present but not used on the CPU path.',
+    notes: 'Bundles DirectML.dll under Microsoft\'s proprietary license; present but not used on the CPU path (measured 2026-10-29: not mapped into the process during a synthesis; audio synth records the check in narration.json).',
   },
   {
     name: 'phonemizer',

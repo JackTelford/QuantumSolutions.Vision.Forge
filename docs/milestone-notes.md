@@ -2,6 +2,14 @@
 
 One short note per milestone for the owner, newest first: what finished, what to look at, what changed underfoot. The full report with evidence is in `handoff.md`.
 
+## M6 finished (2026-10-29): narration
+
+- The `audio` command exists: `audio install` shows the sizes and the third-party notices and installs the Kokoro component into the data directory only after `--yes` (about 11 s here); `audio voices` lists the four offered voices; `audio synth --text "..."` turns text into a −16 LUFS WAV, an SRT and per-sentence frame timings (8 s of speech in about 8 s on the CPU).
+- The DirectML question of ADR 0007 is answered by measurement: DirectML.dll is not mapped into the process during a synthesis. Every `narration.json` records the check.
+- Two things the review caught: frame timings drifted by one frame at 25 fps (now computed from sample counts), and a model present at the right size but with wrong bytes escaped as a stack trace (now a coded error with a hint). `doctor` also used to report the weights unverified after a good install; fixed.
+- Nothing installs unless you ask. The skill asks before `--yes`, and the notices are in `THIRD-PARTY.md`.
+- Review in this order: `src/audio/install.ts`, `src/audio/kokoro-loader.ts`, `src/audio/synth.ts`, `src/audio/timing.ts`, `src/audio/voices.ts`.
+
 ## M5 finished (2026-10-29): the blender lane
 
 - The `blender` lane renders. A blender shot goes through the same plan, still gate, approve and render commands; `still` tries EEVEE on OpenGL, EEVEE on Vulkan, then Cycles on OptiX, CUDA and the CPU, pins the first that renders, and `render` runs that one in batches of thirty frames per Blender process. On this machine: a 1080p still in 7 s, a 480x270 clip at about 0.4 s per frame.

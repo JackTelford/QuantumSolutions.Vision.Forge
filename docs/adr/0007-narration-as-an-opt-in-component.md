@@ -1,6 +1,6 @@
 # ADR 0007: Narration is an opt-in component installed into the data directory
 
-Status: accepted, 2026-10-26. Owner decision recorded the same day.
+Status: accepted, 2026-10-26. Owner decision recorded the same day. Amended 2026-10-29 with M6 (the voice floor and the DirectML measurement).
 
 ## Context
 
@@ -17,8 +17,8 @@ BUILD PROMPT v2 allows one model: Kokoro-82M through `kokoro-js` (Apache-2.0) on
 - `kokoro-js` is **not** a dependency of the plugin. `components/narration/package.json` and its lockfile (exact pins: `kokoro-js` 1.2.1 and a direct `@huggingface/transformers` 3.8.1 so the plugin and kokoro-js share one `env` instance) are a template.
 - `node scripts/cli.ts audio install --data-dir <dir>` copies the template into `<data>/narration/`, runs `npm ci --ignore-scripts` by spawning `node.exe` with `npm-cli.js` (never `npm.cmd`), and downloads the four pinned files with our own downloader (commit SHA, byte size, SHA-256, `.download` partial with Range resume, rename on success, provenance JSON, license copy). Requires the user's confirmation; prints the sizes first.
 - The loader imports both packages from `<data>/narration/node_modules`, sets `env.localModelPath` and `env.cacheDir` to `<data>/narration/models`, `env.allowRemoteModels = false`, and calls `from_pretrained` with `dtype: 'q8'`, `device: 'cpu'`. A missing file fails closed with a hint naming `audio install`.
-- `THIRD-PARTY.md` lists eSpeak NG (GPL-3.0-or-later, provenance gap stated), libvips (LGPL-3.0-or-later) and DirectML.dll (proprietary; installed, not used on the CPU path). M6 checks the process module list to confirm DirectML is not mapped.
-- Text normalization (numbers, units, abbreviations) and sentence chunking happen in TypeScript before synthesis. Only English voices graded B or better are offered; `af_heart` is the default. Loudness is normalized in two passes to −16 LUFS, true peak −1.5 dBTP. Audio QA compares durations and `ebur128` numbers, never byte hashes.
+- `THIRD-PARTY.md` lists eSpeak NG (GPL-3.0-or-later, provenance gap stated), libvips (LGPL-3.0-or-later) and DirectML.dll (proprietary; installed, not used on the CPU path). M6 measured it: after a synthesis, with the onnxruntime sessions alive, Node's diagnostic report lists 55 mapped libraries, onnxruntime.dll and onnxruntime_binding.node among them and DirectML.dll absent (`src/audio/directml-check.ts`; `audio synth` records `directMlMapped` in narration.json on every run).
+- Text normalization (numbers, units, abbreviations) and sentence chunking happen in TypeScript before synthesis. Only English voices graded B or better are offered, and B- when fewer than six reach B (kokoro-js 1.2.1 grades only `af_heart` A and `af_bella` A- at B or above, so the floor is B- and four voices are offered: `af_heart`, `af_bella`, `af_nicole`, `bf_emma`); `af_heart` is the default. Loudness is normalized in two passes to −16 LUFS, true peak −1.5 dBTP. Audio QA compares durations and `ebur128` numbers, never byte hashes.
 - For narrated pieces, audio is produced before shot durations are locked, because sentence lengths are the clock of an explainer.
 
 ## Consequences

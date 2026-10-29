@@ -49,7 +49,7 @@ Environment variables `FFMPEG`, `BLENDER` and `CHROME` override discovery when a
 
 ## Narration (optional)
 
-Narration uses Kokoro-82M on the CPU through `kokoro-js`. It is not installed with the repository because its package chain is about 425 MB and contains components under GPL-3.0 (eSpeak NG), LGPL-3.0 (libvips) and a proprietary Microsoft DirectML library that is present but not used. `node scripts\cli.ts audio install` (milestone M6) installs it into the data directory after showing the sizes and licenses, and downloads the model weights (92 MB) pinned to a commit and verified by SHA-256. You can skip narration entirely and supply your own recording.
+Narration uses Kokoro-82M on the CPU through `kokoro-js`. It is not installed with the repository because its package chain is about 425 MB and contains components under GPL-3.0 (eSpeak NG), LGPL-3.0 (libvips) and a proprietary Microsoft DirectML library that is present but not used. `node scripts\cli.ts audio install --data-dir <dir>` prints the sizes and the licenses and stops; `audio install --yes` then copies the component's package.json and lockfile into `<data>\narration\`, runs `npm ci --ignore-scripts` there through node and npm-cli.js (never npm.cmd), downloads the four model files (92 MB) pinned to one commit and verified by SHA-256 through the allowlisted downloader, records them in the data directory's asset ledger and writes `narration\provenance.json`; about 11 s here on a warm npm cache. `audio status` says what is on disk, `audio voices` lists the four offered voices, `audio install --yes --verify` re-hashes the weights. You can skip narration entirely and supply your own recording.
 
 ## Troubleshooting
 

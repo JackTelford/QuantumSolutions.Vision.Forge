@@ -62,7 +62,7 @@ Installed into the data directory by `node scripts/cli.ts audio install` after t
 | --- | --- | --- | --- |
 | kokoro-js | 1.2.1 | Apache-2.0 | Text-to-speech runtime for the Kokoro model on the CPU. |
 | @huggingface/transformers | 3.8.1 | Apache-2.0 | Model loader used by kokoro-js. |
-| onnxruntime-node | 1.21.0 | MIT | Bundles DirectML.dll under Microsoft's proprietary license; present but not used on the CPU path. |
+| onnxruntime-node | 1.21.0 | MIT | Bundles DirectML.dll under Microsoft's proprietary license; present but not used on the CPU path (measured 2026-10-29: not mapped into the process during a synthesis; audio synth records the check in narration.json). |
 | phonemizer | 1.2.1 | Apache-2.0 (as labelled) | Embeds eSpeak NG (GPL-3.0-or-later); its corresponding source is unidentified: https://github.com/xenova/phonemizer.js/issues/6 |
 | sharp and @img/sharp-win32-x64 | 0.34.5 | Apache-2.0 AND LGPL-3.0-or-later | The prebuilt Windows binary bundles libvips (LGPL-3.0-or-later). |
 | onnx-community/Kokoro-82M-v1.0-ONNX (model weights) | v1.0 | Apache-2.0 | Downloaded from Hugging Face, pinned to a commit and verified by SHA-256. |

@@ -2,6 +2,65 @@
 
 The single source of truth for where this repository stands. Newest milestone first. Every claim here points at a test or a file under `docs/evidence/`; anything else is listed under "Untested".
 
+## M6: narration (2026-10-29)
+
+### Done
+
+- **Seams** (hand-written, committed as 1c6169a): the four pinned Kokoro files with their sizes and SHA-256s (`src/audio/weights.ts`), the text normalizer and sentence chunker (`normalize-text.ts`), the SRT writer (`srt.ts`), and where npm-cli.js lives beside node (`src/tools/npm-cli.ts`).
+- **`audio install`** (`src/audio/install.ts`, `component.ts`, `install-command.ts`, `third-party.ts`): without `--yes` it prints the sizes and the third-party notices and exits 0 with `confirmed false`; with `--yes` it copies the component template into `<data>/narration/`, runs `npm ci --ignore-scripts --no-audit --no-fund` by spawning node with npm-cli.js (the only npm call in the repository), downloads the four pinned files through the allowlisted downloader (size and SHA-256 verified before the rename, `.corrupt` set-aside on a mismatch), records them in the asset ledger with the model's credit, writes `LICENSE.txt` (the repository has no LICENSE file at the pinned commit) and `provenance.json`. Resumable: packages count as present only when npm's hidden lockfile says the last `npm ci` finished; `--verify` re-hashes every weight and reports `downloaded`, `rehashed` or `ledger` per file.
+- **`audio status`** and **`audio voices`** (`status-command.ts`, `voices-command.ts`, `voices.ts`): the disk state without npm or the network (a corrupt provenance file is reported, not a crash); the 28 English voices with the grades read from kokoro-js 1.2.1, of which four reach the floor (B or better, B- when fewer than six reach B): `af_heart` (A, default), `af_bella`, `af_nicole`, `bf_emma`.
+- **`audio synth`** (`kokoro-loader.ts`, `synth.ts`, `timing.ts`, `wav.ts`, `loudness.ts`, `directml-check.ts`, `synth-command.ts`): the loader imports kokoro-js and transformers.js from the data directory by file URL (the plugin has no such dependency), with remote models disallowed, and fails closed before any import when the component is absent; a model that will not load or a sentence that will not synthesize is a coded error with a hint, never a stack trace; the text is normalized and read one sentence at a time, each sentence written as a canonical 24 kHz 16-bit WAV, joined with a gap, the per-sentence timings computed from the integer sample counts (never from rounded seconds: 25 fps drifted a frame before the review), the captions written as SRT, the loudness normalized in two passes to −16 LUFS and −1.5 dBTP and measured back, the mapped libraries read while the model is alive; `narration.json` carries the sentences with their frames, the loudness and `directMlMapped`.
+- **Doctor** reads the component's real state (`narrationState` through `componentStatus`): `installed` once npm finished, `weightsVerified` once the lockfile matches and every pinned file has its size (the integrator's fix: doctor used to look for a `model-source.json` nothing writes).
+- Docs: ADR 0007 amended (the voice floor, the DirectML measurement), THIRD-PARTY.md, SETUP, SKILL.md (the audio paragraph), README, this section, the milestone note.
+- Process: two modules in parallel (the installer; the synthesis pipeline), each built, adversarially reviewed and fixed: 13 findings, 11 applied, 2 declined with reasons (a `--verify` that bypasses the confirm gate; a marker cleanup made unnecessary by the hidden-lockfile rule). One real bug (the frame drift at 25 fps) and three closed-world gaps (a killed npm looking installed, a corrupt provenance crashing status, a half-installed model escaping as a stack trace).
+
+### Evidence
+
+| Claim | Number | Where |
+| --- | --- | --- |
+| Type checks, house rules, schema drift, licenses | `npm run check` exit 0; 481 files linted | run locally 2026-10-29 |
+| Unit and integration tests | `npm test`: see the CI row; locally every suite green including the real-component integration tests (`VF_NARRATION_INSTALL=1`, `VF_NARRATION_DATA_DIR=<installed dir>`) | same |
+| Real install | `audio install --yes` into a fresh data directory: 10.7 s in all (npm ci 4.9 s from a warm cache, the 92 MB model 3 to 5 s from the hf.co CDN, every hash verified); a resumed run 0.19 s with npm skipped and every weight from the ledger; `--verify` re-hashes all four | the install builder's and fixer's reports; `provenance.json` in the scratch install |
+| Real synthesis through the CLI | two sentences (26 words) with `af_heart`: model load about 1 s, synthesis 8.4 s for 8.45 s of speech, loudness −16.0 LUFS and −1.5 dBTP, 254 frames at 30 fps with the second sentence starting at frame 186, DirectML not mapped; 10.3 s wall clock | run by the integrator 2026-10-29 |
+| Offline | a probe with fetch, http and https made to throw loaded the model (0.96 s) and synthesized 2 s of speech with zero network attempts | the synth reviewer's report |
+| DirectML (ADR 0007) | 55 libraries mapped during a synthesis, onnxruntime.dll and onnxruntime_binding.node among them, DirectML.dll absent | `src/audio/directml-check.ts`, the synth reviewer's and fixer's reports |
+| Timing | sample counts to frames exact at 24, 25, 30 and 60 fps (6720 samples at 25 fps is 7 frames, not 8) | `tests/audio/timing.test.ts` |
+| Continuous integration | run RUN_ID_PLACEHOLDER: RESULT_PLACEHOLDER (the runners install nothing: the component tests run through fakes, the real-component tests skip) | GitHub Actions |
+
+### Untested
+
+- macOS and Linux installs (the npm-cli lookup and the lockfile are platform-neutral; the sharp and onnxruntime binaries for those platforms have not been installed here).
+- A slow network: the 60-second download the ADR feared took 5 s here; the downloader resumes a partial file, which no real interruption has exercised.
+- Voices other than `af_heart` and `bf_emma` have been synthesized only in the voices probe; the narration has not been judged by ear beyond a sanity listen.
+- `audio synth --script` with long texts near the 400-character sentence cap; the chunker is unit-tested, not heard.
+
+### Risks
+
+- The component's third-party terms (eSpeak NG under GPL-3.0-or-later with an unidentified corresponding source, libvips under LGPL, DirectML.dll proprietary) stay confined to the data directory and are shown before the install; a distributor of the whole data directory would carry them.
+- `sha256File`'s read-failure hint names `assets --verify`; `audio install` reuses it, so an unreadable weight file points at the wrong command (a hint parameter would fix it).
+- The error codes are strings in the CLI result (`schemas/cli-result.schema.json` has no enum), so a misspelt code in a new command would not be caught by the schema; SKILL.md is the catalogue.
+- kokoro-js clamps a sentence at 509 tokens; the chunker's 400-character cap keeps under it for English, not for a text of long words in another language (narration is English only).
+
+### Deliberately not done
+
+- Streaming synthesis, SSML, word-level timings (kokoro-js gives none), voices below B-.
+- A GPU path (DirectML or CUDA) for the model; the CPU does 1x real time.
+- Music.
+
+### Review guide
+
+Read these five in order (about 900 lines):
+
+1. `src/audio/install.ts` and `component.ts`: what an install does, what counts as installed, and why the hidden lockfile matters.
+2. `src/audio/kokoro-loader.ts`: the file-URL imports, the offline switches and the fail-closed paths.
+3. `src/audio/synth.ts` and `timing.ts`: the pipeline from text to WAV, SRT and frames.
+4. `src/audio/voices.ts` and `third-party.ts`: the data the owner's decisions rest on.
+5. `tests/audio/synth.integration.test.ts`: how the real component is exercised.
+
+### Next: M7
+
+The vertical slice: text plates composited over picture plates after the grade (ADR 0008 decision 4), the assembly plan built from the job (`assemble --job`, `qa --job`), and the product film of `docs/blind-test.md` produced from its prompt through the commands only, with the evidence under `docs/evidence/m7/` and the blind-test write-up for our side.
+
 ## M5: the blender lane (2026-10-29)
 
 ### Done
