@@ -101,9 +101,9 @@ describe('renderFingerprint', () => {
     assert.deepEqual(renderFingerprint(dataDir), { laneCodeHash: '', browserMajor: 157, browserFlags: ['--force-device-scale-factor=1', '--disable-lcd-text'] });
   });
 
-  it('records a null major when no browser has a WebGL report', () => {
+  it('falls back to the first browser found when none has a WebGL report, and records null only without a browser', () => {
     const unchecked: ToolsManifest = { ...manifest, browsers: manifest.browsers.map((browser) => ({ ...browser, webgl: null })) };
-    assert.equal(fingerprintFromManifest(unchecked).browserMajor, null);
+    assert.equal(fingerprintFromManifest(unchecked).browserMajor, majorVersion(manifest.browsers[0]?.version ?? ''));
     assert.equal(fingerprintFromManifest({ ...manifest, browsers: [] }).browserMajor, null);
   });
 });

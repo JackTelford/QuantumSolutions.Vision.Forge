@@ -1,7 +1,8 @@
 /**
  * Reads single registry values through reg.exe, the way the M0 probes did.
- * Only doctor needs the registry (the Blender ProgID command and the
- * long-paths policy); everything else is discovered through the file system.
+ * doctor reads the Blender ProgID command and the long-paths policy, and
+ * the render fingerprint (src/harness/fingerprint.ts) reads the DPI and
+ * ClearType values; everything else is discovered through the file system.
  *
  * Known limitation: reg.exe writes in the console's OEM code page and the
  * runner decodes UTF-8, so data with non-ASCII characters (a Blender

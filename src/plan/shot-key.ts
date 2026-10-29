@@ -8,29 +8,27 @@
  * manifest's fingerprint, not here.
  */
 import { existsSync } from 'node:fs';
+import { laneCodeHash } from '../lanes/lane-code-hash.ts';
 import type { LookBible } from '../shared/contracts/look-bible.ts';
-import type { Shot } from '../shared/contracts/shot-spec.ts';
+import type { Lane, Shot } from '../shared/contracts/shot-spec.ts';
 import type { ToolsManifest } from '../shared/contracts/tools.ts';
 import { contentHash } from '../shared/sha256.ts';
 import { readToolsManifest, toolsManifestPath } from '../tools/tools-manifest.ts';
 
 /**
- * The launch-flag set every shot key records, fixed by the M2 task for the
- * M3 harness. ADR 0006 decision 3 currently lists only
- * `--force-device-scale-factor=1` and `--use-angle` (the renderer choice the
- * shot's render profile already records), and must be amended (or this
- * constant trimmed) before M3 launches a browser, or the key would record
- * flags the harness does not pass.
+ * The launch-flag set every shot key records and the harness launches with
+ * (ADR 0006 decision 3, amended 2026-10-29); the `--use-angle` choice is
+ * added by src/harness/types.ts and recorded by the shot's render profile.
  */
 export const browserLaunchFlags: readonly string[] = ['--force-device-scale-factor=1', '--disable-lcd-text'];
 
 /** The part of the render environment that enters a shot key. */
 export interface RenderFingerprint {
   /**
-   * Content hash of the lane sources (templates, scenes, the frame protocol
-   * runtime) as 64 lowercase hex characters. M3 computes it from the lane
-   * files so a change to rendering code invalidates the cache; until M3
-   * lands it is the empty string.
+   * Content hash of the lane sources (src/lanes/lane-code-hash.ts) as 64
+   * lowercase hex characters, so a change to rendering code invalidates
+   * the cache; the empty string before a lane is chosen (renderFingerprint)
+   * and filled per shot by laneFingerprint.
    */
   readonly laneCodeHash: string;
   /** Major version of the browser the lanes launch, for example 156; null when doctor found no browser with a WebGL report. */
@@ -48,9 +46,9 @@ export function majorVersion(version: string): number | null {
   return match === null ? null : Number(match[1]);
 }
 
-/** The fingerprint a tools manifest gives: the major version of the first browser with a WebGL report, and the launch flags. */
+/** The fingerprint a tools manifest gives: the major version of the first browser with a WebGL report (else the first browser found, Edge before Chrome, the one that renders), and the launch flags. */
 export function fingerprintFromManifest(manifest: ToolsManifest): RenderFingerprint {
-  const browser = manifest.browsers.find((candidate) => candidate.webgl !== null);
+  const browser = manifest.browsers.find((candidate) => candidate.webgl !== null) ?? manifest.browsers[0];
   return {
     laneCodeHash: '',
     browserMajor: browser === undefined ? null : majorVersion(browser.version),
@@ -62,6 +60,11 @@ export function fingerprintFromManifest(manifest: ToolsManifest): RenderFingerpr
 export function renderFingerprint(dataDir: string): RenderFingerprint {
   if (!existsSync(toolsManifestPath(dataDir))) return emptyFingerprint;
   return fingerprintFromManifest(readToolsManifest(dataDir));
+}
+
+/** The render fingerprint of a data directory with the lane's code hash filled in: what plan, still and render all key a shot of that lane with. */
+export async function laneFingerprint(dataDir: string, lane: Lane): Promise<RenderFingerprint> {
+  return { ...renderFingerprint(dataDir), laneCodeHash: await laneCodeHash(lane) };
 }
 
 /** The look bible without its timestamp: rewriting the same look at another time must not re-key every shot. */

@@ -10,7 +10,7 @@ import { readJsonFile, writeJsonAtomic } from '../fs/atomic-json.ts';
 import { validateDocument } from '../schema/validator.ts';
 import type { Lane, RenderManifest } from '../shared/contracts/render-manifest.ts';
 import type { RenderProfile } from '../shared/contracts/shot-spec.ts';
-import { contentHash } from '../shared/sha256.ts';
+import { toolVersionsHash } from '../harness/fingerprint.ts';
 
 /** The document kind of a render manifest. */
 export const manifestKind = 'render-manifest';
@@ -41,10 +41,11 @@ export interface ManifestInputs {
 /**
  * SHA-256 of the canonical JSON of a fingerprint, as the schema defines
  * toolVersionsHash: equal fingerprints hash alike, so a resume compares
- * one string instead of every field.
+ * one string instead of every field. The same function the harness
+ * exports as toolVersionsHash.
  */
 export function fingerprintHash(fingerprint: ManifestFingerprint): Promise<string> {
-  return contentHash(fingerprint);
+  return toolVersionsHash(fingerprint);
 }
 
 /** A manifest in the rendering state with no frames yet. */

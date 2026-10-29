@@ -41,7 +41,7 @@ export function readRenderTools(dataDir: string): RenderTools {
   return { ffmpeg, browser };
 }
 
-/** The fingerprint a shot key is computed with: the tools manifest's browser major and flags plus the lane's code hash. */
+/** The fingerprint a shot key is computed with: the tools manifest's browser major and flags plus the lane's code hash, the same value plan uses (src/plan/shot-key.ts laneFingerprint) taken through the seams so tests can fake the hash. */
 export async function keyFingerprint(dataDir: string, lane: Lane, seams: RenderSeams): Promise<RenderFingerprint> {
   return { ...renderFingerprint(dataDir), laneCodeHash: await seams.laneCodeHash(lane) };
 }

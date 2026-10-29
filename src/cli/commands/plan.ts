@@ -18,12 +18,15 @@ import { documentOptions, loadPlanDocuments } from '../../plan/documents.ts';
 import type { DocumentPaths } from '../../plan/documents.ts';
 import { buildJob, jobFolder, jobId, keptShotCount, readPreviousJob, writeJobFolder } from '../../plan/job.ts';
 import { CrossDocumentError } from '../../plan/plan-error.ts';
-import { renderFingerprint, shotKey } from '../../plan/shot-key.ts';
+import { carryPinnedProfiles } from '../../plan/pinned-profiles.ts';
+import { laneFingerprint, shotKey } from '../../plan/shot-key.ts';
+import type { RenderFingerprint } from '../../plan/shot-key.ts';
 import { compositionProblems, compositionWarnings } from '../../shared/composition/checks.ts';
 import { baseFrame } from '../../shared/composition/framing.ts';
 import { solveBasePose } from '../../shared/composition/solver.ts';
 import { totalFrames } from '../../schema/checks/shot-spec.ts';
 import type { JobStatus } from '../../shared/contracts/job.ts';
+import type { LookBible } from '../../shared/contracts/look-bible.ts';
 import type { Lane, Shot, ShotSpec } from '../../shared/contracts/shot-spec.ts';
 import { frameToSeconds } from '../../shared/frame-time.ts';
 import type { Command, CommandContext } from '../command.ts';
@@ -84,9 +87,18 @@ export function documentPathsFromArguments(context: CommandContext, args: Parsed
  * size) on every shot's base framing, each sentence prefixed with the shot id.
  * The contrast and luma checks need a rendered frame and belong to qa.
  */
-export function compositionProblemsOf(shotSpec: ShotSpec): readonly string[] {
+export function compositionProblemsOf(shotSpec: ShotSpec, look?: LookBible): readonly string[] {
   const spec = { fps: shotSpec.fps, width: shotSpec.width, height: shotSpec.height };
-  return shotSpec.shots.flatMap((shot) => compositionProblems(shot, spec, baseFrame(shot, solveBasePose(shot, spec))).map((problem) => `shot "${shot.id}": ${problem}`));
+  return shotSpec.shots.flatMap((shot) => compositionProblems(shot, spec, baseFrame(shot, solveBasePose(shot, spec)), look?.typography).map((problem) => `shot "${shot.id}": ${problem}`));
+}
+
+/** One fingerprint per lane of the spec, each with that lane's code hash, so every shot is keyed the way still and render key it. */
+export async function laneFingerprints(dataDir: string, shotSpec: ShotSpec): Promise<ReadonlyMap<Lane, RenderFingerprint>> {
+  const fingerprints = new Map<Lane, RenderFingerprint>();
+  for (const shot of shotSpec.shots) {
+    if (!fingerprints.has(shot.lane)) fingerprints.set(shot.lane, await laneFingerprint(dataDir, shot.lane));
+  }
+  return fingerprints;
 }
 
 /** The composition warnings (competing text boxes) of every shot, prefixed with the shot id. */
@@ -103,21 +115,25 @@ export const command: Command = {
     const paths = documentPathsFromArguments(context, args);
     const documents = loadPlanDocuments(paths, context.dataDir);
     const { brief, treatment, shotSpec, look } = documents;
-    const problems = [...crossDocumentProblems(brief, treatment, shotSpec, look), ...compositionProblemsOf(shotSpec)];
+    const problems = [...crossDocumentProblems(brief, treatment, shotSpec, look), ...compositionProblemsOf(shotSpec, look)];
     if (problems.length > 0) throw new CrossDocumentError(problems);
     const warnings = [...crossDocumentWarnings(brief, treatment, shotSpec, look), ...compositionWarningsOf(shotSpec)];
     for (const shot of shotSpec.shots) context.log.info(describeShot(shot));
     context.log.info(describeTotals(documents));
     for (const warning of warnings) context.log.warn(warning);
 
-    const fingerprint = renderFingerprint(context.dataDir);
-    const keys = await Promise.all(shotSpec.shots.map((shot) => shotKey(shot, look, fingerprint)));
     const id = await jobId(brief, treatment, shotSpec, look);
     const folder = jobFolder(context.outDir, id);
     const previous = readPreviousJob(folder);
-    const job = buildJob({ id, documents, keys, folder, dataDir: context.dataDir, createdAt: context.now().toISOString(), previous });
+    // A shot the still gate already pinned keeps its render profile (and so its key, status and still) when the documents did not change it.
+    const carried = carryPinnedProfiles(folder, shotSpec);
+    for (const shotId of carried.carriedShotIds) context.log.info(`shot "${shotId}" keeps the render profile the still gate pinned`);
+    const planned: PlanDocuments = { ...documents, shotSpec: carried.shotSpec };
+    const fingerprints = await laneFingerprints(context.dataDir, planned.shotSpec);
+    const keys = await Promise.all(planned.shotSpec.shots.map((shot) => shotKey(shot, look, fingerprints.get(shot.lane) ?? { laneCodeHash: '', browserMajor: null, browserFlags: [] })));
+    const job = buildJob({ id, documents: planned, keys, folder, dataDir: context.dataDir, createdAt: context.now().toISOString(), previous });
     if (previous !== undefined) context.log.info(`${folder.jobPath} exists; ${keptShotCount(previous, job)} of ${job.shots.length} shots keep their status`);
-    writeJobFolder(folder, documents, job);
+    writeJobFolder(folder, planned, job);
     context.log.info(`wrote ${folder.jobPath}`);
 
     const starts = shotStartFrames(shotSpec);
