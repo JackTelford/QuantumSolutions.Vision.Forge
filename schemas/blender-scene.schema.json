@@ -32,17 +32,17 @@
         },
         "fileStem": {
           "type": "string",
-          "description": "The file name prefix Blender appends the four-digit frame number and .png to, for example \"f\" gives f0001.png for frame 1."
+          "description": "The file name pattern Blender fills the frame number into and appends .png to: every # is one digit, so \"f######\" gives f000000.png for frame 0, the cache's own naming (src/render/cache.ts)."
         },
         "frameStart": {
           "type": "integer",
-          "minimum": 1,
-          "description": "First Blender frame to render, 1 or more (Blender frame k + 1 is shot frame k), for example 1."
+          "minimum": 0,
+          "description": "First Blender frame to render, 0 or more; Blender frame k is shot frame k, for example 0."
         },
         "frameEnd": {
           "type": "integer",
-          "minimum": 1,
-          "description": "Last Blender frame to render, inclusive, at or above frameStart, for example 120."
+          "minimum": 0,
+          "description": "Last Blender frame to render, inclusive, at or above frameStart, for example 119."
         },
         "fps": {
           "type": "integer",
@@ -330,8 +330,8 @@
       "properties": {
         "frame": {
           "type": "integer",
-          "minimum": 1,
-          "description": "The Blender frame number, 1 or more."
+          "minimum": 0,
+          "description": "The Blender frame number, 0 or more (shot frame k)."
         },
         "location": { "$ref": "#/$defs/Vector" },
         "rotationQuaternion": { "$ref": "#/$defs/Quaternion" },
@@ -432,8 +432,8 @@
       "properties": {
         "frame": {
           "type": "integer",
-          "minimum": 1,
-          "description": "The Blender frame number."
+          "minimum": 0,
+          "description": "The Blender frame number, 0 or more (shot frame k)."
         },
         "radians": {
           "type": "number",
@@ -571,8 +571,8 @@
       "properties": {
         "frame": {
           "type": "integer",
-          "minimum": 1,
-          "description": "The Blender frame number."
+          "minimum": 0,
+          "description": "The Blender frame number, 0 or more (shot frame k)."
         },
         "location": { "$ref": "#/$defs/Vector" },
         "rotationQuaternion": { "$ref": "#/$defs/Quaternion" }

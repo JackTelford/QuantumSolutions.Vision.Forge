@@ -82,15 +82,15 @@ export interface BlenderScene {
      */
     directory: string;
     /**
-     * The file name prefix Blender appends the four-digit frame number and .png to, for example "f" gives f0001.png for frame 1.
+     * The file name pattern Blender fills the frame number into and appends .png to: every # is one digit, so "f######" gives f000000.png for frame 0, the cache's own naming (src/render/cache.ts).
      */
     fileStem: string;
     /**
-     * First Blender frame to render, 1 or more (Blender frame k + 1 is shot frame k), for example 1.
+     * First Blender frame to render, 0 or more; Blender frame k is shot frame k, for example 0.
      */
     frameStart: number;
     /**
-     * Last Blender frame to render, inclusive, at or above frameStart, for example 120.
+     * Last Blender frame to render, inclusive, at or above frameStart, for example 119.
      */
     frameEnd: number;
     /**
@@ -254,7 +254,7 @@ export interface LinearRgb {
  */
 export interface CameraKeyframe {
   /**
-   * The Blender frame number, 1 or more.
+   * The Blender frame number, 0 or more (shot frame k).
    */
   frame: number;
   location: Vector;
@@ -383,7 +383,7 @@ export interface Empty {
  */
 export interface RotationZKeyframe {
   /**
-   * The Blender frame number.
+   * The Blender frame number, 0 or more (shot frame k).
    */
   frame: number;
   /**
@@ -499,7 +499,7 @@ export interface AreaLight {
  */
 export interface LocationKeyframe {
   /**
-   * The Blender frame number.
+   * The Blender frame number, 0 or more (shot frame k).
    */
   frame: number;
   location: Vector;
