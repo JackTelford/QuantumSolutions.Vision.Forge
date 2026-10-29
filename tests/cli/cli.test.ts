@@ -57,10 +57,10 @@ describe('scripts/cli.ts', () => {
   });
 
   it('a planned but unimplemented command says which milestone delivers it', async () => {
-    const run = await cli(['render'], dataDir);
+    const run = await cli(['audio'], dataDir);
     assert.equal(run.exitCode, 2);
     assert.equal(run.result.errors[0]?.code, 'not-implemented');
-    assert.match(run.result.errors[0]?.hint ?? '', /milestone M3/);
+    assert.match(run.result.errors[0]?.hint ?? '', /milestone M6/);
   });
 
   it('an unknown option is a usage error', async () => {
