@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>failing protocol fixture</title>
+</head>
+<body>
+<div id="stage"></div>
+<script>
+// A page whose init fails on purpose: by default it reports ok: false with a sentence; with
+// ?animations in the URL it reports success but one running animation, which the harness refuses;
+// with ?hang the init promise never settles, which the harness must time out rather than wait on.
+window.__vfInit = function () {
+  console.error('fixture: the init failure is deliberate');
+  if (location.search.indexOf('hang') >= 0) return new Promise(function () {});
+  var animations = location.search.indexOf('animations') >= 0;
+  return Promise.resolve(JSON.stringify(animations
+    ? { ok: true, error: '', fonts: [], animations: 1, webglRenderer: null }
+    : { ok: false, error: 'The fixture refuses to initialise on purpose.', fonts: [], animations: 0, webglRenderer: null }));
+};
+window.__vfSeek = function (k) {
+  return JSON.stringify({ ok: false, error: 'The fixture never seeks.', frame: k, animations: 0 });
+};
+</script>
+</body>
+</html>

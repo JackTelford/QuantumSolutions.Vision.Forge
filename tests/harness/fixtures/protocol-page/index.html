@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>protocol fixture</title>
+<style>
+html, body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+#stage { position: relative; width: 640px; height: 360px; overflow: hidden; }
+#box { position: absolute; top: 130px; left: 0; width: 100px; height: 100px; background: #ff0000; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="box"></div></div>
+<script>
+// A page that implements the capture protocol of src/shared/harness/protocol.ts in plain
+// JavaScript: every frame is a pure function of k, and nothing here animates on its own.
+window.__vfInit = function (specJson) {
+  JSON.parse(specJson);
+  return Promise.resolve(JSON.stringify({ ok: true, error: '', fonts: [], animations: document.getAnimations().length, webglRenderer: null }));
+};
+window.__vfSeek = function (k) {
+  document.getElementById('stage').style.background = 'rgb(' + ((k * 4) % 256) + ', 51, 102)';
+  document.getElementById('box').style.left = (k * 8) + 'px';
+  return JSON.stringify({ ok: true, error: '', frame: k, animations: document.getAnimations().length });
+};
+</script>
+</body>
+</html>
