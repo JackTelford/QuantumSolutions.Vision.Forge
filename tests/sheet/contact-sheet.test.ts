@@ -67,8 +67,8 @@ describe('sheet layout and request', () => {
     const request = { frames: [{ path: 'C:\\f\\a.png', label: 'a' }, { path: 'C:\\f\\b.png', label: 'b c' }], columns: 2, thumbWidth: 320, fontFile: 'C:\\Windows\\Fonts\\segoeui.ttf', output: 'C:\\f\\sheet.png' };
     const graph = contactSheetGraph(request);
     assert.equal(graph, [
-      "[0:v]scale=320:-2,drawtext=text=a:x=8:y=8:fontsize=22:fontcolor=white:box=1:boxcolor=0x00000088:fontfile='C\\:/Windows/Fonts/segoeui.ttf'[t0]",
-      "[1:v]scale=320:-2,drawtext=text=b\\\\\\ c:x=8:y=8:fontsize=22:fontcolor=white:box=1:boxcolor=0x00000088:fontfile='C\\:/Windows/Fonts/segoeui.ttf'[t1]",
+      "[0:v]scale=320:-2,setsar=1,drawtext=text=a:x=8:y=8:fontsize=22:fontcolor=white:box=1:boxcolor=0x00000088:fontfile='C\\:/Windows/Fonts/segoeui.ttf'[t0]",
+      "[1:v]scale=320:-2,setsar=1,drawtext=text=b\\\\\\ c:x=8:y=8:fontsize=22:fontcolor=white:box=1:boxcolor=0x00000088:fontfile='C\\:/Windows/Fonts/segoeui.ttf'[t1]",
       '[t0][t1]concat=n=2:v=1:a=0,tile=2x1:padding=6:margin=12:color=0x202020',
     ].join(';'));
     assert.deepEqual(contactSheetArgs(request), ['-y', '-i', 'C:\\f\\a.png', '-i', 'C:\\f\\b.png', '-filter_complex', graph, '-frames:v', '1', 'C:\\f\\sheet.png']);

@@ -20,6 +20,9 @@ const probes: Readonly<Record<string, () => Promise<ProbeModule>>> = {
   p7: () => import('./p7-redirects.ts'),
   'm4-calibration': () => import('./m4-calibration.ts'),
   'm4-lookdev': () => import('./m4-lookdev.ts'),
+  'm5-acceptance': () => import('./m5-acceptance.ts'),
+  'm5-calibration': () => import('./m5-calibration.ts'),
+  'm5-lookdev': () => import('./m5-lookdev.ts'),
 };
 
 /** Entry point. Exit code 2 on usage error, 1 when a probe throws. */

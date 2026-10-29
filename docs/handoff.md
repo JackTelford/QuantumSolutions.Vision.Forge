@@ -2,6 +2,71 @@
 
 The single source of truth for where this repository stands. Newest milestone first. Every claim here points at a test or a file under `docs/evidence/`; anything else is listed under "Untested".
 
+## M5: the blender lane (2026-10-29)
+
+### Done
+
+- **Seams** (hand-written before the fan-out, committed earlier): the closed scene document `schemas/blender-scene.schema.json` with its generated contract, the logic-free applier `blender/apply_scene.py` (one commented bpy call per line, no arithmetic, no defaults), the shared-to-Blender axis mapping `src/shared/camera/blender-axes.ts` (positions (x, y, z) → (x, −z, y); orientations q_M · q, corrected after the first smoke render, ADR 0008 decision 2), and Blender 5.2.3 installed through winget and found by `doctor`.
+- **The resolver** (`src/lanes/blender/resolve-scene.ts` with `camera.ts`, `lights.ts`, `materials.ts`, `cyc-mesh.ts`, `subject.ts`, `calibration.ts`, `world.ts`, `render-settings.ts`, `scene-file.ts`): a shot, its look, its baked camera, the frames of one batch, the attempt (engine, device, samples) and the installed HDRI's path become one validated scene document, a pure function of its inputs: the camera keyframed per frame from the bake (sensor 36 mm, lens, f-stop and focus per keyframe, the bake's frame before and after the batch so the shutter window sees the motion at a batch's ends and a still carries blur), the subject's primitives under a turntable empty, the cyc as one explicit mesh (floor, quarter arc, wall), the materials from the look's palette in linear sRGB, one square area light per placed light with power = intensity × `blenderKeyPowerW` × (d / 1.2 m)² (the same irradiance rule as the three lane) in the colour balanced to the key, the world as the rig's HDRI turned so its centre column faces the key (checked by rendering a stripe) at the rig's ambient strength, else the look's background colour; AgX or Standard view transform with the look's exposure; motion blur from the shutter angle; denoising for stills only, by an explicit `still` input, never the batch length.
+- **The runner, the ladder and the predicate** (`src/lanes/blender/runner.ts`, `ladder.ts`, `success.ts`, `estimator.ts`, `batches.ts`; `src/errors/blender-errors.ts`): Blender's command line is exactly ADR 0004 decision 4 (golden-tested; `blender.exe`, never the launcher; `--gpu-backend` and the `gpu.init()` preflight only for EEVEE attempts; `BLENDER_USER_RESOURCES` under the data directory); the still gate runs the ladder EEVEE/OpenGL → EEVEE/Vulkan → Cycles OptiX → CUDA → CPU (stills only) filtered by the probe's devices, pins the rung that rendered, and `render` runs that rung alone, refusing a different pin or a disagreeing `--renderer` before anything launches; a run succeeds when the exit code is 0 (or the documented teardown crash with every frame present and newer than the spawn), every PNG exists, the first frame's BT.709 YAVG is above 18 and no crash log is newer than the spawn; exit 3 is `blender-script` with the traceback's tail, a bad frame `blender-render`, an overrun `blender-timeout`; clips render in batches of thirty frames per process after a three-frame estimate batch, resumable from the manifest.
+- **The dispatch** (`src/render/blender-shot.ts`, `src/cli/commands/still.ts`, `render.ts`, `src/plan/shot-key.ts`, `src/lanes/lane-code-hash.ts`): a blender shot goes through the same cache layout, manifest, frame hashing, still gate, finishing and job state as the browser lanes; its manifest records the Blender version; its key carries the blender lane's code hash (now covering `src/lanes/blender/`) and the Blender series instead of a browser major; every batch's scene document and logs are kept under `<cache>/scene/<attempt>/<first>-<last>/` with the document hashes in `scene-hashes.json`; the still of a blender shot renders into the round's scratch folder (a still has more samples and denoising than a clip, so it is never a cached frame).
+- **Calibration** (`src/shared/blender/calibration-scalars.ts`, `scripts/probes/m5-calibration.ts`, `docs/evidence/m5/calibration.md`, `calibration-tuning.md`): `blenderKeyPowerW` set to 18 W by measurement (the handed-over 150 W read the gray card as a white); one value serves both view transforms, since Blender's AgX and Standard read the card within 0.1 of each other; `blenderKeyedHdriStrength` 0.05 as the three lane's, confirmed on the black patch.
+- **Acceptance and lookdev** (`scripts/probes/m5-acceptance.ts`, `m5-lookdev.ts`, `docs/evidence/m5/`): the engine list and devices, one-frame renders per engine with timings, the exit-code matrix with every argv and stderr tail, the still, the 30-frame clip and the 150-frame turntable through the CLI, contact sheets, the Blender column on the lookdev sheet (21 stills: html, three, blender), the three-against-blender comparison with numbers, and an honest quality assessment.
+- **Integration fixes**: the resolver's explicit `still` flag (a one-frame tail batch of a clip is no longer denoised); the contact sheet sets `setsar=1` after its scale (ffmpeg refused to concat thumbnails whose rounded height gave an odd sample aspect ratio); the blender HDRI path lives beside `resolveEnvironment` in `src/render/environment.ts`; the calibration shot takes any lane; the stale "arrives with M5" hint; ADR 0004 decisions 6 and 7 amended; the schema's keyframe descriptions; the cookbook's blender row; SKILL.md, README and this section.
+- Process: two modules in parallel (the resolver; the runner, ladder and dispatch), then the evidence module, each built, adversarially reviewed and fixed: 21 findings (resolver 4, runner 8, evidence 9), 21 applied. Among them two real bugs: the HDRI turned 180 degrees from the key, and keyframes only inside the batch (so stills rendered without motion blur and batch edges got half of it); and `--renderer` ignored for blender shots.
+
+### Evidence
+
+| Claim | Number | Where |
+| --- | --- | --- |
+| Type checks, house rules, schema drift, licenses | `npm run check` exit 0; 12 contracts up to date; 454 files linted | run locally 2026-10-29 |
+| Unit and integration tests | `npm test`: 1629 tests in 411 suites, 0 failures, 3 skipped, 107 s (the real-Blender integration test renders one 64x36 Cycles CPU frame in 3 s and skips where Blender is absent) | same |
+| Blender acceptance | `Blender 5.2.3 LTS`, Python 3.13.13; devices RTX 2060 (CUDA, OPTIX), i7-9700K (CPU); one 480x270 frame: EEVEE/OpenGL 3.7 s, EEVEE/Vulkan 3.6 s (10.6 s cold), Cycles/OptiX 3.5 s, all non-black, no crash log; exit 3 provoked twice, exit 1 only outside the applier; the 0xC0000005 teardown crash never seen today | `docs/evidence/m5/acceptance.md` |
+| Blender through the CLI | `still --shot s01` at 1080p in 6.9 s, EEVEE/OpenGL pinned, gate passed (exposure 37.1 in 24 to 140); `render --shot s01` 30 frames in 15.6 s (490 ms per frame, two processes); `render --shot s02` 150 frames in 60.8 s (399 ms per frame, six processes), 30 and 150 distinct frame hashes | `docs/evidence/m5/acceptance.md`, `clip-s01-480x270.png`, `turntable-s02-480x270.png`, `still-s01-1920x1080-960.png` |
+| Gray card parity across three lanes | Blender under the studio HDRI: Cycles/OptiX 118.3 (both view transforms), EEVEE/OpenGL 115.7, flat world 115.4; the three lane 116.6 / 117.2; html 117.0; neutrals 119, 119, 119 (Cycles) and 116, 116, 116 (EEVEE); white 177 / 213 and black 56 / 62 within 4 code values of the three lane | `docs/evidence/m5/calibration.md`, `calibration-tuning.md` |
+| Lookdev | 21 stills; Blender stills within 1 to 9 code values of the three lane's luma per look, two outside their look's band (studio-clean 163.5, sunset-gradient 42.3, the same two as the three lane) | `docs/evidence/m5/lookdev-sheet.png`, `lookdev.md` |
+| HDRI orientation | a stripe HDRI rendered unrotated and turned: the lit side agrees with the key after the fix (gray card 98.8 on the key side against 57.6 with the old convention) | the resolver review and fix reports, `src/lanes/blender/world.ts` |
+| Motion blur at batch edges | a one-frame still with the margin keyframes differs from the same without (peak 12 code values along the moving edge); without them the still equalled a render with motion blur off | the resolver fix report, `src/lanes/blender/camera.ts` `keyframeFrames` |
+| Continuous integration | run RUN_ID_PLACEHOLDER: RESULT_PLACEHOLDER (the runners have no Blender; the lane's unit tests run through the fake runner) | GitHub Actions |
+
+### Untested
+
+- Cycles on CUDA and on the CPU at production sizes (the CPU rung rendered one 64x36 frame in the integration test); the CPU rung's time allowance (300 s per 1080p frame) is a guess, not a measurement.
+- EEVEE on Vulkan on a machine without a Vulkan driver; EEVEE from a non-interactive session (ADR 0004 says it falls back to Cycles; the ladder does that by the predicate, not by detecting the session).
+- The 0xC0000005 teardown crash tolerance is tested with the fake runner only; it did not occur in any run today.
+- The turntable and the motion blur could not be judged on the fixture bottle (a stack of cylinders shows no turn); a subject with an asymmetry is needed (M7's product film).
+- The two 2k HDRIs are not installed; the world uses the 1k file. Only studio_small_09 is installed, so five of the seven lookdev rigs rendered under the flat world.
+- The estimate after the first batch is a ceiling (the batch carries Blender's start: 213 s projected against 56 s taken on the turntable).
+- Blender has not run on CI (no runner has it; the lane's unit tests run through the fake runner there).
+
+### Risks
+
+- The applier prints two DeprecationWarnings on 5.2 (`World.use_nodes`, `Material.use_nodes`, to be removed in 6.0); they fill every stderr tail, and a future 5.x may drop the properties. The applier is pinned to 5.2 by `doctor`.
+- The fixture's motes and haze have no Blender counterpart, so the lanes differ in atmosphere on the same shot.
+- The glass of the blind-test brief is not a material the resolver writes (an opaque coated body); the treatment must say so (the steering table) until a transmission material exists.
+- The treatment's beat lane is not checked against its shots' lanes (`plan` accepted a beat marked `three` over a `blender` shot without a warning); a cross-document rule belongs with M7's plan builder.
+- A blender shot's key changes whenever anything under `src/shared/` or `src/lanes/blender/` changes (as the browser lanes' keys do with their code hash); regenerating a contract between `still --approve` and `render` makes `render` ask for a new still, which is by design and surprised the integrator once.
+
+### Deliberately not done
+
+- Poly Haven models as glTF (the asset catalogue has HDRIs only); volumetric haze; a transmission (glass) material; per-rig power scalars.
+- A `sceneHash` field in the render manifest (the sidecar records it; the schema stays closed).
+- Blender on CI.
+
+### Review guide
+
+Read these five in order (about 1,000 lines):
+
+1. `src/lanes/blender/resolve-scene.ts` then `lights.ts` and `world.ts`: what the scene document holds and the two conventions that were wrong once (the HDRI turn, the keyframe margin in `camera.ts`).
+2. `src/lanes/blender/runner.ts` and `success.ts`: Blender's command line and what counts as a successful run.
+3. `src/lanes/blender/ladder.ts`: the attempt ladder, what `still` pins and what `render` refuses.
+4. `src/render/blender-shot.ts`: batches, the estimate, the manifest, the scene sidecar.
+5. `docs/evidence/m5/acceptance.md` and `lookdev-sheet.png`: what the lane produced and the honest assessment of it.
+
+### Next: M6
+
+Narration (ADR 0007): `audio install` (the component template copied into the data directory, `npm ci` through node and npm-cli.js, the four pinned weights through the allowlisted downloader with their hashes, the ledger and a provenance file, the third-party notice shown first), `audio voices`, `audio status`, and `audio synth` (the loader with remote models disallowed, text normalization and sentence chunking, 24 kHz WAV, per-sentence timings as frame events, captions as SRT, two-pass loudness to −16 LUFS and −1.5 dBTP, the DirectML module check). The pure seams are already in `src/audio/` (weights, normalization, SRT) and `src/tools/npm-cli.ts`.
+
 ## M4: the three lane, the calibration parity and the lookdev sheet (2026-10-29)
 
 ### Done

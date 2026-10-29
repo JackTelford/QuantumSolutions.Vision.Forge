@@ -2,7 +2,7 @@
 
 Vision.Forge is a Claude Code skill that turns an English prompt into a finished video or still using only code. It renders titles and explainers with HTML and CSS, stylized 3D with Three.js, and near-photoreal objects with Blender, then assembles and checks the result with ffmpeg. Claude directs the shots, reviews rendered contact sheets and fixes what fails. No image or video generation model is involved; the one optional model is a small local voice for narration.
 
-**Status: under construction.** Milestones M0a (research, probes and decisions), M0b (core infrastructure, checks and packaging), M1 (contracts, doctor, assemble, QA and contact sheets), M2 (camera, motion, composition and the plan command) M3 (the browser harness, the html lane, the still gate, the still, render and assets commands) and M4 (the three lane, the calibration parity between the lanes and the lookdev sheet of the seven looks) are complete. The CLI finds the tools, validates every pipeline document, plans a job with a solved camera and composition per shot, renders the html and three lanes' shots deterministically in headless Edge or Chrome through a still gate, assembles clips into a graded delivery and measures it. The blender lane comes with M5. The current state and everything not yet verified are in [docs/handoff.md](docs/handoff.md); [docs/milestone-notes.md](docs/milestone-notes.md) has one short note per milestone.
+**Status: under construction.** Milestones M0a (research, probes and decisions), M0b (core infrastructure, checks and packaging), M1 (contracts, doctor, assemble, QA and contact sheets), M2 (camera, motion, composition and the plan command) M3 (the browser harness, the html lane, the still gate, the still, render and assets commands), M4 (the three lane, the calibration parity between the lanes and the lookdev sheet of the seven looks) and M5 (the blender lane) are complete. The CLI finds the tools, validates every pipeline document, plans a job with a solved camera and composition per shot, renders the html and three lanes' shots deterministically in headless Edge or Chrome through a still gate, renders the blender lane's shots through Blender 5.2 with the engine chosen at that gate, assembles clips into a graded delivery and measures it. The current state and everything not yet verified are in [docs/handoff.md](docs/handoff.md); [docs/milestone-notes.md](docs/milestone-notes.md) has one short note per milestone.
 
 ## What it will do
 
@@ -59,7 +59,7 @@ The skill is then available as `/vision-forge:cinematic-studio`. While developin
 | `qa --video <file> [--plan <file>] [--text-boxes <json>] [--still <png> --still-frame <k>] [--report <file>] [--loudness-target <LUFS>] [--no-fail]` | measures dimensions, frame rate, duration, black and frozen frames, pops, exposure drift, text contrast, loudness, true peak and the hero still match; writes a QA report |
 | `sheet --frames <dir or json> [--output <png>] [--columns <n>] [--thumb-width <px>]` | tiles labelled frames into one contact sheet |
 
-Planned: `audio` (M6). The `blender` lane arrives with M5; until then `still` refuses its shots.
+Planned: `audio` (M6) and the assembly plan built from the job (M7).
 
 ## Project layout
 
@@ -69,7 +69,7 @@ Planned: `audio` (M6). The `blender` lane arrives with M5; until then `still` re
 - `src/cli/`, `src/errors/`, `src/process/`, `src/fs/`, `src/net/`, `src/harness/` (the loopback server and the Playwright browser session), `src/schema/`, `src/tools/`, `src/plan/`, `src/finishing/`, `src/assemble/`, `src/qa/`, `src/sheet/`, `src/lint/` and `src/licenses/` are the Node-side infrastructure.
 - `Setup-VisionForge.cmd`, `scripts/setup.ps1` and `scripts/setup.sh` are the setup scripts a person runs once; they never prompt and install nothing without `-Install`.
 - `schemas/` holds the JSON Schema contracts; `src/shared/contracts/` is generated from them and checked for drift in CI.
-- `blender/apply_scene.py` is the only Python file; it applies a fully resolved scene and makes no decisions.
+- `blender/apply_scene.py` is the only Python file; it applies a fully resolved scene and makes no decisions. `src/lanes/blender/` is the Node side: the resolver that turns a shot, its look, its baked camera and its environment into the scene document, the runner with Blender's exact command line, the attempt ladder, the success predicate, the estimator and the batches; `src/render/blender-shot.ts` renders a shot through them into the same cache and manifest the browser lanes use.
 - `skills/cinematic-studio/` holds the skill, its creative knowledge base and the four bundled OFL fonts (`assets/fonts/`, with their license texts and provenance); HDRIs are downloaded into the data directory by the `assets` command, never committed.
 - `docs/adr/` records every decision and why; `docs/research.md` lists every fact with its source and status; `docs/evidence/` holds probe output with numbers.
 

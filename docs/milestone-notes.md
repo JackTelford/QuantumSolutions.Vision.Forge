@@ -2,6 +2,14 @@
 
 One short note per milestone for the owner, newest first: what finished, what to look at, what changed underfoot. The full report with evidence is in `handoff.md`.
 
+## M5 finished (2026-10-29): the blender lane
+
+- The `blender` lane renders. A blender shot goes through the same plan, still gate, approve and render commands; `still` tries EEVEE on OpenGL, EEVEE on Vulkan, then Cycles on OptiX, CUDA and the CPU, pins the first that renders, and `render` runs that one in batches of thirty frames per Blender process. On this machine: a 1080p still in 7 s, a 480x270 clip at about 0.4 s per frame.
+- Look at `docs/evidence/m5/lookdev-sheet.png`: the seven looks in three columns now (html, three, blender). The Blender column agrees with the three lane on the gray card within a few code values; its shadows are softer and its cap reflects the real HDRI. `acceptance.md` under it holds every Blender command line, exit code and timing, and the quality notes.
+- Two bugs the review caught before you did: the HDRI was turned 180 degrees away from the key, and a still rendered without motion blur because keyframes stopped at the batch's edge. Both fixed with renders as proof.
+- Known limits: the fixture bottle is a stack of cylinders, so the turntable shows no turn; the brief's frosted glass is an opaque coated body until a transmission material exists; Blender never runs on CI.
+- Review in this order: `src/lanes/blender/resolve-scene.ts`, `src/lanes/blender/runner.ts`, `src/lanes/blender/success.ts`, `src/lanes/blender/ladder.ts`, `src/render/blender-shot.ts`.
+
 ## M4 finished (2026-10-29): the three lane
 
 - The `three` lane renders: the bottle as real geometry on a cyc under the cookbook's rigs as area lights, an HDRI or room environment, depth of field from the lens, motion blur from the shutter, bloom from the look's halation. A 1080p frame costs 105 to 125 ms. The same still gate and render commands drive it; `assets --fetch hdri:studio_small_09-1k` before `plan` gives the studio HDRI.

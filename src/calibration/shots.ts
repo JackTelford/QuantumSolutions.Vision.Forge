@@ -21,8 +21,7 @@
  */
 import type { RenderSpec } from '../shared/camera/types.ts';
 import { solveBasePose } from '../shared/composition/solver.ts';
-import type { Lighting, LightingPreset, Shot } from '../shared/contracts/shot-spec.ts';
-import type { BrowserLane } from '../shared/harness/protocol.ts';
+import type { Lane, Lighting, LightingPreset, Shot } from '../shared/contracts/shot-spec.ts';
 import { lightingRigs } from '../shared/lighting/rigs.ts';
 
 /** How many frames the calibration shot has: enough for a timing run of a few frames after frame 0. */
@@ -47,7 +46,7 @@ export function focusedAtSubject(shot: Shot, spec: RenderSpec): Shot {
 }
 
 /** The calibration shot on a lane under a lighting: the fixture's bottle, held still, with no text, haze or motes in front of the patches (the differences from s01 are listed in the file header); focus it with focusedAtSubject once the frame size is known. */
-export function calibrationShot(lane: BrowserLane, lighting: Lighting): Shot {
+export function calibrationShot(lane: Lane, lighting: Lighting): Shot {
   return {
     id: 'calibration',
     title: 'Calibration scene',

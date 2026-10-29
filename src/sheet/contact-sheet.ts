@@ -125,7 +125,7 @@ export function resolveSheetRequest(request: ContactSheetRequest, findFont: Font
 export function contactSheetGraph(request: ContactSheetRequest, findFont: FontLookup = findSheetFont): string {
   const resolved = resolveSheetRequest(request, findFont);
   const font = resolved.fontFile === undefined ? '' : `:fontfile=${filterPath(resolved.fontFile)}`;
-  const chains = resolved.frames.map((frame, index) => `[${index}:v]scale=${resolved.thumbWidth}:-2,drawtext=text=${escapeDrawtextLabel(frame.label)}:x=8:y=8:fontsize=22:fontcolor=white:box=1:boxcolor=0x00000088${font}[t${index}]`);
+  const chains = resolved.frames.map((frame, index) => `[${index}:v]scale=${resolved.thumbWidth}:-2,setsar=1,drawtext=text=${escapeDrawtextLabel(frame.label)}:x=8:y=8:fontsize=22:fontcolor=white:box=1:boxcolor=0x00000088${font}[t${index}]`);
   const inputs = resolved.frames.map((_frame, index) => `[t${index}]`).join('');
   const layout = `${inputs}concat=n=${resolved.frames.length}:v=1:a=0,tile=${resolved.columns}x${resolved.rows}:padding=${resolved.padding}:margin=${resolved.margin}:color=0x${resolved.background.slice(1)}`;
   return [...chains, layout].join(';');
