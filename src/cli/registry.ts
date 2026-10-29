@@ -36,6 +36,7 @@ const loaders: Readonly<Partial<Record<CommandName, () => Promise<{ readonly com
   version: () => import('./commands/version.ts'),
   doctor: () => import('./commands/doctor.ts'),
   validate: () => import('./commands/validate.ts'),
+  plan: () => import('./commands/plan.ts'),
   assemble: () => import('./commands/assemble.ts'),
   qa: () => import('./commands/qa.ts'),
   sheet: () => import('./commands/sheet.ts'),
