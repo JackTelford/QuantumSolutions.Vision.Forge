@@ -40,6 +40,9 @@ const loaders: Readonly<Partial<Record<CommandName, () => Promise<{ readonly com
   assemble: () => import('./commands/assemble.ts'),
   qa: () => import('./commands/qa.ts'),
   sheet: () => import('./commands/sheet.ts'),
+  still: () => import('./commands/still.ts'),
+  render: () => import('./commands/render.ts'),
+  assets: () => import('./commands/assets.ts'),
 };
 
 /** Loads a command's implementation, or undefined when it is not implemented yet. */
