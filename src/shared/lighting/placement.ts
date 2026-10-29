@@ -7,8 +7,13 @@
  * when it stands on +Z, src/shared/camera/types.ts). Lights are placed on
  * a sphere whose radius grows with the subject, sized from the cookbook's
  * "diameter at one metre of subject height", and the fill stands opposite
- * the key, low, unless the rig names its own azimuth. The three lane maps
- * the result to RectAreaLights; the blender lane to area lights.
+ * the key, low, unless the rig names its own azimuth. A light's relative
+ * intensity is an irradiance on the subject (what a meter there reads),
+ * not a radiance of the panel: the three lane maps the result to
+ * RectAreaLights with radiance = intensity × scalar × d² / A
+ * (src/shared/three/lights.ts), the blender lane to area lights whose
+ * watts scale with d² the same way, so the fill, twice the key's size at
+ * a third of its intensity, lights the subject at a third of the key.
  */
 import { sphericalAngles, sphericalPoint } from '../camera/placement.ts';
 import type { Vector3 } from '../camera/types.ts';

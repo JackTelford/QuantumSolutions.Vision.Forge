@@ -1,14 +1,16 @@
 /**
  * The page's one module script. It installs the two globals of
  * shared/harness/protocol.ts: `__vfInit(specJson)` parses the spec, loads
- * the look's fonts, reads the WebGL renderer, builds the lane and runs the
- * DOM check; `__vfSeek(frame)` renders one frame synchronously. Both return
+ * the look's fonts, disposes the previous lane, builds the lane (awaiting
+ * what it loads), reads the WebGL renderer and runs the DOM check; `__vfSeek(frame)` renders one
+ * frame synchronously. Both return
  * a report as JSON and never throw: the harness prints the page's own
  * sentence when something is wrong.
  */
 import type { InitReport, SeekReport, ShotPageSpec, TextOverflow } from '../../shared/harness/protocol.ts';
 import { pageGlobalNames, rootElementId } from '../../shared/harness/protocol.ts';
 import { HtmlLane } from '../html/lane.ts';
+import { ThreeLane } from '../three/lane.ts';
 import { checkDom } from './dom-check.ts';
 import { loadLookFonts } from './fonts.ts';
 import type { LaneModule } from './lane-module.ts';
@@ -22,14 +24,18 @@ interface RuntimeState {
 
 let state: RuntimeState | undefined;
 
+/** The lane of the last init, kept even when that init failed, so its GPU context is freed before the next lane takes one. */
+let previousLane: LaneModule | undefined;
+
 function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-/** The lane for the spec; the three lane is not written yet. */
+/** The lane for the spec; a lane this page cannot render (blender, or a misspelling) fails with a sentence. */
 function laneFor(spec: ShotPageSpec): LaneModule {
   if (spec.lane === 'html') return new HtmlLane();
-  throw new Error('the three lane arrives in M4');
+  if (spec.lane === 'three') return new ThreeLane();
+  throw new Error(`The lane ${String(spec.lane)} is not a browser lane.`);
 }
 
 /** The parsed JSON as a ShotPageSpec, or an error in a sentence when a top-level field is missing (a property-access message would name nothing useful). */
@@ -55,11 +61,16 @@ async function init(specJson: string): Promise<InitReport> {
     const spec = parseSpec(specJson);
     const fontResult = await loadLookFonts(document.fonts, spec.look.typography);
     fonts = fontResult.loaded;
-    webglRenderer = readWebglRenderer(document);
     const root = document.getElementById(rootElementId);
     if (root === null) throw new Error(`The page has no #${rootElementId} element.`);
+    // The previous lane's WebGL context would otherwise live until GC, and Chromium caps live contexts per page.
+    previousLane?.dispose?.();
+    previousLane = undefined;
     const lane = laneFor(spec);
-    lane.init(spec, root);
+    previousLane = lane;
+    await lane.init(spec, root);
+    // The lane's own context names the renderer that draws; a lane without one (html) is probed with a throwaway context.
+    webglRenderer = lane.webglRenderer === undefined ? readWebglRenderer(document) : lane.webglRenderer();
     // The text is measured in its shown state first; frame 0 is then drawn before the DOM check so the check sees the full page.
     textOverflows = lane.measureText === undefined ? [] : lane.measureText();
     lane.render(0);

@@ -8,6 +8,9 @@
 import type { CameraFrame } from '../../shared/camera/types.ts';
 import type { TextElement } from '../../shared/contracts/shot-spec.ts';
 import type { ShotPageSpec, TextOverflow } from '../../shared/harness/protocol.ts';
+import { calibrationScene } from '../../shared/calibration/scene.ts';
+import type { CalibrationPatch } from '../../shared/calibration/scene.ts';
+import { calibrationBackdropStyle, calibrationPatchStyle, calibrationPatches } from '../../shared/html/calibration.ts';
 import { moteField, moteStyle } from '../../shared/html/motes.ts';
 import type { Mote } from '../../shared/html/motes.ts';
 import { backdropStyle, hazeStyle, shadowStyle, stageGeometry, stageStyle, viewportStyle } from '../../shared/html/stage.ts';
@@ -45,13 +48,29 @@ interface Built {
   readonly texts: readonly TextElements[];
 }
 
+/** The calibration scene's elements (ADR 0008 decision 2): a backdrop and one flat div per patch. */
+interface CalibrationElements {
+  readonly spec: ShotPageSpec;
+  readonly backdrop: HTMLDivElement;
+  readonly patches: readonly { readonly patch: CalibrationPatch; readonly element: HTMLDivElement }[];
+}
+
 /** The html lane. */
 export class HtmlLane implements LaneModule {
   private built: Built | undefined = undefined;
+  private calibration: CalibrationElements | undefined = undefined;
 
-  /** Builds the stage and the text overlay under the root; a second init replaces the first. */
+  /** Builds the stage and the text overlay under the root (or the flat calibration patches when the spec asks for that scene); a second init replaces the first. */
   init(spec: ShotPageSpec, root: HTMLElement): void {
     root.replaceChildren();
+    this.built = undefined;
+    this.calibration = undefined;
+    if (spec.scene === 'calibration') {
+      const backdrop = appendDiv(root, 'vf-calibration');
+      const patches = calibrationPatches(calibrationScene.elements).map((patch) => ({ patch, element: appendDiv(backdrop, `vf-patch vf-patch-${patch.id}`) }));
+      this.calibration = { spec, backdrop, patches };
+      return;
+    }
     const viewport = appendDiv(root, 'vf-viewport');
     const stage = appendDiv(viewport, 'vf-stage');
     const backdrop = appendDiv(stage, 'vf-backdrop');
@@ -69,6 +88,13 @@ export class HtmlLane implements LaneModule {
 
   /** Writes every style for the frame. Throws when init has not run or the frame has no baked camera. */
   render(frame: number): void {
+    const calibration = this.calibration;
+    if (calibration !== undefined) {
+      // The patches do not move; the styles are still written per frame so a frame depends on nothing before it.
+      setStyle(calibration.backdrop, calibrationBackdropStyle(calibration.spec.look.palette));
+      for (const { patch, element } of calibration.patches) setStyle(element, calibrationPatchStyle(patch, calibration.spec.width, calibration.spec.height));
+      return;
+    }
     const built = this.built;
     if (built === undefined) throw new Error('The html lane has not been initialised.');
     const camera = built.spec.camera[frame];
@@ -84,6 +110,7 @@ export class HtmlLane implements LaneModule {
    * restores the frame's styles.
    */
   measureText(): readonly TextOverflow[] {
+    if (this.calibration !== undefined) return [];
     const built = this.built;
     if (built === undefined) throw new Error('The html lane has not been initialised.');
     return built.texts.map((text) => {

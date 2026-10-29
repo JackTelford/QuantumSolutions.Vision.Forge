@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { lightingRigs } from '../../../src/shared/lighting/rigs.ts';
-import { cssVariables, gradientStopPercent, hexToRgb, kelvinToRgb, lightingGradient, lightingGradientWithin, litGradientAngleDeg, lightScreenAngleDeg, normaliseDegrees, rgbaCss, rgbToHex, shadowOffset, sheenAngle, sheenColour, sheenGradient, tintByLight } from '../../../src/shared/look/css-tokens.ts';
+import { cssVariables, gradientStopPercent, hexToRgb, kelvinToRgb, lightingGradient, lightingGradientWithin, litGradientAngleDeg, lightScreenAngleDeg, normaliseDegrees, rgbaCss, rgbToHex, rigWhiteBalanceKelvin, shadowOffset, sheenAngle, sheenColour, sheenGradient, tintByLight, whiteBalancedKelvinRgb } from '../../../src/shared/look/css-tokens.ts';
 import { lookBibleExample } from '../../schema/documents/examples.ts';
 
 const palette = lookBibleExample.palette;
@@ -39,11 +39,24 @@ describe('colour helpers', () => {
     assert.equal(rgbaCss('#ffffff', 2), 'rgba(255, 255, 255, 1.00)');
   });
 
-  it('tint white by a light: amber for a 3200 K key, the neon colour for a tinted rim', () => {
-    const amber = tintByLight('#ffffff', { azimuthDeg: 0, elevationDeg: 0, sizeM: 1, kelvin: 3200, intensity: 1, tint: null });
-    assert.equal(amber, rgbToHex(kelvinToRgb(3200)));
-    const neon = tintByLight('#ffffff', { azimuthDeg: 0, elevationDeg: 0, sizeM: 1, kelvin: 6500, intensity: 1, tint: '#ff2bd6' });
+  it('tints white by a light under a white balance: neutral for a key at the balance, amber for a 3200 K light under a 5600 K balance, the neon colour for a tinted rim', () => {
+    const key = tintByLight('#ffffff', { azimuthDeg: 0, elevationDeg: 0, sizeM: 1, kelvin: 5600, intensity: 1, tint: null }, 5600);
+    assert.equal(key, '#ffffff');
+    const amber = tintByLight('#ffffff', { azimuthDeg: 0, elevationDeg: 0, sizeM: 1, kelvin: 3200, intensity: 1, tint: null }, 5600);
+    assert.equal(amber, rgbToHex(whiteBalancedKelvinRgb(3200, 5600)));
+    const rgb = hexToRgb(amber);
+    assert.ok(rgb.r === 255 && rgb.g < rgb.r && rgb.b < rgb.g, amber);
+    const neon = tintByLight('#ffffff', { azimuthDeg: 0, elevationDeg: 0, sizeM: 1, kelvin: 6500, intensity: 1, tint: '#ff2bd6' }, 5600);
     assert.equal(neon, '#ff2bd6');
+  });
+
+  it('balances a black body: white at the balance, the largest channel always 255, cooler lights blue', () => {
+    assert.deepEqual(whiteBalancedKelvinRgb(5600, 5600), { r: 255, g: 255, b: 255 });
+    assert.deepEqual(whiteBalancedKelvinRgb(3200, 3200), { r: 255, g: 255, b: 255 });
+    const cool = whiteBalancedKelvinRgb(8000, 5600);
+    assert.ok(cool.b === 255 && cool.r < cool.g && cool.g < cool.b, JSON.stringify(cool));
+    assert.equal(rigWhiteBalanceKelvin(studio), 5600);
+    assert.equal(rigWhiteBalanceKelvin({ ...studio, key: null, rims: [] }), studio.fill === null ? 6600 : studio.fill.kelvin);
   });
 
   it('fold angles into [0, 360)', () => {
@@ -117,7 +130,7 @@ describe('shadowOffset', () => {
 describe('the sheen', () => {
   it('shares the backdrop angle and tints the highlight by the key', () => {
     assert.equal(sheenAngle(studio, 0), litGradientAngleDeg(studio, 0));
-    assert.equal(sheenColour(studio, '#ffffff'), rgbToHex(kelvinToRgb(5600)));
+    assert.equal(sheenColour(studio, '#ffffff'), '#ffffff');
     assert.equal(sheenColour(lightingRigs['neon-night'], '#ffffff'), '#ff2bd6');
     assert.equal(sheenColour({ ...lightingRigs['practical-glow'], rims: [] }, '#ffffff'), '#ffffff');
   });

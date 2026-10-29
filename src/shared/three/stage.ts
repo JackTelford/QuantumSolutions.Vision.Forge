@@ -43,12 +43,12 @@ export function floorY(bounds: BoundsM): number {
 }
 
 /**
- * The stage layout: the floor ends at wallDepth + radius, where the curve
- * takes over and rises to wallDepth at floor + radius, where the wall
- * starts. The floor plane is centred so its far edge is that line.
+ * The stage layout for a floor height: the floor ends at wallDepth +
+ * radius, where the curve takes over and rises to wallDepth at floor +
+ * radius, where the wall starts. The floor plane is centred so its far
+ * edge is that line.
  */
-export function stageLayout(bounds: BoundsM): StageLayout {
-  const y = floorY(bounds);
+export function stageLayout(y: number): StageLayout {
   const curveStartZ = wallDepthM + cycRadiusM;
   return {
     floorCentre: { x: 0, y, z: curveStartZ + floorSizeM / 2 },

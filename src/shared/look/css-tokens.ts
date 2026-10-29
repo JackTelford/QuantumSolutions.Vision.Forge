@@ -84,10 +84,37 @@ export function rgbaCss(hex: string, alpha: number): string {
   return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${fixed(Math.min(1, Math.max(0, alpha)))})`;
 }
 
-/** A colour multiplied by a light's colour: the light's tint when it has one, else its black-body colour. */
-export function tintByLight(hex: string, lightSource: RigLight): string {
+/**
+ * The colour of a black body seen by a camera white-balanced to another
+ * temperature (ADR 0008 decision 2, amended 2026-10-29): each channel of
+ * the light's black-body colour over the same channel of the white
+ * balance's, scaled so the largest channel is 255. A light at the white
+ * balance is neutral white, a warmer one warm, a cooler one blue, which
+ * is what a studio camera balanced to its key records; the html lane's
+ * flat patches are untinted, so both lanes agree on neutrals this way.
+ */
+export function whiteBalancedKelvinRgb(kelvin: number, whiteBalanceKelvin: number): Rgb {
+  const light = kelvinToRgb(kelvin);
+  const white = kelvinToRgb(whiteBalanceKelvin);
+  const ratio = { r: light.r / Math.max(1, white.r), g: light.g / Math.max(1, white.g), b: light.b / Math.max(1, white.b) };
+  const largest = Math.max(ratio.r, ratio.g, ratio.b, 1e-9);
+  return { r: Math.round((255 * ratio.r) / largest), g: Math.round((255 * ratio.g) / largest), b: Math.round((255 * ratio.b) / largest) };
+}
+
+/** The colour of a light source under a white balance: its tint when it has one (the neon rigs), else its black-body colour balanced to `whiteBalanceKelvin`. */
+export function lightRgb(lightSource: { readonly tint: string | null; readonly kelvin: number }, whiteBalanceKelvin: number): Rgb {
+  return lightSource.tint === null ? whiteBalancedKelvinRgb(lightSource.kelvin, whiteBalanceKelvin) : hexToRgb(lightSource.tint);
+}
+
+/** The colour temperature a rig is balanced to: its key's, else its first rim's, else the fill's, else 6600 K (the curve's white point). */
+export function rigWhiteBalanceKelvin(rig: LightingRig): number {
+  return rig.key?.kelvin ?? rig.rims[0]?.kelvin ?? rig.fill?.kelvin ?? 6600;
+}
+
+/** A colour multiplied by a light's colour under a white balance: the light's tint when it has one, else its balanced black-body colour. */
+export function tintByLight(hex: string, lightSource: RigLight, whiteBalanceKelvin: number): string {
   const base = hexToRgb(hex);
-  const tint = lightSource.tint === null ? kelvinToRgb(lightSource.kelvin) : hexToRgb(lightSource.tint);
+  const tint = lightRgb(lightSource, whiteBalanceKelvin);
   return rgbToHex({ r: (base.r * tint.r) / 255, g: (base.g * tint.g) / 255, b: (base.b * tint.b) / 255 });
 }
 
@@ -156,10 +183,10 @@ export function sheenAngle(rig: LightingRig, keyOrbitDeg: number): number {
   return litGradientAngleDeg(rig, keyOrbitDeg);
 }
 
-/** The sheen colour: the palette highlight tinted by the light's colour temperature (or its neon tint); untinted when the rig has no light. */
+/** The sheen colour: the palette highlight tinted by the dominant light's colour under the rig's white balance (so a key is neutral and a neon rim keeps its tint); untinted when the rig has no light. */
 export function sheenColour(rig: LightingRig, highlightHex: string): string {
   const lightSource = dominantLight(rig);
-  return lightSource === null ? highlightHex : tintByLight(highlightHex, lightSource);
+  return lightSource === null ? highlightHex : tintByLight(highlightHex, lightSource, rigWhiteBalanceKelvin(rig));
 }
 
 /** The sheen as a CSS gradient layer: the tinted highlight at 35 percent on the lit side, clear by 60 percent of the way across. */
