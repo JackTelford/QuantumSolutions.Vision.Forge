@@ -138,7 +138,7 @@
       "type": "object",
       "description": "The world: a background colour and, optionally, an HDRI environment.",
       "additionalProperties": false,
-      "required": ["color", "strength", "hdriPath", "hdriStrength", "hdriRotationZDeg"],
+      "required": ["color", "strength", "hdriPath", "hdriStrength", "hdriRotationZRad"],
       "properties": {
         "color": { "$ref": "#/$defs/LinearRgb" },
         "strength": {
@@ -155,9 +155,9 @@
           "minimum": 0,
           "description": "Strength of the environment image's light, for example 0.6."
         },
-        "hdriRotationZDeg": {
+        "hdriRotationZRad": {
           "type": "number",
-          "description": "Rotation of the environment about Blender's Z axis in degrees, for example 0."
+          "description": "Rotation of the environment about Blender's Z axis in radians (converted from degrees in TypeScript, since the applier does no arithmetic), for example 0."
         }
       }
     },
@@ -280,7 +280,7 @@
     },
     "Vector": {
       "type": "object",
-      "description": "A point, offset or scale in Blender's axes (X right, Y into the screen, Z up), in metres for positions and sizes, for example x 0, y -2.2, z 0.3.",
+      "description": "A point, offset, scale or XYZ Euler rotation (radians) in Blender's axes (X right, Y into the screen, Z up), in metres for positions and sizes, for example x 0, y -2.2, z 0.3.",
       "additionalProperties": false,
       "required": ["x", "y", "z"],
       "properties": {
@@ -428,16 +428,16 @@
       "type": "object",
       "description": "A rotation about Z at one Blender frame.",
       "additionalProperties": false,
-      "required": ["frame", "degrees"],
+      "required": ["frame", "radians"],
       "properties": {
         "frame": {
           "type": "integer",
           "minimum": 1,
           "description": "The Blender frame number."
         },
-        "degrees": {
+        "radians": {
           "type": "number",
-          "description": "Rotation about Z in degrees, counter-clockwise seen from above."
+          "description": "Rotation about Z in radians, counter-clockwise seen from above (converted from degrees in TypeScript)."
         }
       }
     },
@@ -445,7 +445,7 @@
       "type": "object",
       "description": "One mesh object: a primitive from its operator parameters, or an explicit mesh from vertices and faces; every field is given for every kind and the applier passes the ones its kind reads.",
       "additionalProperties": false,
-      "required": ["name", "kind", "location", "rotationEulerDeg", "scale", "material", "parent", "shadeSmooth", "radiusM", "depthM", "vertices", "majorRadiusM", "minorRadiusM", "sizeM", "meshVertices", "meshFaces"],
+      "required": ["name", "kind", "location", "rotationEulerRad", "scale", "material", "parent", "shadeSmooth", "radiusM", "depthM", "vertices", "majorRadiusM", "minorRadiusM", "sizeM", "meshVertices", "meshFaces"],
       "properties": {
         "name": {
           "type": "string",
@@ -453,7 +453,7 @@
         },
         "kind": { "$ref": "#/$defs/ObjectKind" },
         "location": { "$ref": "#/$defs/Vector" },
-        "rotationEulerDeg": { "$ref": "#/$defs/Vector" },
+        "rotationEulerRad": { "$ref": "#/$defs/Vector" },
         "scale": { "$ref": "#/$defs/Vector" },
         "material": {
           "type": "string",
@@ -521,7 +521,7 @@
       "type": "object",
       "description": "One area light with its location keyframed when it moves (the light sweep).",
       "additionalProperties": false,
-      "required": ["name", "shape", "sizeM", "sizeYM", "powerW", "color", "location", "rotationQuaternion", "locationKeyframes"],
+      "required": ["name", "shape", "sizeM", "sizeYM", "powerW", "useTemperature", "temperatureK", "color", "location", "rotationQuaternion", "locationKeyframes"],
       "properties": {
         "name": {
           "type": "string",
@@ -542,6 +542,16 @@
           "type": "number",
           "minimum": 0,
           "description": "Power in watts (Blender's energy), for example 150."
+        },
+        "useTemperature": {
+          "type": "boolean",
+          "description": "True to colour the light by temperatureK (Blender's use_temperature); false to use color (a tinted rim)."
+        },
+        "temperatureK": {
+          "type": "number",
+          "minimum": 800,
+          "maximum": 12000,
+          "description": "Colour temperature in kelvin, 800 to 12000 (Blender's range), for example 5600."
         },
         "color": { "$ref": "#/$defs/LinearRgb" },
         "location": { "$ref": "#/$defs/Vector" },

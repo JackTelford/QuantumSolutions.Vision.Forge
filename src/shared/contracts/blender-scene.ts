@@ -180,9 +180,9 @@ export interface BlenderScene {
      */
     hdriStrength: number;
     /**
-     * Rotation of the environment about Blender's Z axis in degrees, for example 0.
+     * Rotation of the environment about Blender's Z axis in radians (converted from degrees in TypeScript, since the applier does no arithmetic), for example 0.
      */
-    hdriRotationZDeg: number;
+    hdriRotationZRad: number;
   };
   /**
    * The one camera, keyframed per frame from the shared camera model.
@@ -273,7 +273,7 @@ export interface CameraKeyframe {
   focusDistanceM: number;
 }
 /**
- * A point, offset or scale in Blender's axes (X right, Y into the screen, Z up), in metres for positions and sizes, for example x 0, y -2.2, z 0.3.
+ * A point, offset, scale or XYZ Euler rotation (radians) in Blender's axes (X right, Y into the screen, Z up), in metres for positions and sizes, for example x 0, y -2.2, z 0.3.
  *
  * This interface was referenced by `BlenderScene`'s JSON-Schema
  * via the `definition` "Vector".
@@ -387,9 +387,9 @@ export interface RotationZKeyframe {
    */
   frame: number;
   /**
-   * Rotation about Z in degrees, counter-clockwise seen from above.
+   * Rotation about Z in radians, counter-clockwise seen from above (converted from degrees in TypeScript).
    */
-  degrees: number;
+  radians: number;
 }
 /**
  * One mesh object: a primitive from its operator parameters, or an explicit mesh from vertices and faces; every field is given for every kind and the applier passes the ones its kind reads.
@@ -404,7 +404,7 @@ export interface SceneObject {
   name: string;
   kind: ObjectKind;
   location: Vector;
-  rotationEulerDeg: Vector;
+  rotationEulerRad: Vector;
   scale: Vector;
   /**
    * Name of one of the scene's materials.
@@ -475,6 +475,14 @@ export interface AreaLight {
    * Power in watts (Blender's energy), for example 150.
    */
   powerW: number;
+  /**
+   * True to colour the light by temperatureK (Blender's use_temperature); false to use color (a tinted rim).
+   */
+  useTemperature: boolean;
+  /**
+   * Colour temperature in kelvin, 800 to 12000 (Blender's range), for example 5600.
+   */
+  temperatureK: number;
   color: LinearRgb;
   location: Vector;
   rotationQuaternion: Quaternion;
