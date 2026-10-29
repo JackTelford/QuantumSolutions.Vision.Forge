@@ -17,6 +17,7 @@ import { gateReportPath } from '../../src/render/still-gate.ts';
 import type { StillGateReport } from '../../src/render/still-gate.ts';
 import type { Job } from '../../src/shared/contracts/job.ts';
 import type { ShotSpec } from '../../src/shared/contracts/shot-spec.ts';
+import { blenderCommand } from '../../src/tools/blender.ts';
 import { writeToolsManifest } from '../../src/tools/tools-manifest.ts';
 import { FakeBlenderRunner } from '../fakes/fake-blender-runner.ts';
 import { preferTestBrowserInManifest, testBrowser } from '../fakes/test-browser.ts';
@@ -102,7 +103,7 @@ describe('still command without a browser', () => {
     const noBlender = await cli(['still', '--job', jobDir, '--shot', 's02'], blenderless);
     assert.equal(noBlender.exitCode, 1);
     assert.equal(noBlender.result.errors[0]?.code, 'tool-missing');
-    assert.match(noBlender.result.errors[0]?.hint ?? '', /winget install --id BlenderFoundation\.Blender/);
+    assert.ok((noBlender.result.errors[0]?.hint ?? '').includes(blenderCommand()), 'the hint carries this platform\'s install command');
     writeJsonAtomic(join(jobDir, 'shot-spec.json'), spec);
   });
 

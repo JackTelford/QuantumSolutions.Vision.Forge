@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { join } from 'node:path';
+import { posix, win32 } from 'node:path';
 import { npmCiArguments, npmCliCandidates } from '../../src/tools/npm-cli.ts';
 
 describe('npmCliCandidates', () => {
   it('looks beside node.exe on Windows', () => {
-    assert.deepEqual(npmCliCandidates('C:\\Program Files\\nodejs\\node.exe', 'win32'), [join('C:\\Program Files\\nodejs', 'node_modules', 'npm', 'bin', 'npm-cli.js')]);
+    assert.deepEqual(npmCliCandidates('C:\\Program Files\\nodejs\\node.exe', 'win32'), [win32.join('C:\\Program Files\\nodejs', 'node_modules', 'npm', 'bin', 'npm-cli.js')]);
   });
 
   it('looks under the prefix\'s lib/node_modules first on macOS and Linux, then beside the binary', () => {
-    assert.deepEqual(npmCliCandidates('/usr/local/bin/node', 'linux'), [join('/usr/local', 'lib', 'node_modules', 'npm', 'bin', 'npm-cli.js'), join('/usr/local/bin', 'node_modules', 'npm', 'bin', 'npm-cli.js')]);
+    assert.deepEqual(npmCliCandidates('/usr/local/bin/node', 'linux'), [posix.join('/usr/local', 'lib', 'node_modules', 'npm', 'bin', 'npm-cli.js'), posix.join('/usr/local/bin', 'node_modules', 'npm', 'bin', 'npm-cli.js')]);
   });
 });
 

@@ -19,6 +19,7 @@ import { readManifest } from '../../src/render/manifest.ts';
 import { validateDocument } from '../../src/schema/validator.ts';
 import { toBlenderQuaternion, toBlenderVector } from '../../src/shared/camera/blender-axes.ts';
 import type { BlenderScene } from '../../src/shared/contracts/blender-scene.ts';
+import { blenderCommand } from '../../src/tools/blender.ts';
 import { writeToolsManifest } from '../../src/tools/tools-manifest.ts';
 import { FakeBlenderRunner } from '../fakes/fake-blender-runner.ts';
 import { hex64, lookBibleExample, mutated, shotExample } from '../schema/documents/examples.ts';
@@ -264,7 +265,7 @@ describe('the blender lane\'s tools and environment', () => {
   it('asks for Blender with the install command when tools.json has none, and refuses another series', () => {
     const noBlender = join(dir, 'no-blender');
     writeToolsManifest(noBlender, toolsManifestExample('C:\\tools\\ffmpeg.exe', []));
-    assert.throws(() => readBlenderTools(noBlender), (error: unknown) => error instanceof ToolMissingError && /winget install --id BlenderFoundation\.Blender/.test(error.hint));
+    assert.throws(() => readBlenderTools(noBlender), (error: unknown) => error instanceof ToolMissingError && error.hint.includes(blenderCommand()));
     const old = join(dir, 'old-blender');
     const manifest = toolsManifestExample('C:\\tools\\ffmpeg.exe', []);
     writeToolsManifest(old, { ...manifest, programs: { ...manifest.programs, blender: { path: 'C:\\Old\\blender.exe', version: '4.5.15' } } });

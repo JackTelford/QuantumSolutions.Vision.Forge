@@ -9,7 +9,7 @@
  * render. Only blender.exe is ever spawned: blender-launcher.exe starts
  * Blender in a new console whose output cannot be captured.
  */
-import { basename, join } from 'node:path';
+import { join } from 'node:path';
 import type { Logger } from '../../cli/logger.ts';
 import { InvalidExecutableError } from '../../errors/vision-forge-error.ts';
 import { ensureDirectory } from '../../fs/paths.ts';
@@ -64,9 +64,9 @@ export function batchTimeoutMs(frameCount: number, width: number, height: number
   return Math.round((60 + frameCount * perFrame) * 1000);
 }
 
-/** True when the path names the real Blender executable (blender.exe on Windows, blender elsewhere), never the launcher or anything else. */
+/** True when the path names the real Blender executable (blender.exe on Windows, blender elsewhere), never the launcher or anything else; the last segment after either separator, so a Windows path reads the same on a Linux runner. */
 export function isBlenderExecutable(path: string): boolean {
-  const name = basename(path).toLowerCase();
+  const name = (path.split(/[\\/]/).pop() ?? '').toLowerCase();
   return name === 'blender.exe' || name === 'blender';
 }
 
