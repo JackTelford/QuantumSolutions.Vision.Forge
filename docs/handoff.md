@@ -25,7 +25,7 @@ The single source of truth for where this repository stands. Newest milestone fi
 | Offline | a probe with fetch, http and https made to throw loaded the model (0.96 s) and synthesized 2 s of speech with zero network attempts | the synth reviewer's report |
 | DirectML (ADR 0007) | 55 libraries mapped during a synthesis, onnxruntime.dll and onnxruntime_binding.node among them, DirectML.dll absent | `src/audio/directml-check.ts`, the synth reviewer's and fixer's reports |
 | Timing | sample counts to frames exact at 24, 25, 30 and 60 fps (6720 samples at 25 fps is 7 frames, not 8) | `tests/audio/timing.test.ts` |
-| Continuous integration | run RUN_ID_PLACEHOLDER: RESULT_PLACEHOLDER (the runners install nothing: the component tests run through fakes, the real-component tests skip) | GitHub Actions |
+| Continuous integration | run 40970188927 on 171a6d1: success on windows-2025 and ubuntu-24.04, Node 24 and 26 (the runners install nothing: the component tests run through fakes, the real-component tests skip) | GitHub Actions |
 
 ### Untested
 
