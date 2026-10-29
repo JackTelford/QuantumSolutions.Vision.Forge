@@ -1,3 +1,4 @@
+import { NotImplementedError } from '../../src/errors/vision-forge-error.ts';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -56,11 +57,15 @@ describe('scripts/cli.ts', () => {
     assert.doesNotMatch(run.stderr, /at .*\.ts:\d+/);
   });
 
-  it('a planned but unimplemented command says which milestone delivers it', async () => {
+  it('every planned command is implemented after M6, and a command without its action is a usage error', async () => {
     const run = await cli(['audio'], dataDir);
     assert.equal(run.exitCode, 2);
-    assert.equal(run.result.errors[0]?.code, 'not-implemented');
-    assert.match(run.result.errors[0]?.hint ?? '', /milestone M6/);
+    assert.equal(run.result.errors[0]?.code, 'usage');
+    assert.match(run.result.errors[0]?.hint ?? '', /install, status, voices, synth/);
+    const unimplemented = new NotImplementedError('x', 'M9');
+    assert.equal(unimplemented.code, 'not-implemented');
+    assert.equal(unimplemented.exitCode, 2);
+    assert.match(unimplemented.hint, /milestone M9/);
   });
 
   it('an unknown option is a usage error', async () => {

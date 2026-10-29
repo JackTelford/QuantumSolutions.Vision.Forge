@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, before, describe, it } from 'node:test';
+import { componentPaths, narrationPackages, narrationTemplateDir, packageJsonPath } from '../../src/audio/component.ts';
+import { kokoroWeightDestination, kokoroWeightFiles } from '../../src/audio/weights.ts';
 import { MemoryLogger } from '../../src/cli/logger.ts';
 import { DataFileError, SchemaValidationError } from '../../src/errors/vision-forge-error.ts';
 import type { Browser, FfmpegProgram, ToolsManifest } from '../../src/shared/contracts/tools.ts';
@@ -14,6 +16,12 @@ import type { CapabilityReader, ManifestContext } from '../../src/tools/tools-ma
 import { FakeProcessRunner, failedResult, matchProgram, okResult } from '../fakes/fake-process-runner.ts';
 
 const never = new AbortController().signal;
+
+/** A file of exactly the given number of zero bytes, the way the status reads a weight (by size). */
+function touchBytes(path: string, bytes: number): void {
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, Buffer.alloc(bytes));
+}
 
 function touch(path: string, content = ''): string {
   mkdirSync(dirname(path), { recursive: true });
@@ -69,16 +77,17 @@ describe('narrationState and operatingSystem', () => {
   before(() => { dataDir = mkdtempSync(join(tmpdir(), 'vf-narration-')); });
   after(() => { rmSync(dataDir, { recursive: true, force: true }); });
 
-  it('reports the component installed when kokoro-js is under the data directory and the weights verified from model-source.json', () => {
+  it('reports the component installed once npm finished, and the weights verified once the lockfile matches and every pinned file has its size', () => {
     assert.deepEqual(narrationState(dataDir), { installed: false, weightsVerified: false });
-    touch(join(dataDir, 'narration', 'node_modules', 'kokoro-js', 'package.json'), '{}');
+    for (const name of narrationPackages) touch(packageJsonPath(dataDir, name), '{}');
+    assert.deepEqual(narrationState(dataDir), { installed: false, weightsVerified: false }, 'two markers without the hidden lockfile are an unfinished npm ci');
+    touch(componentPaths(dataDir).hiddenLockfile, '{ "lockfileVersion": 3 }\n');
     assert.deepEqual(narrationState(dataDir), { installed: true, weightsVerified: false });
-    touch(join(dataDir, 'narration', 'models', 'model-source.json'), '{ "verified": false }');
-    assert.deepEqual(narrationState(dataDir), { installed: true, weightsVerified: false });
-    touch(join(dataDir, 'narration', 'models', 'model-source.json'), '{ "verified": true }');
+    copyFileSync(join(narrationTemplateDir, 'package-lock.json'), componentPaths(dataDir).lockfile);
+    for (const file of kokoroWeightFiles) touchBytes(kokoroWeightDestination(dataDir, file), file.bytes === 92_361_116 ? 0 : file.bytes);
+    assert.deepEqual(narrationState(dataDir), { installed: true, weightsVerified: false }, 'a model file of the wrong size is not verified');
+    touchBytes(kokoroWeightDestination(dataDir, kokoroWeightFiles[0]!), kokoroWeightFiles[0]!.bytes);
     assert.deepEqual(narrationState(dataDir), { installed: true, weightsVerified: true });
-    touch(join(dataDir, 'narration', 'models', 'model-source.json'), '{ not json');
-    assert.deepEqual(narrationState(dataDir), { installed: true, weightsVerified: false });
   });
 
   it('maps every platform onto the schema vocabulary', () => {

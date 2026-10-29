@@ -4,6 +4,7 @@
  * written as tools.json under the data directory. Every later command reads
  * it instead of discovering programs again.
  */
+import { componentStatus } from '../audio/component.ts';
 import { existsSync } from 'node:fs';
 import { release } from 'node:os';
 import { join } from 'node:path';
@@ -82,20 +83,18 @@ export function computeLanes(inputs: LaneInputs): ToolsManifest['lanes'] {
   return { html, three, blender, audio };
 }
 
-/** The narration component's state under the data directory (ADR 0007; `audio install` in M6 writes model-source.json). */
+/**
+ * The narration component's state under the data directory (ADR 0007), read
+ * from the disk alone the way `audio status` reads it: installed when the
+ * two packages are under node_modules and npm's hidden lockfile says the
+ * last npm ci finished; weightsVerified when, besides that, the copied
+ * lockfile equals the template and every pinned weight exists at its exact
+ * byte size (`audio install` verified the SHA-256 before the file reached
+ * that path, and `audio install --verify` re-hashes on request).
+ */
 export function narrationState(dataDir: string): ToolsManifest['narration'] {
-  const installed = existsSync(join(dataDir, 'narration', 'node_modules', 'kokoro-js', 'package.json'));
-  const sourcePath = join(dataDir, 'narration', 'models', 'model-source.json');
-  let weightsVerified = false;
-  if (existsSync(sourcePath)) {
-    try {
-      const source = readJsonFile(sourcePath);
-      weightsVerified = typeof source === 'object' && source !== null && (source as { readonly verified?: unknown }).verified === true;
-    } catch {
-      weightsVerified = false;
-    }
-  }
-  return { installed, weightsVerified };
+  const status = componentStatus(dataDir);
+  return { installed: status.packagesPresent, weightsVerified: status.installed };
 }
 
 /** process.platform as the schema's OperatingSystem; anything else is recorded as linux. */

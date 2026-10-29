@@ -43,6 +43,7 @@ const loaders: Readonly<Partial<Record<CommandName, () => Promise<{ readonly com
   still: () => import('./commands/still.ts'),
   render: () => import('./commands/render.ts'),
   assets: () => import('./commands/assets.ts'),
+  audio: () => import('./commands/audio.ts'),
 };
 
 /** Loads a command's implementation, or undefined when it is not implemented yet. */
