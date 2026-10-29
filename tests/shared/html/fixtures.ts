@@ -31,6 +31,7 @@ export function pageSpecFor(shot: Shot): ShotPageSpec {
     baseDistanceM: base.distanceM,
     fontsUrl: '/fonts/',
     assetsUrl: '/assets/',
+    environment: null,
   };
 }
 

@@ -36,6 +36,8 @@ export interface ShotPageSpec {
   readonly fontsUrl: string;
   /** URL prefix of the downloaded assets (HDRIs, models), for example "/assets/". */
   readonly assetsUrl: string;
+  /** The environment map of the three lane when its HDRI is installed; null means the lane's built-in room environment. */
+  readonly environment: EnvironmentRef | null;
 }
 
 /** How far a text element's laid-out content spills past its box, measured by the browser after init; 0 and 0 when it fits. */
@@ -45,6 +47,16 @@ export interface TextOverflow {
   readonly overflowXPx: number;
   /** Pixels the content extends past the box's bottom edge. */
   readonly overflowYPx: number;
+}
+
+/** An environment map the harness serves: a catalogue HDRI installed under the data directory. */
+export interface EnvironmentRef {
+  /** The catalogue id, for example "hdri:studio_small_09-1k". */
+  readonly id: string;
+  /** The served URL, for example "/assets/hdri/studio_small_09_1k.hdr". */
+  readonly url: string;
+  /** The HDRI's white balance in kelvin when Poly Haven publishes one, else null. */
+  readonly kelvin: number | null;
 }
 
 /** What `__vfInit` reports once the page is ready to seek. */

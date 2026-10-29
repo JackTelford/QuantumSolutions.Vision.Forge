@@ -27,6 +27,7 @@ import type { LoadedJob } from '../../render/job-state.ts';
 import { renderShot } from '../../render/render-shot.ts';
 import { loadRealSeams } from '../../render/seams.ts';
 import type { HarnessHandle, RenderSeams } from '../../render/seams.ts';
+import { resolveEnvironment } from '../../render/environment.ts';
 import { browserLaneOf, buildShotPageSpec } from '../../render/shot-page-spec.ts';
 import { StillGateError } from '../../render/still-gate-error.ts';
 import { describeFailures, gateReportPath, readGateReport, runStillGate } from '../../render/still-gate.ts';
@@ -124,7 +125,7 @@ async function renderScaledStill(render: StillRender, renderer: BrowserRenderer,
   const raw = finished.replace(/\.png$/i, '.raw.png');
   // The harness serves one page directory; the scaled page replaces the 1x page there after the 1x frame is captured.
   seams.writeShotPage(render.pageDirectory, scaledSpec.width, scaledSpec.height);
-  await renderer.capture({ pageUrl: seams.pageUrl(render.harness.url), spec: buildShotPageSpec(shot, loaded.look, scaledSpec), frames: [frame], framePath: (): string => raw }, context.signal);
+  await renderer.capture({ pageUrl: seams.pageUrl(render.harness.url), spec: buildShotPageSpec(shot, loaded.look, scaledSpec, resolveEnvironment(shot, context.dataDir)), frames: [frame], framePath: (): string => raw }, context.signal);
   await finishStill(context.runner, render.ffmpegPath, raw, finished, loaded.look, context.signal);
   return finished;
 }
@@ -186,6 +187,7 @@ export const command: Command = {
       const result = await renderShot({
         renderer, page: seams, harnessUrl: harness.url, pageDir: pageDirectory, shot: pinnedShot, look, spec, frames: [frame], cacheDir, key,
         fingerprint: manifestFingerprint, runner: context.runner, ffmpegPath: tools.ffmpeg.path, log: context.log, signal: context.signal, now: context.now,
+        environment: resolveEnvironment(pinnedShot, context.dataDir),
         onInit: (report): void => { textOverflows = report.textOverflows; },
       });
       copyFileSync(framePath(result.framesDir, frame), paths.raw);

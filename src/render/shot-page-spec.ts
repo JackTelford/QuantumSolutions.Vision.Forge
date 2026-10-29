@@ -12,7 +12,7 @@ import { solveBasePose } from '../shared/composition/solver.ts';
 import type { LookBible } from '../shared/contracts/look-bible.ts';
 import type { Shot } from '../shared/contracts/shot-spec.ts';
 import { assetsUrlPrefix, fontsUrlPrefix } from '../shared/harness/protocol.ts';
-import type { BrowserLane, ShotPageSpec } from '../shared/harness/protocol.ts';
+import type { BrowserLane, EnvironmentRef, ShotPageSpec } from '../shared/harness/protocol.ts';
 
 /** A shot asks for a lane this milestone cannot render. */
 export class LaneUnavailableError extends VisionForgeError {
@@ -36,8 +36,8 @@ export function browserLaneOf(shot: Shot): BrowserLane {
   throw new LaneUnavailableError(shot.id, shot.lane);
 }
 
-/** The page spec of a shot: the camera baked over the solver's base pose, the base distance the html stage scales by, and the harness URL prefixes. */
-export function buildShotPageSpec(shot: Shot, look: LookBible, spec: RenderSpec): ShotPageSpec {
+/** The page spec of a shot: the camera baked over the solver's base pose, the base distance the html stage scales by, the harness URL prefixes and the environment map (src/render/environment.ts) when one is installed. */
+export function buildShotPageSpec(shot: Shot, look: LookBible, spec: RenderSpec, environment: EnvironmentRef | null = null): ShotPageSpec {
   const lane = browserLaneOf(shot);
   const pose = solveBasePose(shot, spec);
   return {
@@ -51,5 +51,6 @@ export function buildShotPageSpec(shot: Shot, look: LookBible, spec: RenderSpec)
     baseDistanceM: pose.distanceM,
     fontsUrl: fontsUrlPrefix,
     assetsUrl: assetsUrlPrefix,
+    environment,
   };
 }

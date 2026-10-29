@@ -101,6 +101,6 @@ describe('readRenderTools', () => {
     assert.throws(() => readRenderTools(noFfmpeg), (error: unknown) => error instanceof ToolMissingError && error.tool === 'ffmpeg');
     const noBrowser = join(dir, 'no-browser');
     writeToolsManifest(noBrowser, toolsManifestExample('C:\\tools\\ffmpeg.exe', []));
-    assert.throws(() => readRenderTools(noBrowser), (error: unknown) => error instanceof ToolMissingError && /browser/i.test(error.tool) && /Edge|Chrome/.test(error.hint));
+    assert.throws(() => readRenderTools(noBrowser), (error: unknown) => error instanceof ToolMissingError && /browser/i.test(error.tool) && /edge|chrome/i.test(error.hint));
   });
 });

@@ -28,6 +28,7 @@ import type { ManifestFingerprint } from '../../render/manifest.ts';
 import { renderShot } from '../../render/render-shot.ts';
 import { loadRealSeams } from '../../render/seams.ts';
 import type { HarnessHandle, RenderSeams } from '../../render/seams.ts';
+import { resolveEnvironment } from '../../render/environment.ts';
 import { browserLaneOf } from '../../render/shot-page-spec.ts';
 import { ShotNotApprovedError } from '../../render/shot-not-approved-error.ts';
 import type { RenderSpec } from '../../shared/camera/types.ts';
@@ -186,6 +187,7 @@ export const command: Command = {
         const result = await renderShot({
           renderer, page: seams, harnessUrl: harness.url, pageDir: pageDirectory, shot, look: loaded.look, spec, frames, cacheDir, key, fingerprint,
           runner: context.runner, ffmpegPath: tools.ffmpeg.path, log: context.log, signal: context.signal, now: context.now,
+          environment: resolveEnvironment(shot, context.dataDir),
         });
         const complete = isComplete(readManifest(result.manifestPath), shot.durationFrames);
         job = updateShot(job, shot.id, { key, manifestPath: result.manifestPath, ...(complete ? { status: 'rendered' as const } : {}) });
