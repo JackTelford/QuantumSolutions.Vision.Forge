@@ -2,7 +2,7 @@
 
 Vision.Forge is a Claude Code skill that turns an English prompt into a finished video or still using only code. It renders titles and explainers with HTML and CSS, stylized 3D with Three.js, and near-photoreal objects with Blender, then assembles and checks the result with ffmpeg. Claude directs the shots, reviews rendered contact sheets and fixes what fails. No image or video generation model is involved; the one optional model is a small local voice for narration.
 
-**Status: under construction.** Milestones M0a (research, probes and decisions), M0b (core infrastructure, checks and packaging) and M1 (contracts, doctor, assemble, QA and contact sheets) are complete. The CLI finds the tools, validates every pipeline document, assembles clips into a graded delivery and measures it; nothing renders a frame yet. The current state and everything not yet verified are in [docs/handoff.md](docs/handoff.md).
+**Status: under construction.** Milestones M0a (research, probes and decisions), M0b (core infrastructure, checks and packaging), M1 (contracts, doctor, assemble, QA and contact sheets) and M2 (camera, motion, composition and the plan command) are complete. The CLI finds the tools, validates every pipeline document, plans a job with a solved camera and composition per shot, assembles clips into a graded delivery and measures it; nothing renders a frame yet (M3). The current state and everything not yet verified are in [docs/handoff.md](docs/handoff.md).
 
 ## What it will do
 
@@ -50,18 +50,19 @@ The skill is then available as `/vision-forge:cinematic-studio`. While developin
 | Command | What it does |
 | --- | --- |
 | `doctor [--require <lane>] [--skip-browser-check] [--skip-blender-probe]` | finds Node, ffmpeg, ffprobe, Edge or Chrome, the GPU and Blender 5.2; writes `tools.json` under the data directory; reports which lanes (`html`, `three`, `blender`, `audio`) can run and the install command for anything missing |
+| `plan --brief <f> --treatment <f> --shot-spec <f> --look <f>` | validates the four documents, checks them against each other and the pacing rules, runs the composition solver's checks on every shot, and writes the job folder with one key per shot |
 | `validate <file>` | checks a JSON document (brief, treatment, shot spec, look bible, job, assembly plan, QA report, assets ledger, tools manifest or render manifest) against its schema and the semantic rules of its kind |
 | `assemble --plan <assembly-plan.json>` | joins clips with cuts and transitions, mixes narration and music, writes or burns captions, applies the finishing grade and encodes H.264, HEVC or ProRes; verifies the exact frame count, rate, size and square pixels with ffprobe |
 | `qa --video <file> [--plan <file>] [--text-boxes <json>] [--still <png> --still-frame <k>] [--report <file>] [--loudness-target <LUFS>] [--no-fail]` | measures dimensions, frame rate, duration, black and frozen frames, pops, exposure drift, text contrast, loudness, true peak and the hero still match; writes a QA report |
 | `sheet --frames <dir or json> [--output <png>] [--columns <n>] [--thumb-width <px>]` | tiles labelled frames into one contact sheet |
 
-Planned: `plan` (M2); `still`, `render` and `assets` (M3); `audio` (M6).
+Planned: `still`, `render` and `assets` (M3); `audio` (M6).
 
 ## Project layout
 
 - `scripts/cli.ts` is the only program the skill calls; `scripts/lint.ts`, `scripts/gen-types.ts` and `scripts/licenses.ts` are the repository's own checks; `scripts/probes/` holds the machine probes that produced the evidence under `docs/evidence/`.
-- `src/shared/` is TypeScript that runs both in Node and in the browser: generated contracts, hashing, WCAG contrast (`color/`), the finishing grade and its `.cube` LUT (`grade/`), and (from M2) camera, easing, timeline and composition.
-- `src/cli/`, `src/errors/`, `src/process/`, `src/fs/`, `src/net/`, `src/harness/`, `src/schema/`, `src/tools/`, `src/finishing/`, `src/assemble/`, `src/qa/`, `src/sheet/`, `src/lint/` and `src/licenses/` are the Node-side infrastructure; `src/browser/` and `src/lanes/` arrive with milestones M3 to M5.
+- `src/shared/` is TypeScript that runs both in Node and in the browser: generated contracts, hashing, WCAG contrast (`color/`), the finishing grade and its `.cube` LUT (`grade/`), the easing tokens and timeline combinators (`motion/`), the physical camera model and move catalogue (`camera/`), the composition solver and its checks (`composition/`) and the calibration scene (`calibration/`).
+- `src/cli/`, `src/errors/`, `src/process/`, `src/fs/`, `src/net/`, `src/harness/`, `src/schema/`, `src/tools/`, `src/plan/`, `src/finishing/`, `src/assemble/`, `src/qa/`, `src/sheet/`, `src/lint/` and `src/licenses/` are the Node-side infrastructure; `src/browser/` and `src/lanes/` arrive with milestones M3 to M5.
 - `Setup-VisionForge.cmd`, `scripts/setup.ps1` and `scripts/setup.sh` are the setup scripts a person runs once; they never prompt and install nothing without `-Install`.
 - `schemas/` holds the JSON Schema contracts; `src/shared/contracts/` is generated from them and checked for drift in CI.
 - `blender/apply_scene.py` is the only Python file; it applies a fully resolved scene and makes no decisions.

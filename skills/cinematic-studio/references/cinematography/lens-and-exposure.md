@@ -22,7 +22,7 @@ Field of view, vertical, in degrees: `2 · atan(sensorHeight / (2 · focalMm))` 
 
 ## Aperture and depth of field
 
-| `fStop` | Depth of field at 85 mm, 1 m | Look | Use |
+| `fStop` | Depth of field at 85 mm, 1 m (with a 0.045 mm circle of confusion; the code's `thinLens` uses the standard 0.03 mm, about a third shallower: 3.0 cm at f/4) | Look | Use |
 | --- | --- | --- | --- |
 | 1.4 | about 1.5 cm | razor thin; only one plane sharp | one `ECU` per film at most |
 | 2 | about 2 cm | thin; subject edge soft | `CU` details with a soft background |

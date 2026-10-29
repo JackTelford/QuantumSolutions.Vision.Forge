@@ -18,7 +18,7 @@ Amplitude is the move's size relative to its cap: `amplitude: 1` is the cap, `0.
 | `tilt-up` / `tilt-down` | rotate about the horizontal axis | 10 degrees | `sine-in-out` | three, blender | reveals from the ground up |
 | `arc-left` / `arc-right` | orbit around the subject at constant distance | 60 degrees | `sine-in-out` | three, blender | hero shots |
 | `turntable` | the subject rotates, the camera holds | 40 degrees of subject rotation | `linear` | three, blender | product detail passes |
-| `crane-reveal` | pedestal up while tilting down to keep the subject | 12 % height, 10 degrees | `emphasized-decelerate` | three, blender | openings |
+| `crane-reveal` | pedestal up while tilting down to keep the subject | 12 % of the subject height; the tilt is whatever keeps the subject on its anchor | `emphasized-decelerate` | three, blender | openings |
 | `rack-focus` | focus distance travels from one point to another; no movement | the distance between the two focus points | `emphasized` | three, blender | detail to label, foreground to subject |
 | `zoom-in` / `zoom-out` | focal length changes, camera holds | 1.5 times the focal length | `emphasized` | all | slow emphasis only |
 | `crash-zoom` | a fast zoom with a hard stop | 2 times the focal length over at most 8 frames | `emphasized-accelerate` | html, three | titles and stingers only |
@@ -33,7 +33,7 @@ Amplitude is the move's size relative to its cap: `amplitude: 1` is the cap, `0.
 
 1. One dominant move per shot. A secondary move (for example `breathe` under a `rack-focus`) must have amplitude 0.25 or less; the validator rejects more.
 2. Moves start and end with zero velocity except `turntable` (constant) and the transition moves (`whip-pan`, `crash-zoom`), which end at the cut.
-3. `arc` moves that cover 360 degrees loop without a pop: the camera module guarantees the first and last frames coincide.
+3. `arc` moves that cover 360 degrees loop without a pop: the camera module guarantees the first and last frames coincide. (With the 60-degree cap a full loop is not expressible through a shot spec today; the bake is time-exact, so a looping window would close seamlessly once a loop count exists.)
 4. `handheld` is deterministic: the noise is seeded by the shot's `seed`; the same seed gives the same shake on every render.
 5. `dolly-zoom` once per film, `crash-zoom` and `whip-pan` only in title sequences and stingers, `dutch` roll only with `static-hold` or `breathe`.
 6. The move's `startFrame` and `endFrame` bound it inside the shot; a move shorter than the shot holds still before and after, so a 3-second push can sit inside a 5-second shot.

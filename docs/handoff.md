@@ -2,6 +2,68 @@
 
 The single source of truth for where this repository stands. Newest milestone first. Every claim here points at a test or a file under `docs/evidence/`; anything else is listed under "Untested".
 
+## M2: camera, motion, composition and the plan command (2026-10-29)
+
+### Done
+
+- **Easing** (`src/shared/motion/easing.ts`, written by hand before the fan-out so every module shares it): the thirteen tokens of `references/motion/easing-grammar.md` as pure functions: CSS cubic Béziers (Newton then bisection, the CSS reference `ease(0.5) = 0.8024`), `sine-in-out`, and the one canonical spring (mass 1, stiffness 100, damping ratio 0.75, overshoot 2.8 percent under the 4 percent cap, settle time 0.921 s).
+- **Timeline** (`src/shared/motion/timeline.ts`, `durations.ts`, `text-timing.ts`): `interpolate` with clamp, extend and identity extrapolation, `spring`, segments with `sequence`, `stagger`, `delay`, `loop`, a `Timeline` of named frame events, the duration table (small 150 to 250 ms, medium 300 to 400, full-screen 450 to 600, stagger 40 to 80, nothing but the camera over 600 ms), the 30 percent entrance overlap, the 10-frame quiet tail before a cut, reading holds (words × 0.3 s + 0.8 s, 2 s for numbers) and the caption lead and tail.
+- **Calibration scene** (`src/shared/calibration/scene.ts`): the ADR 0008 scene as data for M4: 18 percent gray card `#767676`, 90 percent white, 2 percent black, six 80 percent swatches, a glossy and a matte sphere, a 48 px text line, each with its frame box and expected limited-range luma (computed on the encoded channels; the gray card expects 117 ± 5).
+- **Camera** (`src/shared/camera/`): vectors and quaternions, the 36 mm physical model (vertical and horizontal field of view, CSS perspective, thin-lens depth of field with a 0.03 mm circle of confusion), size-to-distance and the angle placements of `shot-grammar.md`, pinhole projection of points and boxes to frame fractions, the 26-move catalogue of `camera-moves.md` with caps, default easings, lanes and the ends-at-cut flag, seeded handheld noise (a hashed PRNG, cosine-interpolated value noise at 1.5 Hz, fade envelope), and `bake(shot, spec, base)` / `cameraFrameAt(...)`: per frame position, rotation, focal length, f-stop, focus distance (tracking the camera so a push-in keeps the same surface sharp), shutter angle, exposure, turntable rotation, key-light orbit and stage offset. Time-exact windows (ADR 0006 decision 9).
+- **Composition** (`src/shared/composition/`): the shot-size fraction table, grid anchors, safe areas, the solver (distance for the size and lens, sphere placement, one closed-form slide onto the grid point, headroom placement for MS, MCU and CU, lead-room as a minimum) and the five geometric checks of `composition/rules.md` (subject in action safe, anchor on the grid within 4 percent, text in title safe and off the subject, headroom in range, text floors per role with 42 or 60 characters per line, 3 lines, no orphan) plus the competing-text warning.
+- **`plan`** (`src/plan/`, `src/cli/commands/plan.ts`): reads and validates the brief, treatment, shot spec and look bible (schema, semantic rules, ledger), checks them against each other (ids, beats, fps and size, transition arithmetic, pacing rules 1 and 2 as problems, beat lengths, dissolves, end fades, rig changes and narration order as warnings), runs the composition solver's checks on every shot's base framing, computes one key per shot (ADR 0006 decision 8; the lane code hash is empty until M3), writes `<out>/<jobId>/` with copies of the four documents and `job.json`, keeps shot statuses on a rerun when the key is unchanged, and prints one line per shot with the totals against the brief.
+- **Docs**: ADR 0006 (launch flag set and the time-exact bake), ADR 0008 (calibration luma on encoded channels; Blender's Z-up mapping), `camera-moves.md` (the crane-reveal cap cell), `lens-and-exposure.md` (the depth-of-field column's circle of confusion), SKILL.md and README (the `plan` command, the layout).
+- Process: four modules by parallel agents (composition started when the camera build landed), each adversarially reviewed and fixed: 32 findings (timeline 7, camera 8, plan 10, composition 7), 31 applied, 7 skipped and either done here (the doc amendments, the composition wiring into `plan`) or recorded below.
+
+### Evidence
+
+| Claim | Number | Where |
+| --- | --- | --- |
+| Type checks, house rules, schema drift, licenses | `npm run typecheck` exit 0 both configs; `npm run lint`: no findings in 265 files; 11 contracts up to date; 32 packages, 0 failed | run locally 2026-10-29 |
+| Unit and integration tests | `npm test`: 1081 tests in 251 suites, 0 failures, 2 skipped (macOS or Linux only) | same |
+| Easing matches the CSS reference and the spring stays under its cap | `ease(0.5) = 0.8024 ± 0.001`, every token 0 → 0 and 1 → 1, monotonic except the spring, spring peak in [1.02, 1.04] | `tests/shared/motion/easing.test.ts` |
+| Timeline, durations, text timing, calibration arithmetic | 71 tests | `tests/shared/motion/`, `tests/shared/calibration/` |
+| Camera: zero velocity at both ends except turntable and the cut moves, arc keeps its distance within 1e-6, dolly-zoom keeps the projected anchor height constant, same seed same shake, bake equals cameraFrameAt frame by frame, `verticalFovDegrees(50, 16/9) = 22.9`, `cssPerspectivePx(50, 16/9, 1080) = 2667` | 84 tests | `tests/shared/camera/` |
+| Composition: an MS hero on `thirds-left` lands at x 0.333, headroom 10 percent on a CU puts the subject top at 0.10, overlapping text, a 20 px caption, a 4-line body and a 50-character title line are all reported | 39 tests | `tests/shared/composition/` |
+| `plan`: every cross-document rule with a passing and a failing example, keys stable and sensitive to the shot, the look and the browser major, job id stable, statuses kept on rerun, the command end to end (exit 0 with a valid job folder; 1 with `schema-validation`, `cross-document` including a text box on the subject, `data-file`; 2 usage) | 50 tests | `tests/plan/`, `tests/cli/plan.test.ts` |
+
+### Untested
+
+- No frame has been rendered: the camera and composition numbers are checked against the references' tables and the physics, not against a picture. M3's first title card is the first visual check of the projection, the handedness (arc-right and truck-right travel toward the camera's right, pan-right turns the view right, positive dutch roll drops the right side) and the CSS perspective.
+- The Blender Z-up mapping in ADR 0008 is stated from the axis conventions, not from a rendered frame; M5 confirms it with one eye-level and one overhead shot.
+- The handheld shake, the spring and the easing curves have not been judged by eye; the lookdev sheet in M4 is where taste enters.
+- Portrait aspects go through the camera model's sensor rule but no composition test uses one; `ground` with MS, MCU or CU fails the headroom check by construction (a level camera at the subject's base frames from below), so the planner pairs `ground` with MLS or wider.
+- Only the bottle fixture (0.08 × 0.25 × 0.08 m at 85 mm) and its variants have gone through the solver; a real planned shot spec arrives with M7's treatment.
+- `plan` was run on this machine only; the ubuntu job covers it on this push.
+
+### Risks
+
+- The references and the code disagree in two small places, both recorded in the references: `lens-and-exposure.md`'s depth-of-field column was computed with a 0.045 mm circle of confusion while `thinLens` uses the standard 0.03 mm (about a third shallower); `crane-reveal` and `top-down-reveal` keep `emphasized-decelerate`, which starts with velocity, against rule 2's zero-velocity start (the table is the specification; the test exempts the two).
+- The shot key changes once when M3 fills the lane code hash, and keys planned before `doctor` ran differ from keys planned after (no browser major). Both are by design; the still gate re-renders in each case.
+- `browserLaunchFlags` (`--force-device-scale-factor=1`, `--disable-lcd-text`) is part of the key, so M3's harness must launch with exactly that set plus the `--use-angle` choice the render profile records (ADR 0006 decision 3, amended).
+- For MS, MCU and CU the headroom percentage decides the subject's vertical position and the grid's y is ignored; `composition/rules.md` says "anchor within tolerance of the grid point", which the solver meets horizontally for those sizes. Change the rule or the solver in M3 if the first stills look wrong.
+- The shot spec has no field for a fade-out after the last shot; pacing rule 3 ("ends on a fade-black") is read as the transition into the last shot. A `fadeOut` field may be needed when M7 assembles the product film.
+
+### Deliberately not done
+
+- No lane consumes the baked frames yet (M3 and later); the lane mappings in ADR 0008 and `src/shared/camera/types.ts` are the contract they will follow.
+- A 360-degree arc loop is not expressible (the cap is 60 degrees); a loop count is a later addition.
+- The contrast and luma checks (6 and 7 of `composition/rules.md`) stay in `qa`, where the rendered frame is.
+
+### Review guide
+
+Read these five in order (about 1,000 lines):
+
+1. `src/shared/camera/types.ts`: the frame record every lane will read, with the axis conventions.
+2. `src/shared/camera/bake.ts` then `pose-moves.ts`: the window arithmetic and the per-move pose math.
+3. `src/shared/composition/solver.ts`: distance, placement and the closed-form slide onto the grid.
+4. `src/plan/cross-checks.ts`: the rules that make four documents one job.
+5. `tests/shared/camera/bake-moves.test.ts`: what each of the 26 moves is held to.
+
+### Next: M3
+
+The browser harness runtime (`init(spec)` / `render(frame)` protocol, seek-based capture, renderer policy and fingerprint per ADR 0006), the html lane (title card and lower third from the look bible's tokens, bundled OFL fonts served by the harness), the `still`, `render` and `assets` commands, the determinism test (ten renders, framehash table), the 600-frame timing, the first goldens at 480x270 and the still gate that runs `compositionProblems` on the rendered frame before any vision review.
+
 ## M1: contracts, doctor, assemble, QA and contact sheets (2026-10-27)
 
 ### Done

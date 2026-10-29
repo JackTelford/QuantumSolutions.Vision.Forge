@@ -57,6 +57,7 @@ Read its result as follows. `data.lanes` has one boolean per lane (`html`, `thre
 
 ## Commands available now
 
+- `plan --brief <file> --treatment <file> --shot-spec <file> --look <file>`: validates the four documents, checks them against each other (ids, beats, fps and size, the transition arithmetic, the pacing rules) and runs the composition solver's geometric checks on every shot; writes `<out>/<jobId>/` with copies of the four documents and `job.json` (`evidence[0]`), one key per shot. `data.warnings` lists pacing and composition warnings; repeat them to the user. Exit 1 with code `cross-document` or `schema-validation` lists every problem as a sentence: fix the documents, never the job folder. Asset ids named in the brief or shot spec must already be in the ledger, so run `assets` before `plan` once it exists.
 - `validate <file>`: checks any pipeline document (brief, treatment, shot spec, look bible, job, assembly plan, QA report, assets ledger) against its schema and the semantic rules of its kind; the error lists every problem as a sentence. Asset ids named in a brief or shot spec must already be in the ledger under the data directory.
 - `assemble --plan <assembly-plan.json>`: joins the clips with their transitions, mixes narration and music, applies the finishing grade and encodes the delivery. `artifacts` holds the delivery and its `.srt` when the plan has captions; `data.verified` holds the probed frame count, frame rate and size.
 - `qa --video <file> [--plan <file>] [--text-boxes <json>] [--still <png> --still-frame <k>] [--report <file>] [--loudness-target <LUFS>] [--no-fail]`: measures the delivery and writes a QA report (`evidence[0]`, by default `<out>/qa/<video name>.qa.json`). Exit 1 with code `qa-failed` names the failing checks unless `--no-fail` is given. Read the report's `checks[]` and repeat each failing check's `detail` to the user; never pass a piece the report failed.
@@ -78,7 +79,7 @@ Run `doctor` first. If Blender is missing or is not 5.2.x, say so, offer the set
 
 ## Status
 
-Implemented today (M1): `help`, `version`, `doctor`, `validate`, `assemble`, `qa` and `sheet`. Planned: `plan` (M2); `still`, `render`, `assets` (M3); `audio` (M6); each exits 2 with a `not-implemented` error naming its milestone until then. `help` prints the live table with every option. The state of the whole repository, with what is and is not verified, is in `docs/handoff.md` at the plugin root: `${CLAUDE_PLUGIN_ROOT}/docs/handoff.md`.
+Implemented today (M2): `help`, `version`, `doctor`, `validate`, `plan`, `assemble`, `qa` and `sheet`. Planned: `still`, `render`, `assets` (M3); `audio` (M6); each exits 2 with a `not-implemented` error naming its milestone until then. `help` prints the live table with every option. The state of the whole repository, with what is and is not verified, is in `docs/handoff.md` at the plugin root: `${CLAUDE_PLUGIN_ROOT}/docs/handoff.md`.
 
 ## Knowledge base
 
