@@ -2,7 +2,7 @@
 
 Vision.Forge is a Claude Code skill that turns an English prompt into a finished video or still using only code. It renders titles and explainers with HTML and CSS, stylized 3D with Three.js, and near-photoreal objects with Blender, then assembles and checks the result with ffmpeg. Claude directs the shots, reviews rendered contact sheets and fixes what fails. No image or video generation model is involved; the one optional model is a small local voice for narration.
 
-**Status: under construction.** Milestones M0a (research, probes and decisions), M0b (core infrastructure, checks and packaging), M1 (contracts, doctor, assemble, QA and contact sheets) and M2 (camera, motion, composition and the plan command) are complete. The CLI finds the tools, validates every pipeline document, plans a job with a solved camera and composition per shot, assembles clips into a graded delivery and measures it; nothing renders a frame yet (M3). The current state and everything not yet verified are in [docs/handoff.md](docs/handoff.md).
+**Status: under construction.** Milestones M0a (research, probes and decisions), M0b (core infrastructure, checks and packaging), M1 (contracts, doctor, assemble, QA and contact sheets), M2 (camera, motion, composition and the plan command) and M3 (the browser harness, the html lane, the still gate, the still, render and assets commands) are complete. The CLI finds the tools, validates every pipeline document, plans a job with a solved camera and composition per shot, renders the html lane's shots deterministically in headless Edge or Chrome through a still gate, assembles clips into a graded delivery and measures it. The three and blender lanes come with M4 and M5. The current state and everything not yet verified are in [docs/handoff.md](docs/handoff.md); [docs/milestone-notes.md](docs/milestone-notes.md) has one short note per milestone.
 
 ## What it will do
 
@@ -51,22 +51,26 @@ The skill is then available as `/vision-forge:cinematic-studio`. While developin
 | --- | --- |
 | `doctor [--require <lane>] [--skip-browser-check] [--skip-blender-probe]` | finds Node, ffmpeg, ffprobe, Edge or Chrome, the GPU and Blender 5.2; writes `tools.json` under the data directory; reports which lanes (`html`, `three`, `blender`, `audio`) can run and the install command for anything missing |
 | `plan --brief <f> --treatment <f> --shot-spec <f> --look <f>` | validates the four documents, checks them against each other and the pacing rules, runs the composition solver's checks on every shot, and writes the job folder with one key per shot |
+| `still --job <folder> --shot <id> [--frame <k>] [--renderer hardware\|software\|any] [--scale <n>] [--approve]` | renders one graded frame of a shot for review, runs the still gate (composition, the browser's text measurement, contrast behind every text box, exposure) and pins the renderer; `--approve` marks a passed still approved |
+| `render --job <folder> [--shot <id>] [--renderer ...] [--frames <a-b>] [--force] [--allow-unapproved]` | renders every frame of the approved html shots into the cache with a render manifest (pixel hashes, fingerprint); resumable and reused when nothing changed |
+| `assets [--list] [--fetch <id,id>] [--all] [--verify] [--credits]` | the pinned catalogue of CC0 Poly Haven HDRIs: download with size and MD5 verification into the data directory, record the ledger, verify, write `CREDITS.md` |
 | `validate <file>` | checks a JSON document (brief, treatment, shot spec, look bible, job, assembly plan, QA report, assets ledger, tools manifest or render manifest) against its schema and the semantic rules of its kind |
 | `assemble --plan <assembly-plan.json>` | joins clips with cuts and transitions, mixes narration and music, writes or burns captions, applies the finishing grade and encodes H.264, HEVC or ProRes; verifies the exact frame count, rate, size and square pixels with ffprobe |
 | `qa --video <file> [--plan <file>] [--text-boxes <json>] [--still <png> --still-frame <k>] [--report <file>] [--loudness-target <LUFS>] [--no-fail]` | measures dimensions, frame rate, duration, black and frozen frames, pops, exposure drift, text contrast, loudness, true peak and the hero still match; writes a QA report |
 | `sheet --frames <dir or json> [--output <png>] [--columns <n>] [--thumb-width <px>]` | tiles labelled frames into one contact sheet |
 
-Planned: `still`, `render` and `assets` (M3); `audio` (M6).
+Planned: `audio` (M6). The `three` lane arrives with M4 and the `blender` lane with M5; until then `still` refuses their shots.
 
 ## Project layout
 
 - `scripts/cli.ts` is the only program the skill calls; `scripts/lint.ts`, `scripts/gen-types.ts` and `scripts/licenses.ts` are the repository's own checks; `scripts/probes/` holds the machine probes that produced the evidence under `docs/evidence/`.
-- `src/shared/` is TypeScript that runs both in Node and in the browser: generated contracts, hashing, WCAG contrast (`color/`), the finishing grade and its `.cube` LUT (`grade/`), the easing tokens and timeline combinators (`motion/`), the physical camera model and move catalogue (`camera/`), the composition solver and its checks (`composition/`) and the calibration scene (`calibration/`).
-- `src/cli/`, `src/errors/`, `src/process/`, `src/fs/`, `src/net/`, `src/harness/`, `src/schema/`, `src/tools/`, `src/plan/`, `src/finishing/`, `src/assemble/`, `src/qa/`, `src/sheet/`, `src/lint/` and `src/licenses/` are the Node-side infrastructure; `src/browser/` and `src/lanes/` arrive with milestones M3 to M5.
+- `src/shared/` is TypeScript that runs both in Node and in the browser: generated contracts, hashing, WCAG contrast (`color/`), the finishing grade and its `.cube` LUT (`grade/`), the easing tokens and timeline combinators (`motion/`), the physical camera model and move catalogue (`camera/`, including the CSS 3D transform of the html stage), the composition solver and its checks (`composition/`), the calibration scene (`calibration/`), the page protocol (`harness/`), the type scale, text animations and text fit (`typography/`), the lighting rigs (`lighting/`), the look's CSS tokens (`look/`) and the html lane's pure style functions (`html/`).
+- `src/browser/` runs in the page: the runtime that installs the `__vfInit`/`__vfSeek` protocol (`runtime/`) and the html lane (`html/`); `src/lanes/` holds the Node side of each lane (the page document, the lane code hash); `src/render/` orchestrates a shot's frames, manifest, cache and the still gate; `src/assets/` holds the asset catalogue and its downloads.
+- `src/cli/`, `src/errors/`, `src/process/`, `src/fs/`, `src/net/`, `src/harness/` (the loopback server and the Playwright browser session), `src/schema/`, `src/tools/`, `src/plan/`, `src/finishing/`, `src/assemble/`, `src/qa/`, `src/sheet/`, `src/lint/` and `src/licenses/` are the Node-side infrastructure.
 - `Setup-VisionForge.cmd`, `scripts/setup.ps1` and `scripts/setup.sh` are the setup scripts a person runs once; they never prompt and install nothing without `-Install`.
 - `schemas/` holds the JSON Schema contracts; `src/shared/contracts/` is generated from them and checked for drift in CI.
 - `blender/apply_scene.py` is the only Python file; it applies a fully resolved scene and makes no decisions.
-- `skills/cinematic-studio/` holds the skill, its creative knowledge base, bundled fonts and HDRIs.
+- `skills/cinematic-studio/` holds the skill, its creative knowledge base and the four bundled OFL fonts (`assets/fonts/`, with their license texts and provenance); HDRIs are downloaded into the data directory by the `assets` command, never committed.
 - `docs/adr/` records every decision and why; `docs/research.md` lists every fact with its source and status; `docs/evidence/` holds probe output with numbers.
 
 ## Verified so far on the owner's machine
@@ -78,6 +82,7 @@ Node 24.13.0, TypeScript 6.0.3, ffmpeg 9.0.2, Edge 156 and Chrome 156 on Windows
 - Ten renders of the same page gave byte-identical frames, and Chrome matched Edge pixel for pixel; one 1080p screenshot takes about 50 ms (`docs/evidence/m0/p5-determinism.md`).
 - ffmpeg's finishing and QA filters behave as the design needs (`docs/evidence/m0/p6-ffmpeg.md`).
 - `doctor` exits 0 here with the `html`, `three` and `audio` lanes available: both browsers report WebGL2 on the NVIDIA Direct3D 11 renderer, and the absent Blender is reported with its install command.
+- The html lane's title card renders byte-identically in ten fresh browser launches, the still gate passes the reference fixture (contrast 11.2:1, luma 33 inside the look's band), and a 600-frame 1080p shot renders in 66 s (`docs/evidence/m3/`).
 - `assemble` turns synthetic clips into deliveries with exact frame counts across cuts, dissolves, wipes and fades, lands loudness within 1 LU of the target and applies a `.cube` grade; `qa` finds the planted black and frozen frames, pops and quiet audio in synthetic clips (the M1 section of `docs/handoff.md`).
 
 ## Limits

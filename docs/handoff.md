@@ -2,6 +2,76 @@
 
 The single source of truth for where this repository stands. Newest milestone first. Every claim here points at a test or a file under `docs/evidence/`; anything else is listed under "Untested".
 
+## M3: the browser harness, the html lane, the still gate and the still, render and assets commands (2026-10-29)
+
+### Done
+
+- **Page protocol and seams** (`src/shared/harness/protocol.ts`, `src/harness/types.ts`, written by hand before the fan-out): the `ShotPageSpec` a page receives (shot, look, size, the camera baked per frame, the base distance, the font and asset URL prefixes), the `__vfInit(specJson)` / `__vfSeek(frame)` globals with their JSON reports (fonts loaded, running animations, the WebGL renderer string, each text box's measured overflow), the renderer policy (`hardware`, `software`, `any`), the ANGLE backend per platform and the `BrowserRenderer` interface the render code is tested against with a fake.
+- **CSS stage transform** (`src/shared/camera/css-transform.ts`): the baked camera as a `perspective` and a `matrix3d` for a 2.5D stage, derived so that CSS projects every stage point exactly where `project.ts` puts it (tests hold the two to 1e-5 px through a push-in, an arc, a tilt, a dutch roll and a zoom); the stage scale is fixed from the base pose and the perspective follows the focal length, which is how a zoom and a dolly differ on the stage.
+- **Typography** (`src/shared/typography/`): the four bundled OFL variable fonts (Inter, Space Grotesk, Playfair Display, JetBrains Mono from google/fonts commit 6157dfaa, SHA-256 pinned and checked by a test, OFL texts beside them under `skills/cinematic-studio/assets/fonts/`), the role sizes at both scale ratios, line heights, weights, tracking and case, the `@font-face` rules the page carries; the six text animations as pure functions of the frame (fixed durations and easings, exits mirrored at two thirds with `standard-accelerate`, word stagger, counters); and the fit (`fit.ts`): the role's scale size shrunk one pixel at a time until the greedy-wrapped lines fit the box, never below the composition floor, so the lane and the planner's check 5 agree.
+- **Browser runtime and html lane** (`src/browser/runtime/`, `src/browser/html/`, with every computable style under `src/shared/html/`, `src/shared/lighting/rigs.ts` and `src/shared/look/css-tokens.ts`): the runtime loads the look's faces through `document.fonts.load`, reads `UNMASKED_RENDERER_WEBGL`, builds the lane, measures every text box in its shown state, draws frame 0 and runs the DOM check (no `<video>`, `<iframe>`, SMIL, shadow root, `getAnimations().length === 0`); `render(frame)` rewrites every inline style from scratch. The html lane is a 2.5D stage (`perspective` viewport with the rig's lit gradient, a `preserve-3d` stage under the camera matrix, a backdrop plate four frames wide at −0.6 m, a haze plate, a floor shadow, the subject stand-in shaped by the primitive with a sheen and a box-shadow that follow the key light and the light-sweep orbit, seeded motes) under a flat text overlay (one box per text element at its frame fractions, plates for lower thirds, scrims for captions, one span per word for `stagger-words`, counters counting). The 16 lighting rigs of the cookbook are data with per-shot overrides.
+- **Node harness** (`src/harness/browser-session.ts`, `fingerprint.ts`, `served-roots.ts`, `page-error.ts`; `src/lanes/html/page.ts`, `src/lanes/lane-code-hash.ts`): `openBrowserRenderer` launches the persistent context with exactly `browserLaunchFlags` plus `--use-angle`, reads the renderer through the capability page, enforces the policy (`any` falls back to SwiftShader when hardware has no context) and removes its profile on close; `capture` opens the page, fails at once on a non-OK HTTP answer, waits for the protocol, bounds init by 60 s, repeats the page's own sentences and the last ten console errors in `page-init` / `page-seek` errors, honours aborts, and screenshots each frame after a synchronous seek. The fingerprint reads AppliedDPI and the four ClearType values from the registry on Windows. The lane code hash covers `src/shared/`, `src/browser/runtime/`, `src/browser/<lane>/`, the page document and the font files, and enters every shot key through `plan`, `still` and `render` alike.
+- **Render orchestration** (`src/render/`): the cache folder `<data>/cache/<key>/frames/f%06d.png` with a validated render manifest beside it (pixel hashes from ffmpeg `framehash` in batches of thirty, the fingerprint and its hash), resumable and reused; the still gate (composition checks 1 to 5 with the look's type scale, the browser's text measurement, the WCAG ratio behind every text box on the finished still, the still's YAVG inside the look's band); the still finishing (the look's LUT and vignette, no grain); the job state (load the folder's copies, pin the render profile into the shot spec copy and re-key the shot).
+- **`still`, `render`, `assets`** (`src/cli/commands/`): see SKILL.md for the options and codes. `still` renders one frame through the same path as `render`, grades it, writes `stills/<shot>-r<n>.png` with the raw frame and the gate report, pins the profile (the key changes once), optionally renders a 4K `-2x.png`, and `--approve` marks a passed still approved; `render` renders every approved html shot with one browser, reuses complete manifests, refuses a renderer that disagrees with the pinned profile; `assets` lists, fetches (size and MD5 verified, ledger recorded, `.corrupt` set aside on a failed verify), verifies and writes `CREDITS.md` for ten pinned Poly Haven HDRIs.
+- **`plan`** keys every shot with its lane's code hash and, on a rerun over the same folder, carries the render profile the still gate pinned for every shot the documents did not change (`src/plan/pinned-profiles.ts`), so approvals and renders survive a replan; the composition check runs with the look's type scale.
+- **Docs**: ADR 0006 (decision 8 amended: lane code hash coverage, browser fallback, the profile in the key; decision 10 added: the page protocol and the still gate), SKILL.md (the order of a production, the three commands and their codes), README, SETUP (data directory layout, fonts, troubleshooting), `docs/evidence/m3/`.
+- Process: four modules by parallel agents (browser runtime and html lane, Node harness, render orchestration and commands, assets), each adversarially reviewed and fixed: 40 findings (browser 11, harness 12, render 11, assets 6), 40 applied (3 refused with reasons), then the integrator pass: the text fit and the measured overflow (both agents flagged the title spilling its box), the lane code hash and the profile carry in `plan`, the browser fallback in the key, the test browser preference for Linux CI, the determinism test and the golden, the timing run, ffmpeg 7.0.2.
+
+### Evidence
+
+| Claim | Number | Where |
+| --- | --- | --- |
+| Type checks, house rules, schema drift, licenses | `npm run typecheck` exit 0 both configs; `npm run lint`: no findings in 353 files; 11 contracts up to date; 32 packages, 0 failed | run locally 2026-10-29 |
+| Unit and integration tests | `npm test`: 1345 tests in 331 suites, 0 failures, 3 skipped (two macOS or Linux only, the Poly Haven network test) | same |
+| The CSS stage agrees with the pinhole projection | every stage point within 1e-5 px of `project()` through five moves and four frames | `tests/shared/camera/css-transform.test.ts` |
+| The first rendered frame passes the gate | `still` on the fixture's s03 at 1080p: composition 0 problems, text-contrast 11.23:1, exposure YAVG 33.4 in 24 to 140; 4.1 s including the launch | `docs/evidence/m3/README.md`, `title-card-s03-r1-640.png` |
+| Same machine, same fingerprint: byte identity | ten fresh Edge launches, frames 0, 26, 60, 119 at 480x270: one framehash per frame; Chrome gives the same four hashes and SSIM 1.00000 against the Edge golden | `tests/render/determinism.integration.test.ts`, `docs/evidence/m3/README.md` |
+| Golden | `tests/goldens/html/title-card-480x270-f026.png` with its fingerprint sidecar; SSIM 0.99 on the same fingerprint, 0.95 elsewhere | same test |
+| Timing | 600 frames at 1920x1080 in 66.1 s, 110.2 ms per frame including hashing; 120 frames in 14.0 s | `docs/evidence/m3/README.md` |
+| Harness against the real browser | policy `any` picks the D3D11 renderer, `software` reports SwiftShader, three captured frames decode to the expected pixels, an aborted capture lands exactly the frames before the abort, a failing fixture page surfaces its sentence, a 404 fails in 92 ms, the profile directory is removed on close | 15 tests, `tests/harness/browser-session.integration.test.ts` |
+| Render orchestration without a browser | resume skips hashed frames, a failing renderer marks the manifest failed with the frames kept, the whole-shot reuse reports the requested count | `tests/render/render-shot.test.ts` and the rest of `tests/render/` |
+| still and render end to end at 480x270 | still exit 0 with the gate passed and the profile pinned; render 12 frames, 12 reused on the second run, 120 complete on the whole-shot run, nothing launched when everything is cached | `tests/cli/still.test.ts`, `tests/cli/render.test.ts` |
+| assets | loopback downloads record the ledger, a wrong MD5 records nothing, a modified byte fails `--verify`; the real `hdri:studio_small_09-1k` download: 1615248 bytes, MD5 matched, SHA-256 e7cfda5f…, 0.2 s | `tests/assets/`, `tests/cli/assets.test.ts` |
+| ffmpeg 7.0.2 | the six ffmpeg-dependent M3 suites: 43 tests, 0 failures on the Gyan 7.0.2 full build | run locally 2026-10-29 |
+| Continuous integration | run RUN_ID_PLACEHOLDER: RESULT_PLACEHOLDER | GitHub Actions |
+
+### Untested
+
+- Linux and macOS have not run the harness here; the ubuntu CI job runs the integration tests on Chrome (the tests prefer Chrome on Linux because Edge times out at launch on that runner). Policy `any` on a runner without a GPU takes the SwiftShader fallback and records `software`.
+- No golden exists for the software renderer; its frames are classified and launched but not compared.
+- The still gate measures text boxes and luma; nobody has yet judged a still by the vision rubric (that is the M7 loop). The handheld move, the motes and the sheen have been looked at on one fixture only.
+- The lighting gradient's angle convention (`src/shared/look/css-tokens.ts`: a key at camera-right lights the right side) was chosen by the builder against the brief's literal formula and verified by eye on one frame; the three lane (M4) will show whether html and three agree on the lit side.
+- The floor shadow is a camera-facing ellipse just below the subject (a plate rotated into the floor is invisible at eye level); on the dark obsidian look it does not show at all.
+- `assets --fetch` has only run against Poly Haven's CDN once; the catalogue's ten MD5s were read from api.polyhaven.com on 2026-10-29.
+
+### Risks
+
+- The text fit is an estimate (average character widths per family); the browser's measurement reports what the estimate missed, and the gate fails on it, but a box the estimate fills exactly may still wrap one word in the browser. Widen boxes rather than fight the estimate.
+- The html lane renders the three lane's shots as "the three lane arrives in M4": a shot spec with `three` shots passes `plan` and fails `still`.
+- The key changes at the still gate (the profile enters it); `plan` carries the profile forward only when a shot is byte-for-byte unchanged apart from it. Editing any field of a shot re-keys it and sends it back through the gate, as intended.
+- `render` keeps one page directory per job (`<job>/page`) while `still` uses `<cache>/<key>/page`; both serve the same document, but a job whose shots had different sizes would need one page per size (the schema forbids that today).
+- 110 ms per 1080p frame is twice the P5 screenshot time; PNG encoding of a 1080p frame and the style writes account for the rest. A faster path (`readPixels`, or a lossless video stream from the browser) was not needed yet.
+
+### Deliberately not done
+
+- The three and blender lanes (M4, M5); the assembly plan built from the job's frame patterns (M7); narration (M6).
+- The vision review loop (contact sheet, rubric scores in the QA report) stays with the skill's instructions; `still` and `sheet` give it the pictures.
+- `assets` has no model entries yet (M5 brings glTF).
+
+### Review guide
+
+Read these five in order (about 1,100 lines):
+
+1. `src/shared/harness/protocol.ts` then `src/browser/runtime/boot.ts`: what crosses between Node and the page.
+2. `src/harness/browser-session.ts`: the launch, the policy, the capture loop and every way it fails.
+3. `src/shared/camera/css-transform.ts` and `src/shared/html/stage.ts`: how the baked camera becomes a CSS stage.
+4. `src/render/render-shot.ts` and `src/render/still-gate.ts`: the cache, the manifest, the resume and the gate.
+5. `src/cli/commands/still.ts`: the one command that ties the gate, the profile pin and the job together.
+
+### Next: M4
+
+The three lane: scene builders (PMREM from the bundled HDRIs or `RoomEnvironment`, `RectAreaLight` rigs from `lighting/rigs.ts`, a shadow-casting key, SSAA, bloom, bokeh from the thin-lens model, AgX or standard tone mapping), the shared camera applied through `filmGauge 36` and `setFocalLength`, the GPU assertion through the renderer policy, the calibration parity scene of ADR 0008 rendered in both lanes with the gray card's YAVG held to 117 ± 5, the lookdev swatch sheet of the seven looks (html and three) for the owner's taste decisions, and the three lane's own frame cost.
+
 ## M2: camera, motion, composition and the plan command (2026-10-29)
 
 ### Done
