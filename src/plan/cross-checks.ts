@@ -161,10 +161,23 @@ export const crossProblemRules: readonly CrossRule[] = [
   idsAgree,
   frameAgrees,
   beatsMatchShots,
+  beatLanesMatchShots,
   transitionsFitNeighbours,
   noDoubleTransitionOnShortShots,
   totalMatchesBrief,
 ];
+
+/** A beat whose lane differs from a shot it names: the treatment promises one lane per beat, and the renderer that runs is the shot's. */
+function beatLanesMatchShots({ treatment, shotSpec }: PlanDocuments): readonly string[] {
+  const problems: string[] = [];
+  for (const beat of treatment.beats) {
+    for (const shotId of beat.shotIds) {
+      const shot = shotSpec.shots.find((candidate) => candidate.id === shotId);
+      if (shot !== undefined && shot.lane !== beat.lane) problems.push(`beat "${beat.id}" is planned on the ${beat.lane} lane but its shot "${shotId}" is on the ${shot.lane} lane`);
+    }
+  }
+  return problems;
+}
 
 /** Problems between the four documents, one sentence each; empty when they agree. */
 export function crossDocumentProblems(brief: Brief, treatment: Treatment, shotSpec: ShotSpec, look: LookBible): readonly string[] {

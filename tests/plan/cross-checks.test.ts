@@ -19,8 +19,8 @@ function assertOne(sentences: readonly string[], pattern: RegExp): void {
 }
 
 describe('crossDocumentProblems', () => {
-  it('runs six problem rules and five warning rules', () => {
-    assert.equal(crossProblemRules.length, 6);
+  it('runs seven problem rules and five warning rules', () => {
+    assert.equal(crossProblemRules.length, 7);
     assert.equal(crossWarningRules.length, 5);
   });
 
@@ -50,6 +50,10 @@ describe('crossDocumentProblems', () => {
 
   it('reports a beat that names a shot the spec does not have', () => {
     assertOne(problems(planDocumentsWith((d) => { d.treatment.beats[1]?.shotIds.push('s09'); })), /beat "b2" names shot "s09", which the shot spec does not have/);
+  });
+
+  it('reports a beat whose lane is not the lane of a shot it names', () => {
+    assertOne(problems(planDocumentsWith((d) => { d.shotSpec.shots[0]!.lane = 'blender'; })), /beat "b1" is planned on the three lane but its shot "s01" is on the blender lane/);
   });
 
   it('reports a shot that belongs to no beat, and one that belongs to two', () => {

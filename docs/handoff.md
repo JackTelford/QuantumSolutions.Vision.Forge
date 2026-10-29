@@ -44,7 +44,7 @@ The single source of truth for where this repository stands. Newest milestone fi
 - The applier prints two DeprecationWarnings on 5.2 (`World.use_nodes`, `Material.use_nodes`, to be removed in 6.0); they fill every stderr tail, and a future 5.x may drop the properties. The applier is pinned to 5.2 by `doctor`.
 - The fixture's motes and haze have no Blender counterpart, so the lanes differ in atmosphere on the same shot.
 - The glass of the blind-test brief is not a material the resolver writes (an opaque coated body); the treatment must say so (the steering table) until a transmission material exists.
-- The treatment's beat lane is not checked against its shots' lanes (`plan` accepted a beat marked `three` over a `blender` shot without a warning); a cross-document rule belongs with M7's plan builder.
+- The treatment's beat lane was not checked against its shots' lanes (`plan` accepted a beat marked `three` over a `blender` shot without a word); closed after the M5 push by a seventh cross-document problem rule, `beatLanesMatchShots` in `src/plan/cross-checks.ts`.
 - A blender shot's key changes whenever anything under `src/shared/` or `src/lanes/blender/` changes (as the browser lanes' keys do with their code hash); regenerating a contract between `still --approve` and `render` makes `render` ask for a new still, which is by design and surprised the integrator once.
 
 ### Deliberately not done
