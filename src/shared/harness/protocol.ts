@@ -38,6 +38,8 @@ export interface ShotPageSpec {
   readonly assetsUrl: string;
   /** The environment map of the three lane when its HDRI is installed; null means the lane's built-in room environment. */
   readonly environment: EnvironmentRef | null;
+  /** When "calibration", the lane renders the calibration scene of src/shared/calibration/scene.ts under the shot's lighting instead of the shot's subject and text (ADR 0008 decision 2); absent for a normal shot. */
+  readonly scene?: 'calibration';
 }
 
 /** How far a text element's laid-out content spills past its box, measured by the browser after init; 0 and 0 when it fits. */
