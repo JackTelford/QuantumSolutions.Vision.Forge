@@ -1,0 +1,11 @@
+{
+  "platform": "win32",
+  "channel": "msedge",
+  "browserMajor": 156,
+  "webglRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 2060 (0x00001F08) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "args": [
+    "--force-device-scale-factor=1",
+    "--disable-lcd-text",
+    "--use-angle=d3d11"
+  ]
+}

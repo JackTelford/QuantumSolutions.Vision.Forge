@@ -13,7 +13,7 @@ import { readManifest } from '../../src/render/manifest.ts';
 import { validateDocument } from '../../src/schema/validator.ts';
 import type { Job } from '../../src/shared/contracts/job.ts';
 import type { ShotSpec } from '../../src/shared/contracts/shot-spec.ts';
-import { findBrowsers } from '../../src/tools/browsers.ts';
+import { preferTestBrowserInManifest, testBrowser } from '../fakes/test-browser.ts';
 import { planBrief, planLook, planShotSpec, planTreatment } from '../plan/fixtures.ts';
 import { mutated } from '../schema/documents/examples.ts';
 
@@ -116,7 +116,7 @@ describe('render command without a browser', () => {
 // Optional: the whole render path on the real browser. It depends on the harness and the html lane landing
 // (src/harness/browser-session.ts, src/browser/runtime/boot.ts) and on Edge or Chrome being installed.
 const harnessPresent = existsSync(join(repoRoot, 'src', 'harness', 'browser-session.ts')) && existsSync(join(repoRoot, 'src', 'browser', 'runtime', 'boot.ts'));
-const browserPresent = findBrowsers().found.length > 0;
+const browserPresent = testBrowser() !== undefined;
 const skipIntegration = !harnessPresent ? 'the browser harness has not landed' : !browserPresent ? 'no Edge or Chrome is installed' : false;
 
 describe('render command on the real browser at 480x270', { skip: skipIntegration }, () => {
@@ -128,6 +128,7 @@ describe('render command on the real browser at 480x270', { skip: skipIntegratio
     dataDir = join(dir, 'data');
     const doctor = await cli(['doctor', '--skip-browser-check', '--skip-blender-probe'], dataDir, 180_000);
     assert.equal(doctor.exitCode, 0, doctor.stderr);
+    preferTestBrowserInManifest(dataDir);
     jobDir = await planJob(dir, dataDir, 480, 270);
   });
   after(() => { rmSync(dir, { recursive: true, force: true }); });

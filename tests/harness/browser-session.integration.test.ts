@@ -13,13 +13,13 @@ import { PageInitError } from '../../src/harness/page-error.ts';
 import { browserArgs } from '../../src/harness/types.ts';
 import type { BrowserRenderer, CaptureRequest, CapturedFrame } from '../../src/harness/types.ts';
 import { isHardwareRenderer } from '../../src/tools/browser-capabilities.ts';
-import { findBrowsers } from '../../src/tools/browsers.ts';
+import { testBrowser } from '../fakes/test-browser.ts';
 import { findFfmpeg } from '../../src/tools/ffmpeg.ts';
 import type { ShotPageSpec } from '../../src/shared/harness/protocol.ts';
 import { browserLaunchFlags } from '../../src/plan/shot-key.ts';
 import { lookBibleExample, shotExample } from '../schema/documents/examples.ts';
 
-const browser = findBrowsers().found[0];
+const browser = testBrowser();
 const skip = browser === undefined ? 'no browser is installed' : false;
 const ffmpeg = findFfmpeg()?.path;
 const width = 640;
