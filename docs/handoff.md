@@ -14,7 +14,7 @@ Post-v0.1.0: the second piece of `docs/blind-test.md` made through the commands,
   - every paper-flat still failed the gate on exposure (207 to 212 YAVG against 150 to 190, a band no paper-flat html frame could meet; the M4 lookdev had measured 217.8 and called it a defect of the bible): the band is 170 to 225 in the preset and the look bible (`src/shared/look/presets.ts`).
   - `qa --job` failed `frozen-frames` on 1128 frames: a `breathe` of half a percent is sub-pixel on a 2.5D stage. The plan context now carries `holdRanges` (the clips of shots whose move is `static-hold` or `breathe`, from the job's shot spec) and the check tolerates a frozen run inside one; a frozen run elsewhere still fails (`src/qa/plan-context.ts`, `motion-checks.ts`, `cli/commands/qa.ts`).
   - burnt-in captions were ffmpeg's stock white Arial with a black outline: the assembly plan's captions carry a `style` (`CaptionStyle` in `schemas/assembly-plan.schema.json`: one of the four bundled families, text and scrim colours, opacity, size, margin), `plan-from-job` builds it from the look, and the subtitles filter gets `fontsdir` and `force_style` in libass units (`src/assemble/captions.ts`, `invocation.ts`).
-- Docs: SKILL.md (the examples line, the assemble and qa paragraphs, the implemented-today line), README, the test guide's limits, this section, the milestone note.
+- Docs: SKILL.md (the examples line, the assemble and qa paragraphs, the implemented-today line), README (a reader's guide at the top and a "Getting the most out of it" section), `docs/getting-started.md` (the plain-language page: three installs, two plugin commands, one prompt, where the MP4 lands), the test guide's limits, this section, the milestone note.
 
 ### Evidence
 
@@ -27,7 +27,7 @@ Post-v0.1.0: the second piece of `docs/blind-test.md` made through the commands,
 | Paper-flat band | 170 to 225 | `tests/shared/look/presets.test.ts` |
 | Planned holds | `holdShotIds` names the breathe and static-hold shots | `tests/qa/plan-context.test.ts` |
 | Caption style | the filter golden `FontName=Inter,...,BorderStyle=4,...,MarginV=19` at 288 lines; the plan from a job carries `captions.style` | `tests/assemble/captions.test.ts`, `tests/assemble/plan-from-job.test.ts` |
-| Continuous integration | see the handoff's top line after the push | GitHub Actions |
+| Continuous integration | run 41070780375 on 4583afc: success on windows-2025 and ubuntu-24.04, Node 24 and 26 | GitHub Actions |
 
 ### Untested
 

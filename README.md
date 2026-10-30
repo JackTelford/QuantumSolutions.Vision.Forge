@@ -2,7 +2,16 @@
 
 Vision.Forge is a Claude Code skill that turns an English prompt into a finished video or still using only code. It renders titles and explainers with HTML and CSS, stylized 3D with Three.js, and near-photoreal objects with Blender, then assembles and checks the result with ffmpeg. Claude directs the shots, reviews rendered contact sheets and fixes what fails. No image or video generation model is involved; the one optional model is a small local voice for narration.
 
-**Status: v0.1.0, the first complete pass.** Milestones M0a (research, probes and decisions), M0b (core infrastructure, checks and packaging), M1 (contracts, doctor, assemble, QA and contact sheets), M2 (camera, motion, composition and the plan command) M3 (the browser harness, the html lane, the still gate, the still, render and assets commands), M4 (the three lane, the calibration parity between the lanes and the lookdev sheet of the seven looks), M5 (the blender lane), M6 (narration) and M7 (text plates over picture plates, the assembly plan from the job, and the first product film produced from its prompt through the commands alone) are complete. The CLI finds the tools, validates every pipeline document, plans a job with a solved camera and composition per shot, renders the html and three lanes' shots deterministically in headless Edge or Chrome through a still gate, renders the blender lane's shots through Blender 5.2 with the engine chosen at that gate, narrates with a small local voice model installed on request, assembles clips into a graded delivery and measures it. The current state and everything not yet verified are in [docs/handoff.md](docs/handoff.md); [docs/milestone-notes.md](docs/milestone-notes.md) has one short note per milestone; [docs/owner-test-guide.md](docs/owner-test-guide.md) says how to test it, in order.
+**Status: v0.1.0.** Every planned milestone (M0a to M8) is complete; two of the three blind-test pieces have been produced from their prompts through the commands alone. What is verified and what is not is in [docs/handoff.md](docs/handoff.md).
+
+## Which page to read
+
+| You are | Read |
+| --- | --- |
+| new to all of this and want a video | [docs/getting-started.md](docs/getting-started.md): install three programs, add the plugin, type one line, play the MP4 |
+| installing on a new PC, macOS or Linux | [docs/SETUP.md](docs/SETUP.md): every program, why it is separate, where files go, troubleshooting |
+| a developer who wants to run, steer or extend it | this page, then [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/adr/](docs/adr/) |
+| the owner, testing a release | [docs/owner-test-guide.md](docs/owner-test-guide.md), then [docs/milestone-notes.md](docs/milestone-notes.md) |
 
 ## What it will do
 
@@ -61,6 +70,51 @@ The skill is then available as `/vision-forge:cinematic-studio`. While developin
 | `audio install [--yes] [--verify]`, `audio status`, `audio voices`, `audio synth --text <sentences> \| --script <file> [--voice <name>] [--fps <n>]` | the optional narration component: installs it into the data directory after showing the sizes and licenses (ADR 0007), reports its state, lists the voices, and turns text into a loudness-normalized WAV with per-sentence frame timings and an SRT |
 
 Two pieces of `docs/blind-test.md` were produced from their prompts through the commands alone: the 15-second product film (`skills/cinematic-studio/examples/product-film/`, record `docs/evidence/m7/`) and the 45-second narrated explainer (`skills/cinematic-studio/examples/explainer/`, record `docs/evidence/explainer/`). v0.1.0 is packaged (M8); the title sequence is the owner's prompt.
+
+## Getting the most out of it
+
+### Write the prompt the way a director would brief
+
+The skill fills a questionnaire from your words and takes a default for anything you leave out, so the more of these you say, the less it guesses: the use case (a product shot, an explainer, a title sequence, a lower third, kinetic type), the length in seconds, the frame (16:9, 9:16, 1:1), the tempo (calm, dynamic), the mood, a palette hint, the subject and what it is made of, the text that must appear verbatim in quotes, whether it loops, whether it is narrated or captioned, and whether you have music. The defaults per use case are in `skills/cinematic-studio/references/direction/treatment-template.md`.
+
+### Read the treatment before anything renders
+
+The one-page treatment is the contract: the look and why, the beats with a lane and a length each, and the substitutions (what the lanes cannot do literally and what they do instead, from `references/direction/steering-table.md`). Change it there. A still costs five seconds and a full render costs minutes, so the cheapest place to steer is the treatment, the next cheapest is the still loop.
+
+### Know what each lane is for
+
+- `html`: type, cards, charts, lower thirds, kinetic text, 2.5D stages. Fastest (about 110 ms per 1080p frame) and the only lane for text, so a title over a 3D shot is an html plate composited over it.
+- `three`: stylized 3D, the subject's primitives under the cookbook's rigs, depth of field, motion blur, bloom. Works everywhere a browser runs.
+- `blender`: the most physical image (EEVEE, or Cycles when EEVEE cannot start), seconds per frame. Chosen for product shots when Blender 5.2 is installed.
+
+Subjects are stand-ins built from primitives (a bottle is cylinders, a card a slab) in the look's materials; the treatment says so. Glass, liquid and brushed textures are suggested, not shown.
+
+### Pick a look, then change at most two things
+
+Seven presets ship (`studio-clean`, `obsidian`, `warm-editorial`, `neon-tech`, `paper-flat`, `noir-title`, `sunset-gradient`), each a palette, a font pairing, a rig, a tone mapping and a grade with its own QA exposure band (`references/color/look-bible.md`). Name colours or fonts in the prompt and the skill starts from the nearest preset and changes the palette plus at most two other tokens; it says which. The lookdev sheet of all seven is `docs/evidence/m4/`.
+
+### Use the still loop
+
+Every shot renders one graded still through the same path the render takes, and a gate measures it (composition, type sizes, contrast behind every text box, exposure in the look's band). Then the skill names three faults and fixes what is cheap. You can join in: ask for a 4K still of the hero (`still --scale 2`), ask for a contact sheet of all the stills, or say what to change. Three rounds per shot, then the design changes, not the numbers.
+
+### Narration first, then durations
+
+For a narrated piece the sentences are the clock: the voice is synthesized before the shot list is written and every cut lands on a sentence boundary. The local voice (`af_heart` and three others, English only) installs once on your yes; or hand the skill a WAV of your own recording. Captions come from the voice's own timings, as an SRT beside the delivery or burnt in, set in the look's face and colours.
+
+### Trust the cache and the determinism
+
+A shot's key is the hash of its spec, the look, the lane's code and the renderer's major version. Frames live under the data directory by key, so a re-plan after an edit re-renders only the shots whose key changed, and a cancelled render resumes. The same inputs give the same pixels on the same machine; across machines the gates compare by SSIM. A job's id is the hash of its four documents, so an edit plans into a new folder and the old one keeps its rounds.
+
+### Run the commands yourself
+
+Everything the skill does is `node scripts/cli.ts <command> --data-dir <dir> --out <dir>` with one JSON result on standard output. Pass the same `--data-dir` the skill uses (Claude Code's plugin data directory for `vision-forge`) to share its tool record, HDRIs, voice and frame cache; `--pretty` makes a result readable, `--verbose` shows every page console line. The two shipped examples under `skills/cinematic-studio/examples/` list the exact command sequence of a blender product film and a narrated html explainer, and `docs/evidence/` records each with timings.
+
+### Extend it
+
+- A new look: a preset in `src/shared/look/presets.ts` and a row in the look bible; the parity test keeps the lanes within a few YAVG of each other.
+- A new camera move or text animation: `src/shared/camera/` and `src/shared/typography/`, with a row in the matching reference table; the vocabulary lives once in `schemas/` and is generated into `src/shared/contracts/` by `npm run schema:gen`.
+- A new check: `src/qa/` for the delivery, `src/render/still-gate` for the still; every check reports a measured value, a threshold and a sentence.
+- The rules every file follows are in `AGENTS.md`; `npm run check` runs the type checks, the house-rules lint, the schema drift check, the license allowlist and the suite. Decisions and their reasons are in `docs/adr/`.
 
 ## Project layout
 
