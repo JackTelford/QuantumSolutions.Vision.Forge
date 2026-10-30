@@ -41,6 +41,8 @@ export function checkAssemblyPlan(plan: AssemblyPlan): readonly string[] {
     if (ids.has(clip.id)) problems.push(`clip id "${clip.id}" is used more than once`);
     ids.add(clip.id);
     if (clip.source.kind === 'frames' && !clip.source.path.includes('%')) problems.push(`clip "${clip.id}" has a frames source without a printf pattern such as f%06d.png`);
+    const overlay = clip.overlay;
+    if (overlay !== undefined && overlay !== null && !overlay.path.includes('%')) problems.push(`clip "${clip.id}" has a text plate without a printf pattern such as f%06d.png`);
   }
   const lastId = plan.clips[plan.clips.length - 1]?.id;
   const seenTransitions = new Set<string>();

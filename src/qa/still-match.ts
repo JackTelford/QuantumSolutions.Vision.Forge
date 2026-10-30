@@ -1,13 +1,14 @@
 /**
  * hero-still-match: the approved still against frame k of the render, the
- * strict same-fingerprint comparison of ADR 0006. Frame k is first written
- * to a PNG in the work directory (the same extraction the text-contrast
+ * strict same-fingerprint comparison of ADR 0006. With `--still` and a
+ * video, frame k is first written to a PNG in the work directory (the same extraction the text-contrast
  * check uses), then the two PNGs are taken to planar RGB and compared with
  * the ssim filter, so a still and a yuv420p delivery meet in one space. Two
  * single-image inputs pair reliably on every ffmpeg version; selecting the
  * frame inside the ssim graph did not (ffmpeg 7.0 paired the still with
  * another frame). The threshold is 0.98.
  */
+import { existsSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import type { ProcessRunner } from '../process/process-runner.ts';
 import type { Check } from '../shared/contracts/qa-report.ts';
@@ -26,6 +27,41 @@ export function heroStillArgs(stillPath: string, framePath: string): readonly st
 /** The ffmpeg arguments that compare two PNGs in planar RGB and print the PSNR summary (`parsePsnrSummary`). */
 export function psnrArgs(aPath: string, bPath: string): readonly string[] {
   return ['-i', aPath, '-i', bPath, '-filter_complex', '[0:v]format=gbrp[a];[1:v]format=gbrp[b];[a][b]psnr'];
+}
+
+/**
+ * The job's comparison of ADR 0006 decision 7: the approved still's raw
+ * frame against frame k of the shot's render in the cache, both PNGs,
+ * before the grade, the grain and the encode. For the html and three lanes
+ * the render reused the still's frame, so the two are byte-identical; a
+ * blender still renders with more samples and denoising than its clip, so
+ * the SSIM is high but not 1. A missing file is a failed check that names
+ * it.
+ */
+export async function checkHeroStillAgainstRender(runner: ProcessRunner, ffmpegPath: string, rawStillPath: string, renderFramePath: string, frame: number, signal: AbortSignal): Promise<Check> {
+  try {
+    for (const path of [rawStillPath, renderFramePath]) {
+      if (!existsSync(path)) return makeCheck('hero-still-match', { ok: false, measured: null, threshold: heroStillThreshold, unit: 'ssim', detail: `${path} does not exist, so the still cannot be compared with frame ${frame} of the render`, frames: [frame] });
+    }
+    const result = await runAnalysis(runner, ffmpegPath, heroStillArgs(rawStillPath, renderFramePath), 'ffmpeg ssim', signal);
+    const ssim = parseSsimSummary(result.stderr);
+    if (ssim === undefined) {
+      return makeCheck('hero-still-match', { ok: false, measured: null, threshold: heroStillThreshold, unit: 'ssim', detail: `ffmpeg printed no SSIM for frame ${frame} of the render against ${basename(rawStillPath)}`, frames: [frame] });
+    }
+    const ok = ssim >= heroStillThreshold;
+    return makeCheck('hero-still-match', {
+      ok,
+      measured: round(ssim, 4),
+      threshold: heroStillThreshold,
+      unit: 'ssim',
+      detail: ok
+        ? `frame ${frame} of the render matches ${basename(rawStillPath)} (SSIM ${round(ssim, 4)})`
+        : `frame ${frame} of the render differs from ${basename(rawStillPath)}: SSIM ${round(ssim, 4)} is below ${heroStillThreshold}; the shot was rendered from something other than the approved still`,
+      frames: ok ? [] : [frame],
+    });
+  } catch (error: unknown) {
+    return unmeasured('hero-still-match', 'ssim', heroStillThreshold, error);
+  }
 }
 
 /** Where frame `frame` of the video is written for the comparison. */
