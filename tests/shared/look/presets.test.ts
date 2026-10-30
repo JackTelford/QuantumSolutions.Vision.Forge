@@ -53,5 +53,6 @@ describe('the seven look presets', () => {
     assert.equal(lookPresets['sunset-gradient'].lightingDefault, 'golden-hour');
     assert.deepEqual(lookPresets['noir-title'].qa, { yavgMin: 20, yavgMax: 50 });
     assert.deepEqual(lookPresets['studio-clean'].qa, { yavgMin: 170, yavgMax: 200 });
+    assert.deepEqual(lookPresets['paper-flat'].qa, { yavgMin: 170, yavgMax: 225 }, 'paper white reads above 200 on an html card frame');
   });
 });

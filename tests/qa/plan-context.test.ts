@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { clipTailRanges, planContext } from '../../src/qa/plan-context.ts';
+import { clipTailRanges, holdShotIds, planContext } from '../../src/qa/plan-context.ts';
 import { planFor } from './synthetic-clips.ts';
 
 describe('plan context', () => {
@@ -45,5 +45,12 @@ describe('plan context', () => {
   it('names the last half second of every clip as a tolerated hold', () => {
     const context = planContext(planFor([{ id: 'a', frames: 30 }, { id: 'b', frames: 10 }]));
     assert.deepEqual(clipTailRanges(context, 0.5), [{ start: 15, end: 30 }, { start: 30, end: 40 }]);
+  });
+});
+
+describe('holdRanges', () => {
+  it('marks the clips of the shots that hold by design, and none without the set', () => {
+    const shots = [{ id: 's01', move: { preset: 'push-in' } }, { id: 's02', move: { preset: 'breathe' } }, { id: 's03', move: { preset: 'static-hold' } }];
+    assert.deepEqual([...holdShotIds(shots)], ['s02', 's03']);
   });
 });

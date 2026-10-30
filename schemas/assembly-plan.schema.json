@@ -233,8 +233,49 @@
         "burnIn": {
           "type": "boolean",
           "description": "True to render the captions into the frames with the subtitles filter."
+        },
+        "style": { "$ref": "#/$defs/CaptionStyle" }
+      }
+    },
+    "CaptionStyle": {
+      "type": "object",
+      "description": "How burnt-in captions are set, from the look: its body family from the bundled fonts, its text colour on a scrim of its background colour, a size and a bottom margin in pixels at the delivery's height. Absent captions take ffmpeg's own style, which no look should want.",
+      "additionalProperties": false,
+      "required": ["fontFamily", "textColor", "scrimColor", "scrimOpacity", "fontSizePx", "marginBottomPx"],
+      "properties": {
+        "fontFamily": { "$ref": "#/$defs/FontFamily" },
+        "textColor": {
+          "type": "string",
+          "pattern": "^#[0-9a-f]{6}$",
+          "description": "The caption colour as lowercase #rrggbb, the look's text colour."
+        },
+        "scrimColor": {
+          "type": "string",
+          "pattern": "^#[0-9a-f]{6}$",
+          "description": "The box behind each caption line as lowercase #rrggbb, the look's background colour."
+        },
+        "scrimOpacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Opacity of the scrim, 0 to 1; 0.6 is the typography system's scrim over picture."
+        },
+        "fontSizePx": {
+          "type": "integer",
+          "minimum": 8,
+          "description": "Size of the caption text in pixels at the delivery's height: 36 at 1080p, scaled with the height (the type scale's 24 px floor is a 1080p rule; a 270 px fixture scales to 9)."
+        },
+        "marginBottomPx": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Distance from the bottom edge to the caption's baseline in pixels at the delivery's height, for example 72 at 1080p (inside title safe)."
         }
       }
+    },
+    "FontFamily": {
+      "type": "string",
+      "enum": ["inter", "space-grotesk", "playfair-display", "jetbrains-mono"],
+      "description": "One of the bundled OFL font families."
     },
     "FinishingGrade": {
       "type": "object",

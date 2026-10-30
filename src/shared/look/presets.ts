@@ -112,7 +112,8 @@ export const lookPresets: Readonly<Record<NamedLookPreset, LookBible>> = {
     toneMapping: 'standard',
     exposureEv: 0,
     grade: neutralGrade,
-    qa: { yavgMin: 150, yavgMax: 190 },
+    // Paper white reads above 200 on a card frame of the html lane (the explainer's cards measured 207 to 212; the lookdev title card 218) and 174 to 176 on the 3D lanes under soft-cross, so the band spans both (widened 2026-10-30 from 150 to 190, which no paper-flat html frame could meet).
+    qa: { yavgMin: 170, yavgMax: 225 },
   },
   'noir-title': {
     ...common,

@@ -67,7 +67,7 @@ export function judgeFrozenFrames(segments: readonly TimeSegment[], fps: number,
   const flagged = toFrameRanges(segments, fps).filter((range) => !tolerated.some((hold) => rangeWithin(range, hold)));
   const total = flagged.reduce((sum, range) => sum + (range.end - range.start), 0);
   const detail = total === 0
-    ? (segments.length === 0 ? 'no frozen frames' : `no frozen frames outside the planned ${stillHoldSeconds} s holds at clip ends (${segments.length} hold(s) seen)`)
+    ? (segments.length === 0 ? 'no frozen frames' : `no frozen frames outside the planned holds (the ${stillHoldSeconds} s at every clip's end and the clips that hold by design; ${segments.length} frozen run(s) seen there)`)
     : flagged.map((range) => `${describeFrames(range)} are frozen (${frameToSecondsText(range.end - range.start, fps)})`).join('; ');
   return makeCheck('frozen-frames', { ok: total === 0, measured: total, threshold: 0, unit: 'frames', detail, frames: flagged.map((range) => range.start) });
 }
@@ -111,7 +111,8 @@ export async function checkFrozenFrames(analysis: Analysis, plan: PlanContext | 
   try {
     const result = await runAnalysis(analysis.runner, analysis.ffmpegPath, ['-i', analysis.videoPath, '-vf', freezedetectFilter], 'ffmpeg freezedetect', analysis.signal);
     const streamEnd = analysis.probe.frameCount / analysis.probe.fps;
-    return judgeFrozenFrames(parseFreezedetect(result.stderr, streamEnd), analysis.probe.fps, plan === undefined ? [] : clipTailRanges(plan, stillHoldSeconds));
+    // A frozen run is tolerated in the last half second of every clip (a still hold before a cut) and anywhere inside a clip whose shot holds by design (the explainer's cards: a breathe of half a percent is sub-pixel on a 2.5D stage).
+    return judgeFrozenFrames(parseFreezedetect(result.stderr, streamEnd), analysis.probe.fps, plan === undefined ? [] : [...clipTailRanges(plan, stillHoldSeconds), ...plan.holdRanges]);
   } catch (error: unknown) {
     return unmeasured('frozen-frames', 'frames', 0, error);
   }

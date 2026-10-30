@@ -22,7 +22,7 @@ import { framePattern, framesDir } from '../render/cache.ts';
 import { isComplete } from '../render/manifest.ts';
 import { runSemanticChecks } from '../schema/checks/index.ts';
 import { validateDocument } from '../schema/validator.ts';
-import type { AssemblyPlan, AudioMix, Captions, Clip, Codec, FinishingGrade, Transition } from '../shared/contracts/assembly-plan.ts';
+import type { AssemblyPlan, AudioMix, CaptionStyle, Captions, Clip, Codec, FinishingGrade, Transition } from '../shared/contracts/assembly-plan.ts';
 import type { Job, JobShot } from '../shared/contracts/job.ts';
 import type { LookBible } from '../shared/contracts/look-bible.ts';
 import type { RenderManifest } from '../shared/contracts/render-manifest.ts';
@@ -135,9 +135,19 @@ export function planAudio(narration: NarrationFiles | null, music: MusicInput | 
   };
 }
 
-/** The captions: the narration's SRT, burnt in only when asked (the brief has no field for it, so the sidecar is the default). */
-export function planCaptions(narration: NarrationFiles | null, burnIn: boolean): Captions | undefined {
-  return narration === null ? undefined : { srtPath: narration.srtPath, burnIn };
+/** The smallest caption size the assembly plan schema allows, in pixels. */
+export const captionMinimumFontSizePx = 8;
+
+/** The caption style of a look: its body family, its text colour on a 60 percent scrim of its background (typography/system.md, text over picture), 36 px high and 72 px off the bottom at 1080p, scaled with the frame. */
+export function captionStyleOf(look: LookBible, height: number): CaptionStyle {
+  // 36 px and a 72 px bottom margin at 1080p, scaled with the height; the schema's 8 px floor holds for a fixture-sized frame.
+  const scale = height / 1080;
+  return { fontFamily: look.typography.body, textColor: look.palette.text, scrimColor: look.palette.background, scrimOpacity: 0.6, fontSizePx: Math.max(captionMinimumFontSizePx, Math.round(36 * scale)), marginBottomPx: Math.round(72 * scale) };
+}
+
+/** The captions: the narration's SRT, burnt in only when asked (the brief has no field for it, so the sidecar is the default), set in the look's style. */
+export function planCaptions(narration: NarrationFiles | null, burnIn: boolean, look: LookBible, height: number): Captions | undefined {
+  return narration === null ? undefined : { srtPath: narration.srtPath, burnIn, style: captionStyleOf(look, height) };
 }
 
 /** The finishing grade: the look's vignette and grain with its LUT baked to the given .cube. */
@@ -150,7 +160,7 @@ export function planGrade(look: LookBible, cubePath: string): FinishingGrade {
 export function buildAssemblyPlan(inputs: AssemblyPlanInputs): AssemblyPlan {
   const { shotSpec } = inputs;
   const audio = planAudio(inputs.narration, inputs.music);
-  const captions = planCaptions(inputs.narration, inputs.burnIn);
+  const captions = planCaptions(inputs.narration, inputs.burnIn, inputs.look, shotSpec.height);
   const plan: AssemblyPlan = {
     kind: 'assembly-plan',
     version: 1,

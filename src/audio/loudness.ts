@@ -16,8 +16,11 @@ import { narrationSampleRate } from './wav.ts';
 /** The integrated loudness a narration is normalized to, in LUFS. */
 export const narrationLoudnessTarget = -16;
 
-/** The true-peak ceiling of a narration, in dBTP. */
+/** The true-peak ceiling of a narration, in dBTP: what the finished file is held to. */
 export const narrationTruePeakCeiling = -1.5;
+
+/** The true peak loudnorm aims at, half a decibel under the ceiling: loudnorm lands within a tenth of a decibel of its TP argument (the explainer's narration came out at -1.4 dBTP against a -1.5 argument), so the aim carries the headroom and the ceiling stays the check. */
+export const narrationTruePeakTarget = -2;
 
 /** What normalizing one file needs. */
 export interface NormalizeLoudnessOptions {
@@ -32,12 +35,12 @@ export interface NormalizeLoudnessOptions {
 
 /** The loudnorm analysis filter (pass one): targets only, statistics printed as JSON on standard error. */
 export function narrationLoudnormMeasureFilter(): string {
-  return `loudnorm=I=${narrationLoudnessTarget}:TP=${narrationTruePeakCeiling}:LRA=${loudnessRangeTarget}:print_format=json`;
+  return `loudnorm=I=${narrationLoudnessTarget}:TP=${narrationTruePeakTarget}:LRA=${loudnessRangeTarget}:print_format=json`;
 }
 
 /** The loudnorm filter for pass two: the measured values, linear normalization, a summary printed on standard error. */
 export function narrationLoudnormApplyFilter(measured: LoudnessMeasurement): string {
-  return `loudnorm=I=${narrationLoudnessTarget}:TP=${narrationTruePeakCeiling}:LRA=${loudnessRangeTarget}:measured_I=${measured.inputI}:measured_TP=${measured.inputTp}:measured_LRA=${measured.inputLra}:measured_thresh=${measured.inputThresh}:offset=${measured.targetOffset}:linear=true:print_format=summary`;
+  return `loudnorm=I=${narrationLoudnessTarget}:TP=${narrationTruePeakTarget}:LRA=${loudnessRangeTarget}:measured_I=${measured.inputI}:measured_TP=${measured.inputTp}:measured_LRA=${measured.inputLra}:measured_thresh=${measured.inputThresh}:offset=${measured.targetOffset}:linear=true:print_format=summary`;
 }
 
 /** The ffmpeg arguments of pass one: analyse the input, discard the audio. */

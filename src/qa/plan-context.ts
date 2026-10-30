@@ -34,10 +34,18 @@ export interface PlanContext {
   readonly loudnessLufs: number | undefined;
   /** The plan's true-peak ceiling in dBTP, when it has audio. */
   readonly truePeakDbtp: number | undefined;
+  /** The clips whose shot holds by design (a static-hold or a breathe move): a frozen run inside one is not a stuck render. Empty when the plan was not built from a job. */
+  readonly holdRanges: readonly FrameRange[];
 }
 
 /** Derives the PlanContext from a plan. */
-export function planContext(plan: AssemblyPlan): PlanContext {
+/** The shot ids whose move holds the camera (static-hold or breathe): their clips are planned holds for the frozen-frames check. */
+export function holdShotIds(shots: readonly { readonly id: string; readonly move: { readonly preset: string } }[]): ReadonlySet<string> {
+  return new Set(shots.filter((shot) => shot.move.preset === 'static-hold' || shot.move.preset === 'breathe').map((shot) => shot.id));
+}
+
+/** The context the checks read from a plan; `holdClipIds` names the clips whose shots hold by design (from the job's shot spec), none for a plan without one. */
+export function planContext(plan: AssemblyPlan, holdClipIds: ReadonlySet<string> = new Set()): PlanContext {
   const starts = clipStartFrames(plan);
   const total = totalFrames(plan);
   const clips: ClipRange[] = plan.clips.map((clip, index) => ({ id: clip.id, start: starts[index] ?? 0, end: starts[index + 1] ?? total }));
@@ -67,6 +75,7 @@ export function planContext(plan: AssemblyPlan): PlanContext {
     transitionAfter,
     loudnessLufs: plan.audio?.loudnessLufs,
     truePeakDbtp: plan.audio?.truePeakDbtp,
+    holdRanges: clips.filter((clip) => holdClipIds.has(clip.id)).map((clip) => ({ start: clip.start, end: clip.end })),
   };
 }
 

@@ -4,10 +4,12 @@
  * every function returns strings; the assembler runs them. Tests assert on
  * these arrays exactly.
  */
+import { join } from 'node:path';
 import { deliveryTailFilters } from '../finishing/finishing-chain.ts';
 import type { AssemblyPlan, AudioMix } from '../shared/contracts/assembly-plan.ts';
 import { audioInputArguments, loudnormApplyFilter, loudnormMeasureFilter, mixGraph, mixLabel, normalizedLabel } from './audio.ts';
 import type { LoudnessMeasurement } from './audio.ts';
+import { fontsDirectory, repositoryRoot } from '../harness/served-roots.ts';
 import { captionFilter } from './captions.ts';
 import { audioCodecArguments, encodeArguments } from './encode.ts';
 import { joinClips } from './graph.ts';
@@ -45,7 +47,7 @@ export function measureArguments(audio: AudioMix, mixPath: string): readonly str
  */
 export function filterGraph(plan: AssemblyPlan, mix: MeasuredMix | undefined): string {
   const joined = joinClips(plan);
-  const captions = captionFilter(plan.captions);
+  const captions = captionFilter(plan.captions, join(repositoryRoot, fontsDirectory), plan.height);
   const tail = [...deliveryTailFilters(plan.grade, plan.output.codec), ...(captions === undefined ? [] : [captions])];
   const chains = [...allClipFilters(plan), ...allPlateFilters(plan), ...joined.filters, `${joined.label}${tail.join(',')}${finishedLabel}`];
   if (mix !== undefined) {

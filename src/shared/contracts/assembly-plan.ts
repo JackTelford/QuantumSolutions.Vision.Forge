@@ -25,6 +25,13 @@ export type TransitionType =
   | 'slide-left'
   | 'slide-right';
 /**
+ * One of the bundled OFL font families.
+ *
+ * This interface was referenced by `AssemblyPlan`'s JSON-Schema
+ * via the `definition` "FontFamily".
+ */
+export type FontFamily = 'inter' | 'space-grotesk' | 'playfair-display' | 'jetbrains-mono';
+/**
  * Delivery codec: h264 (libx264, the default), hevc (libx265) or prores (prores_ks 422 HQ mezzanine).
  *
  * This interface was referenced by `AssemblyPlan`'s JSON-Schema
@@ -213,6 +220,36 @@ export interface Captions {
    * True to render the captions into the frames with the subtitles filter.
    */
   burnIn: boolean;
+  style?: CaptionStyle;
+}
+/**
+ * How burnt-in captions are set, from the look: its body family from the bundled fonts, its text colour on a scrim of its background colour, a size and a bottom margin in pixels at the delivery's height. Absent captions take ffmpeg's own style, which no look should want.
+ *
+ * This interface was referenced by `AssemblyPlan`'s JSON-Schema
+ * via the `definition` "CaptionStyle".
+ */
+export interface CaptionStyle {
+  fontFamily: FontFamily;
+  /**
+   * The caption colour as lowercase #rrggbb, the look's text colour.
+   */
+  textColor: string;
+  /**
+   * The box behind each caption line as lowercase #rrggbb, the look's background colour.
+   */
+  scrimColor: string;
+  /**
+   * Opacity of the scrim, 0 to 1; 0.6 is the typography system's scrim over picture.
+   */
+  scrimOpacity: number;
+  /**
+   * Size of the caption text in pixels at the delivery's height: 36 at 1080p, scaled with the height (the type scale's 24 px floor is a 1080p rule; a 270 px fixture scales to 9).
+   */
+  fontSizePx: number;
+  /**
+   * Distance from the bottom edge to the caption's baseline in pixels at the delivery's height, for example 72 at 1080p (inside title safe).
+   */
+  marginBottomPx: number;
 }
 /**
  * The finishing applied to every frame before encoding (ADR 0008): a 3D LUT, a vignette and seeded grain. Absent when the clips are delivered as rendered.
@@ -296,3 +333,6 @@ export const CodecValues = ['h264', 'hevc', 'prores'] as const;
 
 /** Every EncodePreset value the schema allows, in schema order. */
 export const EncodePresetValues = ['ultrafast', 'superfast', 'veryfast', 'faster', 'fast', 'medium', 'slow', 'slower', 'veryslow'] as const;
+
+/** Every FontFamily value the schema allows, in schema order. */
+export const FontFamilyValues = ['inter', 'space-grotesk', 'playfair-display', 'jetbrains-mono'] as const;

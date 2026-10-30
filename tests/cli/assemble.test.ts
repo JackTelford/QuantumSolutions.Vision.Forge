@@ -267,7 +267,8 @@ describe('node scripts/cli.ts assemble --job', { skip: ffmpeg === undefined || f
     assert.deepEqual(run.result.artifacts, [outFile, join(dir, 'delivery', 'film.srt')]);
     const plan = loadAssemblyPlan(join(jobDir, jobAssemblyFileNames.plan));
     assert.deepEqual(plan.audio, { narration: [{ path: wavPath, startFrame: 0 }], music: null, loudnessLufs: -16, truePeakDbtp: -1.5 });
-    assert.deepEqual(plan.captions, { srtPath, burnIn: false });
+    assert.deepEqual({ srtPath: plan.captions?.srtPath, burnIn: plan.captions?.burnIn }, { srtPath, burnIn: false });
+    assert.equal(plan.captions?.style?.fontSizePx, 8, 'the caption style scales with the fixture height down to the schema floor');
     assert.equal((readJsonFile(join(jobDir, 'job.json')) as Job).deliverablePath, outFile);
   });
 

@@ -30,7 +30,7 @@ import type { Analysis } from '../../qa/check.ts';
 import { checkDimensions, checkDuration, checkFps, expectationsFromPlan } from '../../qa/expectation-checks.ts';
 import { checkExposureDrift } from '../../qa/exposure.ts';
 import { checkBlackFrames, checkFrozenFrames, checkPops } from '../../qa/motion-checks.ts';
-import { planContext } from '../../qa/plan-context.ts';
+import { holdShotIds, planContext } from '../../qa/plan-context.ts';
 import type { PlanContext } from '../../qa/plan-context.ts';
 import { probeVideo } from '../../qa/probe.ts';
 import { QaFailedError } from '../../qa/qa-failed-error.ts';
@@ -196,7 +196,7 @@ function requestFromJob(context: CommandContext, args: ParsedArguments, jobArg: 
   for (const entry of jobStills.skipped) context.log.warn(`qa: shot "${entry.shotId}" has no hero comparison: ${entry.reason}`);
   return {
     videoPath: job.deliverablePath,
-    plan: planContext(plan),
+    plan: planContext(plan, holdShotIds(loaded.shotSpec.shots)),
     textBoxes: jobTextBoxes(plan, loaded.shotSpec, loaded.look, planPath),
     still: undefined,
     shotStills: jobStills.stills,

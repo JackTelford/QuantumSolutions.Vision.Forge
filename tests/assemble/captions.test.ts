@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, before, describe, it } from 'node:test';
-import { captionFilter, copySidecar, samePath, sidecarPath } from '../../src/assemble/captions.ts';
+import { assColour, captionFilter, captionForceStyle, copySidecar, samePath, sidecarPath } from '../../src/assemble/captions.ts';
 
 describe('sidecarPath', () => {
   it('puts the SRT next to the delivery under its base name', () => {
@@ -22,6 +22,15 @@ describe('samePath', () => {
 });
 
 describe('captionFilter', () => {
+  it('sets styled captions in the look\'s bundled family and colours on a scrim, scaled to the picture', () => {
+    const style = { fontFamily: 'inter' as const, textColor: '#1f2937', scrimColor: '#fbfaf6', scrimOpacity: 0.6, fontSizePx: 36, marginBottomPx: 72 };
+    assert.equal(assColour('#1f2937'), '&H0037291F');
+    assert.equal(assColour('#fbfaf6', 0.6), '&H66F6FAFB');
+    assert.equal(captionForceStyle(style, 1080), 'FontName=Inter,FontSize=10,PrimaryColour=&H0037291F,BackColour=&H66F6FAFB,BorderStyle=4,Outline=0,Shadow=0,MarginV=19');
+    assert.equal(captionForceStyle({ ...style, fontSizePx: 72, marginBottomPx: 144 }, 2160), 'FontName=Inter,FontSize=10,PrimaryColour=&H0037291F,BackColour=&H66F6FAFB,BorderStyle=4,Outline=0,Shadow=0,MarginV=19');
+    assert.equal(captionFilter({ srtPath: 'C:\\vf\\job\\cap.srt', burnIn: true, style }, 'C:\\vf\\fonts', 1080), "subtitles='C\\:/vf/job/cap.srt':fontsdir='C\\:/vf/fonts':force_style='FontName=Inter,FontSize=10,PrimaryColour=&H0037291F,BackColour=&H66F6FAFB,BorderStyle=4,Outline=0,Shadow=0,MarginV=19'");
+  });
+
   it('is the quoted subtitles filter only when burning in', () => {
     assert.equal(captionFilter({ srtPath: 'C:\\vf\\job\\cap.srt', burnIn: true }), "subtitles='C\\:/vf/job/cap.srt'");
     assert.equal(captionFilter({ srtPath: 'C:\\vf\\job\\cap.srt', burnIn: false }), undefined);

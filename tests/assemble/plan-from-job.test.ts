@@ -158,8 +158,9 @@ describe('buildAssemblyPlan', () => {
   it('places the narration as one line at frame 0 at -16 LUFS and -1.5 dBTP, with its captions as a sidecar unless burn-in is asked', () => {
     const plan = buildAssemblyPlan(inputs({ narration }));
     assert.deepEqual(plan.audio, { narration: [{ path: narration.wavPath, startFrame: 0 }], music: null, loudnessLufs: -16, truePeakDbtp: -1.5 });
-    assert.deepEqual(plan.captions, { srtPath: narration.srtPath, burnIn: false });
-    assert.deepEqual(buildAssemblyPlan(inputs({ narration, burnIn: true })).captions, { srtPath: narration.srtPath, burnIn: true });
+    const style = { fontFamily: planLook.typography.body, textColor: planLook.palette.text, scrimColor: planLook.palette.background, scrimOpacity: 0.6, fontSizePx: 36, marginBottomPx: 72 };
+    assert.deepEqual(plan.captions, { srtPath: narration.srtPath, burnIn: false, style });
+    assert.deepEqual(buildAssemblyPlan(inputs({ narration, burnIn: true })).captions, { srtPath: narration.srtPath, burnIn: true, style });
     assert.deepEqual(deliveryLoudness, { lufs: -16, truePeakDbtp: -1.5 });
   });
 
@@ -175,7 +176,7 @@ describe('buildAssemblyPlan', () => {
 
   it('has neither audio nor captions for a silent piece', () => {
     assert.equal(planAudio(null, null), undefined);
-    assert.equal(planCaptions(null, true), undefined);
+    assert.equal(planCaptions(null, true, planLook, 1080), undefined);
     const plan = buildAssemblyPlan(inputs());
     assert.equal(plan.audio, undefined);
     assert.equal(plan.captions, undefined);

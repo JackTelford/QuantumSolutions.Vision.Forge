@@ -19,15 +19,15 @@ describe('the narration loudnorm filters', () => {
   it('target -16 LUFS and -1.5 dBTP with the assembler\'s loudness range, JSON in pass one', () => {
     assert.equal(narrationLoudnessTarget, -16);
     assert.equal(narrationTruePeakCeiling, -1.5);
-    assert.equal(narrationLoudnormMeasureFilter(), 'loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json');
+    assert.equal(narrationLoudnormMeasureFilter(), 'loudnorm=I=-16:TP=-2:LRA=11:print_format=json');
   });
 
   it('apply the measured values in linear mode with a summary in pass two', () => {
-    assert.equal(narrationLoudnormApplyFilter(measured), 'loudnorm=I=-16:TP=-1.5:LRA=11:measured_I=-26.53:measured_TP=-19.56:measured_LRA=0.40:measured_thresh=-36.53:offset=-0.39:linear=true:print_format=summary');
+    assert.equal(narrationLoudnormApplyFilter(measured), 'loudnorm=I=-16:TP=-2:LRA=11:measured_I=-26.53:measured_TP=-19.56:measured_LRA=0.40:measured_thresh=-36.53:offset=-0.39:linear=true:print_format=summary');
   });
 
   it('build the two ffmpeg argument lists: analysis to the null muxer, then 24 kHz mono pcm_s16le', () => {
-    assert.deepEqual(loudnessMeasureArguments('in.wav'), ['-nostats', '-i', 'in.wav', '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json', '-f', 'null', '-']);
+    assert.deepEqual(loudnessMeasureArguments('in.wav'), ['-nostats', '-i', 'in.wav', '-af', 'loudnorm=I=-16:TP=-2:LRA=11:print_format=json', '-f', 'null', '-']);
     assert.deepEqual(loudnessApplyArguments('in.wav', 'out.wav', measured), ['-nostats', '-y', '-i', 'in.wav', '-af', narrationLoudnormApplyFilter(measured), '-ar', '24000', '-ac', '1', '-c:a', 'pcm_s16le', 'out.wav']);
   });
 });
