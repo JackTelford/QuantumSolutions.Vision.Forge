@@ -1,0 +1,693 @@
+{
+  "kind": "shot-spec",
+  "version": 1,
+  "id": "explainer-content-hash-shots",
+  "briefId": "explainer-content-hash",
+  "treatmentId": "explainer-content-hash-t1",
+  "lookId": "paper-flat",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "shots": [
+    {
+      "id": "s01",
+      "title": "Hook",
+      "lane": "html",
+      "durationFrames": 140,
+      "size": "MS",
+      "angle": "eye",
+      "dutchDegrees": 0,
+      "lens": {
+        "focalMm": 50,
+        "fStop": 5.6,
+        "focusDistanceM": 1.56,
+        "shutterAngleDeg": 180
+      },
+      "move": {
+        "preset": "breathe",
+        "amplitude": 1,
+        "easing": "sine-in-out",
+        "startFrame": 0,
+        "endFrame": null
+      },
+      "lighting": {
+        "preset": "soft-cross",
+        "keyIntensity": 1,
+        "fillRatio": 2,
+        "rimIntensity": 0,
+        "kelvin": 5600
+      },
+      "exposureOffsetEv": 0,
+      "composition": {
+        "anchor": "thirds-right",
+        "headroomPct": 10,
+        "leadRoomPct": 0,
+        "textSide": "left"
+      },
+      "text": [
+        {
+          "id": "t1",
+          "role": "title",
+          "content": "What is a content hash?",
+          "box": {
+            "x": 0.06,
+            "y": 0.2,
+            "w": 0.44,
+            "h": 0.38
+          },
+          "animation": "fade-rise",
+          "staggerMs": 0,
+          "inFrame": 0,
+          "outFrame": null
+        },
+        {
+          "id": "t2",
+          "role": "subtitle",
+          "content": "Why a render can resume where it stopped",
+          "box": {
+            "x": 0.06,
+            "y": 0.62,
+            "w": 0.44,
+            "h": 0.12
+          },
+          "animation": "fade-rise",
+          "staggerMs": 0,
+          "inFrame": 0,
+          "outFrame": null
+        }
+      ],
+      "subject": {
+        "assetId": null,
+        "primitive": "card",
+        "boundsM": {
+          "w": 0.24,
+          "h": 0.3,
+          "d": 0.02
+        }
+      },
+      "atmosphere": {
+        "haze": 0,
+        "motes": 0
+      },
+      "narrationEvent": "n1",
+      "seed": 11,
+      "renderProfile": null
+    },
+    {
+      "id": "s02",
+      "title": "Problem",
+      "lane": "html",
+      "durationFrames": 165,
+      "size": "MS",
+      "angle": "eye",
+      "dutchDegrees": 0,
+      "lens": {
+        "focalMm": 50,
+        "fStop": 5.6,
+        "focusDistanceM": 1.56,
+        "shutterAngleDeg": 180
+      },
+      "move": {
+        "preset": "breathe",
+        "amplitude": 1,
+        "easing": "sine-in-out",
+        "startFrame": 0,
+        "endFrame": null
+      },
+      "lighting": {
+        "preset": "soft-cross",
+        "keyIntensity": 1,
+        "fillRatio": 2,
+        "rimIntensity": 0,
+        "kelvin": 5600
+      },
+      "exposureOffsetEv": 0,
+      "composition": {
+        "anchor": "thirds-right",
+        "headroomPct": 10,
+        "leadRoomPct": 0,
+        "textSide": "left"
+      },
+      "text": [
+        {
+          "id": "t1",
+          "role": "counter",
+          "content": "2400",
+          "box": {
+            "x": 0.06,
+            "y": 0.18,
+            "w": 0.44,
+            "h": 0.3
+          },
+          "animation": "counter",
+          "staggerMs": 0,
+          "inFrame": 0,
+          "outFrame": null
+        },
+        {
+          "id": "t2",
+          "role": "subtitle",
+          "content": "frames in one render",
+          "box": {
+            "x": 0.06,
+            "y": 0.5,
+            "w": 0.44,
+            "h": 0.09
+          },
+          "animation": "fade-rise",
+          "staggerMs": 0,
+          "inFrame": 6,
+          "outFrame": null
+        },
+        {
+          "id": "t3",
+          "role": "body",
+          "content": "A crash at frame 1,207 used to mean frame 0 again.",
+          "box": {
+            "x": 0.06,
+            "y": 0.63,
+            "w": 0.44,
+            "h": 0.07
+          },
+          "animation": "fade-rise",
+          "staggerMs": 0,
+          "inFrame": 60,
+          "outFrame": null
+        }
+      ],
+      "subject": {
+        "assetId": null,
+        "primitive": "card",
+        "boundsM": {
+          "w": 0.24,
+          "h": 0.3,
+          "d": 0.02
+        }
+      },
+      "atmosphere": {
+        "haze": 0,
+        "motes": 0
+      },
+      "narrationEvent": "n2",
+      "seed": 11,
+      "renderProfile": null
+    },
+    {
+      "id": "s03",
+      "title": "The fingerprint",
+      "lane": "html",
+      "durationFrames": 186,
+      "size": "MS",
+      "angle": "eye",
+      "dutchDegrees": 0,
+      "lens": {
+        "focalMm": 50,
+        "fStop": 5.6,
+        "focusDistanceM": 1.56,
+        "shutterAngleDeg": 180
+      },
+      "move": {
+        "preset": "breathe",
+        "amplitude": 1,
+        "easing": "sine-in-out",
+        "startFrame": 0,
+        "endFrame": null
+      },
+      "lighting": {
+        "preset": "soft-cross",
+        "keyIntensity": 1,
+        "fillRatio": 2,
+        "rimIntensity": 0,
+        "kelvin": 5600
+      },
+      "exposureOffsetEv": 0,
+      "composition": {
+        "anchor": "thirds-right",
+        "headroomPct": 10,
+        "leadRoomPct": 0,
+        "textSide": "left"
+      },
+      "text": [
+        {
+          "id": "t1",
+          "role": "title",
+          "content": "A fingerprint of the inputs",
+          "box": {
+            "x": 0.06,
+            "y": 0.16,
+            "w": 0.44,
+            "h": 0.28
+          },
+          "animation": "fade-rise",
+          "staggerMs": 0,
+          "inFrame": 0,
+          "outFrame": null
+        },
+        {
+          "id": "t2",
+          "role": "subtitle",
+          "content": "shot · look · code · tools",
+          "box": {
+            "x": 0.06,
+            "y": 0.48,
+            "w": 0.44,
+            "h": 0.09
+          },
+          "animation": "stagger-words",
+          "staggerMs": 70,
+          "inFrame": 30,
+          "outFrame": null
+        },
+        {
+          "id": "t3",
+          "role": "lower-third-name",
+          "content": "3fdbbee6755f540078f2b2a11906dd69",
+          "box": {
+            "x": 0.06,
+            "y": 0.6,
+            "w": 0.47,
+            "h": 0.07
+          },
+          "animation": "fade-rise",
+          "staggerMs": 0,
+          "inFrame": 90,
+          "outFrame": null
+        },
+        {
+          "id": "t4",
+          "role": "lower-third-name",
+          "content": "00a554ea864ba4a94034d050ad07ae4e",
+          "box": {
+            "x": 0.06,
+            "y": 0.68,
+            "w": 0.47,
+            "h": 0.07
+          },
+          "animation": "fade-rise",
+          "staggerMs": 0,
+          "inFrame": 100,
+          "outFrame": null
+        }
+      ],
+      "subject": {
+        "assetId": null,
+        "primitive": "card",
+        "boundsM": {
+          "w": 0.24,
+          "h": 0.3,
+          "d": 0.02
+        }
+      },
+      "atmosphere": {
+        "haze": 0,
+        "motes": 0
+      },
+      "narrationEvent": "n3",
+      "seed": 11,
+      "renderProfile": null
+    },
+    {
+      "id": "s04",
+      "title": "One folder per hash",
+      "lane": "html",
+      "durationFrames": 212,
+      "size": "MS",
+      "angle": "eye",
+      "dutchDegrees": 0,
+      "lens": {
+        "focalMm": 50,
+        "fStop": 5.6,
+        "focusDistanceM": 1.56,
+        "shutterAngleDeg": 180
+      },
+      "move": {
+        "preset": "breathe",
+        "amplitude": 1,
+        "easing": "sine-in-out",
+        "startFrame": 0,
+        "endFrame": null
+      },
+      "lighting": {
+        "preset": "soft-cross",
+        "keyIntensity": 1,
+        "fillRatio": 2,
+        "rimIntensity": 0,
+        "kelvin": 5600
+      },
+      "exposureOffsetEv": 0,
+      "composition": {
+        "anchor": "thirds-right",
+        "headroomPct": 10,
+        "leadRoomPct": 0,
+        "textSide": "left"
+      },
+      "text": [
+        {
+          "id": "t1",
+          "role": "title",
+          "content": "One folder per hash",
+          "box": {
+            "x": 0.06,
+            "y": 0.16,
+            "w": 0.44,
+            "h": 0.28
+          },
+          "animation": "fade-rise",
+          "staggerMs": 0,
+          "inFrame": 0,
+          "outFrame": null
+        },
+        {
+          "id": "t2",
+          "role": "subtitle",
+          "content": "3fdbbee6… / f000000.png",
+          "box": {
+            "x": 0.06,
+            "y": 0.48,
+            "w": 0.44,
+            "h": 0.09
+          },
+          "animation": "fade-rise",
+          "staggerMs": 0,
+          "inFrame": 30,
+          "outFrame": null
+        },
+        {
+          "id": "t3",
+          "role": "subtitle",
+          "content": "Every frame, its own hash",
+          "box": {
+            "x": 0.06,
+            "y": 0.62,
+            "w": 0.44,
+            "h": 0.09
+          },
+          "animation": "fade-rise",
+          "staggerMs": 0,
+          "inFrame": 110,
+          "outFrame": null
+        }
+      ],
+      "subject": {
+        "assetId": null,
+        "primitive": "card",
+        "boundsM": {
+          "w": 0.24,
+          "h": 0.3,
+          "d": 0.02
+        }
+      },
+      "atmosphere": {
+        "haze": 0,
+        "motes": 0
+      },
+      "narrationEvent": "n4",
+      "seed": 11,
+      "renderProfile": null
+    },
+    {
+      "id": "s05",
+      "title": "Stop and resume",
+      "lane": "html",
+      "durationFrames": 219,
+      "size": "MS",
+      "angle": "eye",
+      "dutchDegrees": 0,
+      "lens": {
+        "focalMm": 50,
+        "fStop": 5.6,
+        "focusDistanceM": 1.56,
+        "shutterAngleDeg": 180
+      },
+      "move": {
+        "preset": "breathe",
+        "amplitude": 1,
+        "easing": "sine-in-out",
+        "startFrame": 0,
+        "endFrame": null
+      },
+      "lighting": {
+        "preset": "soft-cross",
+        "keyIntensity": 1,
+        "fillRatio": 2,
+        "rimIntensity": 0,
+        "kelvin": 5600
+      },
+      "exposureOffsetEv": 0,
+      "composition": {
+        "anchor": "thirds-right",
+        "headroomPct": 10,
+        "leadRoomPct": 0,
+        "textSide": "left"
+      },
+      "text": [
+        {
+          "id": "t1",
+          "role": "title",
+          "content": "Stop, then resume",
+          "box": {
+            "x": 0.06,
+            "y": 0.16,
+            "w": 0.44,
+            "h": 0.28
+          },
+          "animation": "fade-rise",
+          "staggerMs": 0,
+          "inFrame": 0,
+          "outFrame": null
+        },
+        {
+          "id": "t2",
+          "role": "subtitle",
+          "content": "f000000 to f001206: on disk",
+          "box": {
+            "x": 0.06,
+            "y": 0.48,
+            "w": 0.44,
+            "h": 0.09
+          },
+          "animation": "fade-rise",
+          "staggerMs": 0,
+          "inFrame": 70,
+          "outFrame": null
+        },
+        {
+          "id": "t3",
+          "role": "subtitle",
+          "content": "f001207: rendered",
+          "box": {
+            "x": 0.06,
+            "y": 0.62,
+            "w": 0.44,
+            "h": 0.09
+          },
+          "animation": "fade-rise",
+          "staggerMs": 0,
+          "inFrame": 130,
+          "outFrame": null
+        }
+      ],
+      "subject": {
+        "assetId": null,
+        "primitive": "card",
+        "boundsM": {
+          "w": 0.24,
+          "h": 0.3,
+          "d": 0.02
+        }
+      },
+      "atmosphere": {
+        "haze": 0,
+        "motes": 0
+      },
+      "narrationEvent": "n5",
+      "seed": 11,
+      "renderProfile": null
+    },
+    {
+      "id": "s06",
+      "title": "Payoff",
+      "lane": "html",
+      "durationFrames": 191,
+      "size": "MS",
+      "angle": "eye",
+      "dutchDegrees": 0,
+      "lens": {
+        "focalMm": 50,
+        "fStop": 5.6,
+        "focusDistanceM": 1.56,
+        "shutterAngleDeg": 180
+      },
+      "move": {
+        "preset": "breathe",
+        "amplitude": 1,
+        "easing": "sine-in-out",
+        "startFrame": 0,
+        "endFrame": null
+      },
+      "lighting": {
+        "preset": "soft-cross",
+        "keyIntensity": 1,
+        "fillRatio": 2,
+        "rimIntensity": 0,
+        "kelvin": 5600
+      },
+      "exposureOffsetEv": 0,
+      "composition": {
+        "anchor": "thirds-right",
+        "headroomPct": 10,
+        "leadRoomPct": 0,
+        "textSide": "left"
+      },
+      "text": [
+        {
+          "id": "t1",
+          "role": "title",
+          "content": "One frame, not a night",
+          "box": {
+            "x": 0.06,
+            "y": 0.2,
+            "w": 0.44,
+            "h": 0.38
+          },
+          "animation": "fade-rise",
+          "staggerMs": 0,
+          "inFrame": 0,
+          "outFrame": null
+        },
+        {
+          "id": "t2",
+          "role": "subtitle",
+          "content": "A change re-renders only what it touched",
+          "box": {
+            "x": 0.06,
+            "y": 0.62,
+            "w": 0.44,
+            "h": 0.12
+          },
+          "animation": "fade-rise",
+          "staggerMs": 0,
+          "inFrame": 80,
+          "outFrame": null
+        }
+      ],
+      "subject": {
+        "assetId": null,
+        "primitive": "card",
+        "boundsM": {
+          "w": 0.24,
+          "h": 0.3,
+          "d": 0.02
+        }
+      },
+      "atmosphere": {
+        "haze": 0,
+        "motes": 0
+      },
+      "narrationEvent": "n6",
+      "seed": 11,
+      "renderProfile": null
+    },
+    {
+      "id": "s07",
+      "title": "Call to action",
+      "lane": "html",
+      "durationFrames": 237,
+      "size": "MS",
+      "angle": "eye",
+      "dutchDegrees": 0,
+      "lens": {
+        "focalMm": 50,
+        "fStop": 5.6,
+        "focusDistanceM": 1.56,
+        "shutterAngleDeg": 180
+      },
+      "move": {
+        "preset": "breathe",
+        "amplitude": 1,
+        "easing": "sine-in-out",
+        "startFrame": 0,
+        "endFrame": null
+      },
+      "lighting": {
+        "preset": "soft-cross",
+        "keyIntensity": 1,
+        "fillRatio": 2,
+        "rimIntensity": 0,
+        "kelvin": 5600
+      },
+      "exposureOffsetEv": 0,
+      "composition": {
+        "anchor": "thirds-right",
+        "headroomPct": 10,
+        "leadRoomPct": 0,
+        "textSide": "left"
+      },
+      "text": [
+        {
+          "id": "t1",
+          "role": "title",
+          "content": "Hash the inputs.",
+          "box": {
+            "x": 0.06,
+            "y": 0.16,
+            "w": 0.44,
+            "h": 0.3
+          },
+          "animation": "fade-rise",
+          "staggerMs": 0,
+          "inFrame": 0,
+          "outFrame": null
+        },
+        {
+          "id": "t2",
+          "role": "subtitle",
+          "content": "Name the output by it.",
+          "box": {
+            "x": 0.06,
+            "y": 0.5,
+            "w": 0.44,
+            "h": 0.09
+          },
+          "animation": "fade-rise",
+          "staggerMs": 0,
+          "inFrame": 50,
+          "outFrame": null
+        },
+        {
+          "id": "t3",
+          "role": "subtitle",
+          "content": "The work stays done.",
+          "box": {
+            "x": 0.06,
+            "y": 0.62,
+            "w": 0.44,
+            "h": 0.09
+          },
+          "animation": "fade-rise",
+          "staggerMs": 0,
+          "inFrame": 110,
+          "outFrame": null
+        }
+      ],
+      "subject": {
+        "assetId": null,
+        "primitive": "card",
+        "boundsM": {
+          "w": 0.24,
+          "h": 0.3,
+          "d": 0.02
+        }
+      },
+      "atmosphere": {
+        "haze": 0,
+        "motes": 0
+      },
+      "narrationEvent": "n7",
+      "seed": 11,
+      "renderProfile": null
+    }
+  ],
+  "transitions": [],
+  "createdAt": "2026-10-30T00:30:00.000Z"
+}

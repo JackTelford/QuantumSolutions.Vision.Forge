@@ -2,6 +2,55 @@
 
 The single source of truth for where this repository stands. Newest milestone first. Every claim here points at a test or a file under `docs/evidence/`; anything else is listed under "Untested".
 
+## Explainer and its fixes (2026-10-30)
+
+Post-v0.1.0: the second piece of `docs/blind-test.md` made through the commands, and the four pipeline faults it exposed, fixed with tests.
+
+### Done
+
+- **The explainer** (`skills/cinematic-studio/examples/explainer/`, `docs/evidence/explainer/`, `docs/evidence/blind-test/our-side-explainer.md`): the 45-second narrated explainer from its prompt through the commands alone, narration first (seven sentences, 42.5 s, the sentence frames as the clock), seven html shots on a paper stage with the words, numbers, hash rows and file names of each step as text, the captions burnt in from the voice's SRT; four planning rounds (three still rounds, one prose correction that reused every frame and wrote a byte-identical delivery), 1350 frames in 152 s, 25 minutes of wall clock to the first passing `qa`, 17 checks passing. The treatment gate was passed on the owner's standing permission for this run; the write-up says so.
+- **Four fixes**, each a defect the piece exposed:
+  - `audio synth` failed its own `narration-loudness` check (true peak −1.4 dBTP against the −1.5 ceiling): loudnorm now aims at −2 dBTP (`narrationTruePeakTarget`), since it lands within 0.1 dB of its argument; the ceiling check is unchanged (`src/audio/loudness.ts`).
+  - every paper-flat still failed the gate on exposure (207 to 212 YAVG against 150 to 190, a band no paper-flat html frame could meet; the M4 lookdev had measured 217.8 and called it a defect of the bible): the band is 170 to 225 in the preset and the look bible (`src/shared/look/presets.ts`).
+  - `qa --job` failed `frozen-frames` on 1128 frames: a `breathe` of half a percent is sub-pixel on a 2.5D stage. The plan context now carries `holdRanges` (the clips of shots whose move is `static-hold` or `breathe`, from the job's shot spec) and the check tolerates a frozen run inside one; a frozen run elsewhere still fails (`src/qa/plan-context.ts`, `motion-checks.ts`, `cli/commands/qa.ts`).
+  - burnt-in captions were ffmpeg's stock white Arial with a black outline: the assembly plan's captions carry a `style` (`CaptionStyle` in `schemas/assembly-plan.schema.json`: one of the four bundled families, text and scrim colours, opacity, size, margin), `plan-from-job` builds it from the look, and the subtitles filter gets `fontsdir` and `force_style` in libass units (`src/assemble/captions.ts`, `invocation.ts`).
+- Docs: SKILL.md (the examples line, the assemble and qa paragraphs, the implemented-today line), README, the test guide's limits, this section, the milestone note.
+
+### Evidence
+
+| Claim | Number | Where |
+| --- | --- | --- |
+| Type checks, house rules, schema drift, licenses, the suite | `npm run check` exit 0 (1,767 tests, 0 failures, 3 skipped) | run locally 2026-10-30 |
+| The delivery passes QA | 17 checks, none failing: frozen frames only in planned holds, text contrast 8.47:1 at worst, −16 LUFS, −4.8 dBTP, seven hero matches at SSIM 1.0 | `docs/evidence/blind-test/our-side-explainer.md` |
+| The prose round changed no frame | `62fedd4e.mp4` byte-identical to `00699e16.mp4` (`cmp`) | `docs/evidence/explainer/README.md` |
+| Loudnorm aim | the two-pass filters carry `TP=-2` | `tests/audio/loudness.test.ts` |
+| Paper-flat band | 170 to 225 | `tests/shared/look/presets.test.ts` |
+| Planned holds | `holdShotIds` names the breathe and static-hold shots | `tests/qa/plan-context.test.ts` |
+| Caption style | the filter golden `FontName=Inter,...,BorderStyle=4,...,MarginV=19` at 288 lines; the plan from a job carries `captions.style` | `tests/assemble/captions.test.ts`, `tests/assemble/plan-from-job.test.ts` |
+| Continuous integration | see the handoff's top line after the push | GitHub Actions |
+
+### Untested
+
+- The caption style on macOS and Linux (libass finds the bundled fonts through `fontsdir`; only Windows was run).
+- A `qa --job` with a frozen run outside a planned hold on a real production (the unit test covers the ranges; the explainer has no such run).
+
+### Risks
+
+- A shot whose move is `breathe` is now exempt from the frozen-frames check for its whole clip, so a stuck render of such a shot would pass; the hero-still match still catches a shot that rendered the wrong frame.
+- The treatment gate was not a yes from the owner for this piece; the owner's own run is the one that counts for the blind test.
+
+### Review guide
+
+1. `docs/evidence/blind-test/our-side-explainer.md`: the piece, its defects named.
+2. `src/qa/plan-context.ts` and `src/qa/motion-checks.ts`: what a planned hold is.
+3. `src/assemble/captions.ts`: the caption style in libass units.
+4. `src/assemble/plan-from-job.ts`: where the style comes from.
+5. `skills/cinematic-studio/examples/explainer/README.md`: the flow for a narrated piece.
+
+### Next
+
+The title sequence (the owner's prompt), the blind-test scoring of both pieces, then the follow-ups M8 lists. From this piece: a diagram vocabulary for the html lane (boxes joined by lines, arrows, a file tree) so "diagram-led" is more than type on cards; a caption role of its own in the type scale rather than the lower-third chip for hash rows.
+
 ## M8: packaging and v0.1.0 (2026-10-29)
 
 ### Done

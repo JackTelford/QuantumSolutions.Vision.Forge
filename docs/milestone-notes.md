@@ -2,6 +2,13 @@
 
 One short note per milestone for the owner, newest first: what finished, what to look at, what changed underfoot. The full report with evidence is in `handoff.md`.
 
+## Explainer finished (2026-10-30): the second film
+
+- The 45-second explainer of `docs/blind-test.md` was made from its prompt through the commands only: narration first (seven sentences by the local voice, their timings as the clock), seven html cards on a paper stage, captions burnt in, 1350 frames in 152 s, 25 minutes from `doctor` to a passing `qa`. Its documents ship as `skills/cinematic-studio/examples/explainer/`; the record is `docs/evidence/explainer/README.md` and the blind-test write-up with its blank scoring sheet is `docs/evidence/blind-test/our-side-explainer.md`. The delivery is `out/62fedd4e/62fedd4e.mp4` on this machine; play it with sound.
+- It exposed four faults, all fixed with tests: the voice's own true-peak check failed by 0.1 dB (loudnorm now aims lower); the paper-flat exposure band was one no paper frame could meet (now 170 to 225); QA called a 2.5D stage under a breathe a frozen render (planned holds are now tolerated, nothing else); burnt-in captions were ffmpeg's stock white Arial (now the look's face and colours).
+- Honest limits: the "diagrams" are typographic cards, the card is a plain slate stand-in, the hash rows wear the lower-third chip, and I passed the treatment gate on your standing permission; your own run through Claude Code stops at the treatment for your yes.
+- Review in this order: `docs/evidence/blind-test/our-side-explainer.md`, `src/qa/plan-context.ts`, `src/assemble/captions.ts`, `src/assemble/plan-from-job.ts`, `skills/cinematic-studio/examples/explainer/README.md`.
+
 ## M8 finished (2026-10-29): v0.1.0
 
 - The plugin installs from the clone's marketplace manifest (`claude plugin install vision-forge@quantum-solutions`: one skill, about 220 always-on tokens) and is installed on this machine at scope `user` for your testing. `package.json` says 0.1.0; no git tag was made without your word.

@@ -1,0 +1,7 @@
+What is a content hash, and why does it let a render pick up where it stopped?
+A long render is thousands of frames, and a crash used to mean starting over.
+A content hash is a fingerprint of the inputs: the shot, the look, the code and the tools.
+Every shot renders into a folder named by its hash, and each finished frame is checked in with its own hash.
+When a render stops, the next run reads that ledger, skips what is on disk, and renders only what is missing.
+A crash costs one frame, not a night, and a change re-renders only the shots it touched.
+Hash the inputs, name the output by the hash, and the work you did stays done.

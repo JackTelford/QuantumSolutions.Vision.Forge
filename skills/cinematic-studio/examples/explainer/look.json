@@ -1,0 +1,62 @@
+{
+  "kind": "look-bible",
+  "version": 1,
+  "createdAt": "2026-10-30T00:00:00.000Z",
+  "id": "paper-flat",
+  "name": "Paper Flat",
+  "preset": "paper-flat",
+  "palette": {
+    "background": "#fbfaf6",
+    "surface": "#ffffff",
+    "primary": "#1f2937",
+    "accent": "#ef7d3b",
+    "text": "#1f2937",
+    "highlight": "#ffffff"
+  },
+  "typography": {
+    "display": "inter",
+    "body": "inter",
+    "scaleRatio": 1.25,
+    "displayTrackingEm": -0.02,
+    "uppercaseTrackingEm": 0.08
+  },
+  "lightingDefault": "soft-cross",
+  "motionFamily": "snappy",
+  "toneMapping": "standard",
+  "exposureEv": 0,
+  "grade": {
+    "lift": {
+      "r": 0,
+      "g": 0,
+      "b": 0
+    },
+    "gamma": {
+      "r": 1,
+      "g": 1,
+      "b": 1
+    },
+    "gain": {
+      "r": 1,
+      "g": 1,
+      "b": 1
+    },
+    "saturation": 1,
+    "contrast": 1,
+    "contrastPivot": 0.5,
+    "splitTone": {
+      "shadowHue": 0,
+      "shadowAmount": 0,
+      "highlightHue": 0,
+      "highlightAmount": 0
+    },
+    "vignetteAmount": 0,
+    "vignetteSoftness": 0.6,
+    "grainAmount": 0,
+    "grainSeed": 7,
+    "halationAmount": 0
+  },
+  "qa": {
+    "yavgMin": 170,
+    "yavgMax": 225
+  }
+}

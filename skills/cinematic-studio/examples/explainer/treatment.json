@@ -1,0 +1,105 @@
+{
+  "kind": "treatment",
+  "version": 1,
+  "id": "explainer-content-hash-t1",
+  "briefId": "explainer-content-hash",
+  "logline": "Seven paper cards, one per sentence of a friendly voice, explain that a content hash is a fingerprint of a render's inputs, that every output is filed under it, and that this is why a stopped render resumes where it left off.",
+  "lookId": "paper-flat",
+  "beats": [
+    {
+      "id": "b1",
+      "title": "Hook",
+      "intent": "ask the question the piece answers, as the voice asks it",
+      "durationSeconds": 4.67,
+      "lane": "html",
+      "shotIds": [
+        "s01"
+      ]
+    },
+    {
+      "id": "b2",
+      "title": "Problem",
+      "intent": "name what went wrong before: thousands of frames and a crash that meant frame zero again; the counter runs up the frame count",
+      "durationSeconds": 5.5,
+      "lane": "html",
+      "shotIds": [
+        "s02"
+      ]
+    },
+    {
+      "id": "b3",
+      "title": "The fingerprint",
+      "intent": "define the hash as a fingerprint of four inputs, and show what sixty-four characters of it look like",
+      "durationSeconds": 6.2,
+      "lane": "html",
+      "shotIds": [
+        "s03"
+      ]
+    },
+    {
+      "id": "b4",
+      "title": "One folder per hash",
+      "intent": "show the folder named by the hash and that each frame inside carries its own hash",
+      "durationSeconds": 7.07,
+      "lane": "html",
+      "shotIds": [
+        "s04"
+      ]
+    },
+    {
+      "id": "b5",
+      "title": "Stop and resume",
+      "intent": "show a stopped render resuming: the frames on disk skipped, the missing one rendered",
+      "durationSeconds": 7.3,
+      "lane": "html",
+      "shotIds": [
+        "s05"
+      ]
+    },
+    {
+      "id": "b6",
+      "title": "Payoff",
+      "intent": "state the payoff: one frame lost, and a change that re-renders only what it touched",
+      "durationSeconds": 6.37,
+      "lane": "html",
+      "shotIds": [
+        "s06"
+      ]
+    },
+    {
+      "id": "b7",
+      "title": "Call to action",
+      "intent": "close on the rule in three lines and hold",
+      "durationSeconds": 7.9,
+      "lane": "html",
+      "shotIds": [
+        "s07"
+      ]
+    }
+  ],
+  "substitutions": [
+    {
+      "requested": "diagram-led",
+      "substitute": "typographic diagrams: one labelled card per step on a 2.5D paper stage (the html lane), with the frame count as a counter, the hash as two rows of tabular type and the file names as captions",
+      "reason": "the html lane draws type, cards and a lit stage; it draws no arrows or icons, so each step is a card whose words and numbers are the diagram"
+    },
+    {
+      "requested": "captions on screen",
+      "substitute": "the narration's own sentences burnt into the frame at the bottom (assemble --job --burn-in from the SRT the voice produced), timed to the voice",
+      "reason": "the captions are then exact and in sync; the on-screen headlines say less than the voice so the two do not compete"
+    },
+    {
+      "requested": "a narrator",
+      "substitute": "the local English voice af_heart, normalized to -16 LUFS",
+      "reason": "the only voice available offline; the user's own recording replaces it as a WAV"
+    }
+  ],
+  "risks": [
+    "the paper-flat look is near white, so the card is the look's dark slate (a stand-in, not an illustration) and the stage reads through its shadow alone; the still gate's exposure band 170 to 225 decides whether the frame is too bright",
+    "the burnt-in captions sit at the bottom of the frame in the look's body face over a paper scrim; their legibility is judged by eye on the delivery sheet, since the text-contrast check measures the shot's own text boxes",
+    "shot lengths come from the voice, so the problem and resume beats run 5.5 and 7.3 s, past the dynamic tempo's 3.5 s ceiling; cuts land on sentence boundaries, as the pacing table asks for narration",
+    "a 64-character hash does not wrap, so it is shown as two rows of 32 tabular characters"
+  ],
+  "narrationFirst": true,
+  "createdAt": "2026-10-30T00:30:00.000Z"
+}

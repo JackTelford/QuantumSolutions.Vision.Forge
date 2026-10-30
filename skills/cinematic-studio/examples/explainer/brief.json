@@ -1,0 +1,49 @@
+{
+  "kind": "brief",
+  "version": 1,
+  "id": "explainer-content-hash",
+  "title": "Content hash explainer",
+  "prompt": "A 45-second narrated explainer that teaches what a content hash is and why it makes renders resumable. Clean, friendly, diagram-led. Captions on screen.",
+  "useCase": "explainer",
+  "goal": "leave the viewer able to say what a content hash is and why a render keyed on one can stop and resume without redoing work",
+  "audience": "developers and technical readers on a documentation page or in a team channel",
+  "durationSeconds": 45,
+  "aspect": "16:9",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "tempo": "dynamic",
+  "emotion": "clear",
+  "genre": "technical explainer",
+  "era": null,
+  "paletteHints": [
+    "clean",
+    "friendly",
+    "paper white"
+  ],
+  "mustHaveText": [
+    "content hash"
+  ],
+  "subject": {
+    "description": "a diagram card on a paper stage, one card per step",
+    "kind": "diagram",
+    "primitive": "card",
+    "assetIds": []
+  },
+  "narration": {
+    "enabled": true,
+    "voice": "af_heart",
+    "script": "What is a content hash, and why does it let a render pick up where it stopped?\nA long render is thousands of frames, and a crash used to mean starting over.\nA content hash is a fingerprint of the inputs: the shot, the look, the code and the tools.\nEvery shot renders into a folder named by its hash, and each finished frame is checked in with its own hash.\nWhen a render stops, the next run reads that ledger, skips what is on disk, and renders only what is missing.\nA crash costs one frame, not a night, and a change re-renders only the shots it touched.\nHash the inputs, name the output by the hash, and the work you did stays done."
+  },
+  "music": {
+    "policy": "none",
+    "path": null
+  },
+  "limitsAcknowledged": [
+    "diagram-led is read as typographic diagrams: a labelled card on a 2.5D paper stage per step, with the numbers, the hash and the file names as type; no illustration engine draws arrows or icons",
+    "captions on screen are the narration's own sentences, burnt into the frame at the bottom from the SRT the voice produced",
+    "the narration is the local English voice af_heart; the user's own recording is the alternative",
+    "no music: none was supplied and nothing is downloaded"
+  ],
+  "createdAt": "2026-10-30T00:30:00.000Z"
+}

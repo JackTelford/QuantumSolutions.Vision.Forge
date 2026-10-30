@@ -60,7 +60,7 @@ The skill is then available as `/vision-forge:cinematic-studio`. While developin
 | `sheet --frames <dir or json> \| --video <file> [--every <n>] [--output <png>] [--columns <n>] [--thumb-width <px>]` | tiles labelled frames, or every nth frame of a delivery, into one contact sheet |
 | `audio install [--yes] [--verify]`, `audio status`, `audio voices`, `audio synth --text <sentences> \| --script <file> [--voice <name>] [--fps <n>]` | the optional narration component: installs it into the data directory after showing the sizes and licenses (ADR 0007), reports its state, lists the voices, and turns text into a loudness-normalized WAV with per-sentence frame timings and an SRT |
 
-The first piece of `docs/blind-test.md`, a 15-second product film, was produced from its prompt through the commands alone: its four documents are the shipped example under `skills/cinematic-studio/examples/product-film/` and the record is `docs/evidence/m7/`. Planned: packaging and the v0.1.0 release (M8).
+Two pieces of `docs/blind-test.md` were produced from their prompts through the commands alone: the 15-second product film (`skills/cinematic-studio/examples/product-film/`, record `docs/evidence/m7/`) and the 45-second narrated explainer (`skills/cinematic-studio/examples/explainer/`, record `docs/evidence/explainer/`). v0.1.0 is packaged (M8); the title sequence is the owner's prompt.
 
 ## Project layout
 
@@ -98,7 +98,8 @@ Node 24.13.0, TypeScript 6.0.3, ffmpeg 9.0.2, Edge 156 and Chrome 156 on Windows
 - The subject is a stand-in built from primitives (a bottle is a stack of cylinders; a box, a pill, a card); glTF models are not imported yet, and frosted glass or brushed metal are suggested by colour and roughness, not shown.
 - A job is keyed on its four documents: every edit during the still loop plans into a new job folder, and approvals restart there (the render cache keeps the frames).
 - Text on a three or blender shot is one plate per shot, laid over the picture after the grade; a three-dimensional title is not offered.
-- The three blind-test pieces are judged by the owner; the product film is made, the explainer and the title sequence are the next prompts to run.
+- The three blind-test pieces are judged by the owner; the product film and the explainer are made, the title sequence is the next prompt to run.
+- An explainer's "diagram" is typographic: one labelled card per step on a 2.5D stage, with the numbers, names and hashes as type; no arrows, icons or connected boxes are drawn.
 
 ## Current non-goals
 
