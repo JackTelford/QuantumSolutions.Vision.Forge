@@ -22,7 +22,7 @@ The studio as a Model Context Protocol server, so any MCP client on the same PC 
 | Type checks, house rules, schema drift, licenses, the suite | `npm run check` exit 0 (1,881 tests, 0 failures, 3 skipped) | run locally 2026-10-30 |
 | The MCP tests | 114 tests, 0 failures over `tests/mcp/` | `node --test "tests/mcp/*.test.ts"` |
 | The server end to end | initialize, 16 tools, 39 resources, the prompt, doctor, an inline plan with the CLI's job id, a still with its image and 85 progress notifications, a refused path, a render as a task polled to done, −32602 and −32601, exit 0 with stdout all JSON | `docs/evidence/m9/README.md` |
-| Continuous integration | CI_ROW | GitHub Actions |
+| Continuous integration | run 41080886874 on 171cb79: success on windows-2025 and ubuntu-24.04, Node 24 and 26 | GitHub Actions |
 
 ### Untested
 
