@@ -97,6 +97,14 @@ export interface JobShot {
    * Number of still review rounds completed, 0 or more, for example 1; the retry cap is 3.
    */
   rounds: number;
+  /**
+   * The key of the shot's text plate (ADR 0008, decision 4): the content hash of the shot key, the plate name and the html lane's fingerprint, as 64 lowercase hex characters; names the text plate's cache folder. Absent for an html shot and for a shot without text elements.
+   */
+  textKey?: string;
+  /**
+   * Absolute path of the text plate's render manifest once its render started, for example C:/vf/cache/<textKey>/manifest.json; absent before, and absent for a shot without a text plate.
+   */
+  textManifestPath?: string;
 }
 
 /** Every JobStatus value the schema allows, in schema order. */

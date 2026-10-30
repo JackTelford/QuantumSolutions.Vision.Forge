@@ -17,11 +17,17 @@ const never = new AbortController().signal;
 const ffmpegExe = 'C:\\tools\\ffmpeg\\ffmpeg.exe';
 const ffprobeExe = 'C:\\tools\\ffmpeg\\ffprobe.exe';
 const tags = ['-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709', '-color_range', 'tv'];
-const finishing = 'format=gbrp16le,scale=in_range=full:out_range=tv:out_color_matrix=bt709,format=yuv420p';
+/** The delivery's tail: the grade now sits per clip (plate.ts), so without a grade only the BT.709 conversion follows the join. */
+const tail = 'scale=in_range=full:out_range=tv:out_color_matrix=bt709,format=yuv420p';
 const oneLine: AudioMix = { narration: [{ path: 'C:\\vf\\n1.wav', startFrame: 0 }], music: null, loudnessLufs: -16, truePeakDbtp: -1.5 };
 
 function clip(id: string, path: string, durationFrames = 30): Clip {
   return { id, source: { kind: 'frames', path, startNumber: 1 }, durationFrames };
+}
+
+/** Clip `index` brought to the join format with no grade and no overlay (plate.ts): 16-bit RGB, where the join stays without a vignette or a text plate. */
+function plated(index: number): string {
+  return `[c${index}]format=gbrp16le[p${index}]`;
 }
 
 function normalized(index: number, durationFrames: number): string {
@@ -61,7 +67,7 @@ describe('Assembler', () => {
   before(() => { dir = mkdtempSync(join(tmpdir(), 'vf-asm-')); });
   after(() => { rmSync(dir, { recursive: true, force: true }); });
 
-  it('runs exactly one ffmpeg command for a silent two-clip dissolve, with the golden argument array', async () => {
+  it('runs exactly one ffmpeg command for a silent two-clip dissolve, with the golden argument array: each clip is plated on its own before the join, since a text plate must land on its graded picture and not on a dissolve of two', async () => {
     const plan = twoClipDissolve(dir);
     const fake = new FakeProcessRunner();
     fake.expect(matchProgram('ffmpeg.exe'), okResult());
@@ -70,8 +76,10 @@ describe('Assembler', () => {
     const graph = [
       normalized(0, 30),
       normalized(1, 30),
-      '[c0][c1]xfade=transition=dissolve:duration=0.333333:offset=0.666667[vout]',
-      `[vout]${finishing}[v]`,
+      plated(0),
+      plated(1),
+      '[p0][p1]xfade=transition=fade:duration=0.333333:offset=0.666667[vout]',
+      `[vout]${tail}[v]`,
     ].join(';');
     assert.deepEqual(fake.invocations.map((spec) => spec.args), [[
       '-hide_banner', '-y',
@@ -105,7 +113,7 @@ describe('Assembler', () => {
     assert.ok(fake.invocations[0]?.args.includes(plan.output.path));
   });
 
-  it('joins a cut and a wipe across three clips with concat then xfade', () => {
+  it('joins a cut and a wipe across three clips with concat then xfade after each clip is plated', () => {
     const plan = twoClipDissolve(dir, {
       clips: [clip('a', 'C:\\vf\\a\\f%04d.png'), clip('b', 'C:\\vf\\b\\f%04d.png'), { id: 'c', source: { kind: 'video', path: 'C:\\vf\\c.mp4', startNumber: 0 }, durationFrames: 30 }],
       transitions: [{ afterClipId: 'b', type: 'wipe-left', frames: 15 }],
@@ -114,9 +122,12 @@ describe('Assembler', () => {
       normalized(0, 30),
       normalized(1, 30),
       normalized(2, 30),
-      '[c0][c1]concat=n=2:v=1:a=0,fps=30[j1]',
-      '[j1][c2]xfade=transition=wipeleft:duration=0.5:offset=1.5[vout]',
-      `[vout]${finishing}[v]`,
+      plated(0),
+      plated(1),
+      plated(2),
+      '[p0][p1]concat=n=2:v=1:a=0,fps=30[j1]',
+      '[j1][p2]xfade=transition=wipeleft:duration=0.5:offset=1.5[vout]',
+      `[vout]${tail}[v]`,
     ].join(';'));
     assert.deepEqual(encodeInvocation(plan, undefined).slice(0, 11), ['-y', '-framerate', '30', '-start_number', '1', '-i', 'C:\\vf\\a\\f%04d.png', '-framerate', '30', '-start_number', '1']);
     assert.deepEqual(encodeInvocation(plan, undefined).slice(11, 15), ['-i', 'C:\\vf\\b\\f%04d.png', '-i', 'C:\\vf\\c.mp4']);
@@ -152,8 +163,10 @@ describe('Assembler', () => {
     const encodeGraph = [
       normalized(0, 30),
       normalized(1, 30),
-      '[c0][c1]xfade=transition=dissolve:duration=0.333333:offset=0.666667[vout]',
-      `[vout]${finishing}[v]`,
+      plated(0),
+      plated(1),
+      '[p0][p1]xfade=transition=fade:duration=0.333333:offset=0.666667[vout]',
+      `[vout]${tail}[v]`,
       '[2:a]loudnorm=I=-16:TP=-1.5:LRA=11:measured_I=-26.53:measured_TP=-19.56:measured_LRA=0.40:measured_thresh=-36.53:offset=-0.39:linear=true:print_format=summary[aout]',
     ].join(';');
     assert.deepEqual(fake.invocations.map((spec) => spec.args), [
@@ -189,7 +202,7 @@ describe('Assembler', () => {
     assert.ok(existsSync(temp), 'the temp dir with encode.log is kept');
   });
 
-  it('burns captions in after the finishing chain and copies the SRT sidecar next to the output', async () => {
+  it('burns captions in after the delivery tail and copies the SRT sidecar next to the output', async () => {
     const srt = join(dir, 'captions.srt');
     writeFileSync(srt, '1\n00:00:00,500 --> 00:00:01,500\nHello\n', 'utf8');
     const outputDir = join(dir, 'captioned');
@@ -198,7 +211,7 @@ describe('Assembler', () => {
     fake.expect(matchProgram('ffmpeg.exe'), okResult());
     const result = await new Assembler(fake, ffmpegExe, ffprobeExe, new MemoryLogger()).assemble(plan, never);
     const graph = fake.invocations[0]?.args[fake.invocations[0].args.indexOf('-filter_complex') + 1] ?? '';
-    assert.ok(graph.endsWith(`[vout]${finishing},subtitles=${filterPath(srt)}[v]`), graph);
+    assert.ok(graph.endsWith(`[vout]${tail},subtitles=${filterPath(srt)}[v]`), graph);
     assert.equal(result.sidecarPath, join(outputDir, 'film.srt'));
     assert.ok(existsSync(join(outputDir, 'film.srt')));
   });

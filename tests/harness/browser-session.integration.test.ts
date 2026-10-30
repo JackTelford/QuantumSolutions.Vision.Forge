@@ -27,7 +27,7 @@ const height = 360;
 const never = new AbortController().signal;
 
 /** The fixture ignores the spec's content; a sound shot and look keep the request well typed. */
-const spec: ShotPageSpec = { lane: 'html', fps: 30, width, height, shot: shotExample('s01', 30, 'html'), look: lookBibleExample, camera: [], baseDistanceM: 1, fontsUrl: '/fonts/', assetsUrl: '/assets/', environment: null };
+const spec: ShotPageSpec = { lane: 'html', plate: 'picture', fps: 30, width, height, shot: shotExample('s01', 30, 'html'), look: lookBibleExample, camera: [], baseDistanceM: 1, fontsUrl: '/fonts/', assetsUrl: '/assets/', environment: null };
 
 /** The options every open in this file shares; the data directory and the policy vary per test. */
 function openOptions(dataDir: string, log: MemoryLogger, extra: Partial<OpenBrowserOptions> = {}): OpenBrowserOptions {

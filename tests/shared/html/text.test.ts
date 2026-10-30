@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { TextElement } from '../../../src/shared/contracts/shot-spec.ts';
-import { textAlign, textBoxStyle, textElementVisible, textPlate, textPlateStyle, textSpanContent, textSpanStates, textSpanStyle, textSpans, fittedFontSizePx } from '../../../src/shared/html/text.ts';
+import { textAlign, pageBackground, textBoxStyle, textElementVisible, textPlate, textPlateStyle, textSpanContent, textSpanStates, textSpanStyle, textSpans, fittedFontSizePx } from '../../../src/shared/html/text.ts';
 import { hiddenState, shownState, textTiming } from '../../../src/shared/typography/text-animation.ts';
 import { htmlPageSpec, htmlShot } from './fixtures.ts';
 
@@ -139,5 +139,12 @@ describe('textSpanContent', () => {
     assert.equal(textSpanContent(counter, counter.content, { ...shownState, counterFraction: 0.5 }), '600 km');
     assert.equal(textSpanContent(counter, counter.content, shownState), '1,200 km');
     assert.equal(textSpanContent(title, 'Now in 500 ml', { ...shownState, counterFraction: 0.5 }), 'Now in 500 ml');
+  });
+});
+
+describe('pageBackground', () => {
+  it('clears the page behind a text plate and leaves the page document\'s black for a picture', () => {
+    assert.equal(pageBackground('text'), 'transparent');
+    assert.equal(pageBackground('picture'), '');
   });
 });

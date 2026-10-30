@@ -93,6 +93,23 @@ export interface Clip {
    * Length of the clip in frames at the plan's fps, for example 90 for three seconds at 30 fps. A video source longer than this is trimmed.
    */
   durationFrames: number;
+  /**
+   * The clip's text plate (ADR 0008, decision 4): a numbered PNG sequence with alpha, composited over the clip's graded picture before the transitions and the grain. Null or absent when the clip has none.
+   */
+  overlay?: {
+    /**
+     * Always "frames": a text plate is a PNG sequence named by a printf pattern.
+     */
+    kind: 'frames';
+    /**
+     * Absolute printf pattern of the text plate's frames, for example C:/vf/cache/<textKey>/frames/f%06d.png.
+     */
+    path: string;
+    /**
+     * First frame number of the pattern, for example 0.
+     */
+    startNumber: number;
+  } | null;
 }
 /**
  * Where a clip's pictures come from.

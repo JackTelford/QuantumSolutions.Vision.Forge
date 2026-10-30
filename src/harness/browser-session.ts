@@ -282,7 +282,8 @@ class PlaywrightRenderer implements BrowserRenderer {
     const started = process.hrtime.bigint();
     try {
       // animations 'allow' on purpose: 'disabled' finishes animations and destroys the seeked frame (probe P5).
-      await page.screenshot({ path, type: 'png', animations: 'allow', caret: 'hide', scale: 'css', clip: { x: 0, y: 0, width: this.width, height: this.height } });
+      // A text plate is captured without the browser's default background, so the PNG keeps alpha where the page painted nothing (ADR 0008 decision 4).
+      await page.screenshot({ path, type: 'png', animations: 'allow', caret: 'hide', scale: 'css', omitBackground: request.spec.plate === 'text', clip: { x: 0, y: 0, width: this.width, height: this.height } });
     } catch (error: unknown) {
       if (signal.aborted) throw new CancelledError();
       throw new PageSeekError(request.pageUrl, frame, `the screenshot failed: ${firstLine(error)}.`, consoleTail);

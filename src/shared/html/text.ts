@@ -7,7 +7,7 @@
  */
 import type { Shot, TextElement, TextRole } from '../contracts/shot-spec.ts';
 import type { LookBible } from '../contracts/look-bible.ts';
-import type { ShotPageSpec } from '../harness/protocol.ts';
+import type { Plate, ShotPageSpec } from '../harness/protocol.ts';
 import { rgbaCss } from '../look/css-tokens.ts';
 import type { Palette } from '../look/css-tokens.ts';
 import { textFloorPx } from '../composition/checks.ts';
@@ -60,6 +60,17 @@ function justifyFor(align: 'left' | 'right' | 'center'): string {
 /** The overlay that holds every text box: fills the root, in front of the stage, no perspective. */
 export function textOverlayStyle(): StyleMap {
   return { position: 'absolute', inset: '0', overflow: 'hidden' };
+}
+
+/**
+ * The inline background the lane writes on the page's html and body
+ * elements for a plate: `transparent` for a text plate, so nothing is
+ * painted behind the words and the capture keeps alpha (ADR 0008 decision
+ * 4); the empty string for a picture, which removes any inline value and
+ * lets the page document's own black stand.
+ */
+export function pageBackground(plate: Plate): string {
+  return plate === 'text' ? 'transparent' : '';
 }
 
 /**

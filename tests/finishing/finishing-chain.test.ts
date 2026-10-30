@@ -1,36 +1,60 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { bt709Scale, colorTagArguments, finishingFilters, grainFilter, vignetteFilter } from '../../src/finishing/finishing-chain.ts';
+import { bt709Scale, clipGradeFilters, colorTagArguments, deliveryTailFilters, eightBitFormat, grainFilter, joinFormat, sixteenBitFormat, vignetteFilter } from '../../src/finishing/finishing-chain.ts';
 import type { FinishingGrade } from '../../src/shared/contracts/assembly-plan.ts';
 
 const grade: FinishingGrade = { cubePath: 'C:\\vf\\look\\film.cube', vignetteAmount: 0.5, vignetteSoftness: 0.6, grainAmount: 0.15, grainSeed: 7 };
 const quotedCube = "'C\\:/vf/look/film.cube'";
 
-describe('finishingFilters', () => {
-  it('without a grade is the 16-bit RGB pass, the BT.709 limited-range conversion and yuv420p', () => {
-    assert.deepEqual(finishingFilters(undefined, 'h264'), ['format=gbrp16le', bt709Scale, 'format=yuv420p']);
-    assert.deepEqual(finishingFilters(undefined, 'hevc'), ['format=gbrp16le', bt709Scale, 'format=yuv420p']);
+describe('clipGradeFilters', () => {
+  it('without a grade still takes the clip through 16-bit RGB, the path every graded clip and every calibration number took', () => {
+    assert.deepEqual(clipGradeFilters(undefined), ['format=gbrp16le']);
+    assert.equal(sixteenBitFormat, 'format=gbrp16le');
+    assert.equal(eightBitFormat, 'format=gbrp');
+  });
+
+  it('with a full grade applies the quoted cube in 16-bit RGB then the vignette in rgb24, leaving the grain for the joined delivery', () => {
+    assert.deepEqual(clipGradeFilters(grade), ['format=gbrp16le', `lut3d=file=${quotedCube}:interp=tetrahedral`, 'format=rgb24', 'vignette=angle=PI/8']);
+    assert.equal(clipGradeFilters(grade).some((step) => step.startsWith('noise')), false);
+  });
+
+  it('skips the LUT for a null cube and the vignette when its amount is 0', () => {
+    assert.deepEqual(clipGradeFilters({ ...grade, cubePath: null }), ['format=gbrp16le', 'format=rgb24', 'vignette=angle=PI/8']);
+    assert.deepEqual(clipGradeFilters({ ...grade, vignetteAmount: 0 }), ['format=gbrp16le', `lut3d=file=${quotedCube}:interp=tetrahedral`]);
+    assert.deepEqual(clipGradeFilters({ ...grade, cubePath: null, vignetteAmount: 0 }), ['format=gbrp16le']);
+  });
+});
+
+describe('joinFormat', () => {
+  it('keeps the join in 16-bit RGB for a vignette-free grade without text plates, so a LUT-only look and a prores master take the path ADR 0008 decision 3 measured', () => {
+    assert.equal(joinFormat(undefined, false), 'format=gbrp16le');
+    assert.equal(joinFormat({ ...grade, vignetteAmount: 0 }, false), 'format=gbrp16le');
+    assert.equal(joinFormat({ ...grade, vignetteAmount: 0, grainAmount: 0.5 }, false), 'format=gbrp16le', 'grain lands after the join and drops to 8 bits there');
+  });
+
+  it('joins in 8-bit RGB once a vignette (rgb24 out) or a text plate (rgba overlay) is in the chain, as the single chain before the per-clip grade already did for a vignette', () => {
+    assert.equal(joinFormat(grade, false), 'format=gbrp');
+    assert.equal(joinFormat(undefined, true), 'format=gbrp');
+    assert.equal(joinFormat({ ...grade, vignetteAmount: 0 }, true), 'format=gbrp');
+  });
+});
+
+describe('deliveryTailFilters', () => {
+  it('without a grade is the BT.709 limited-range conversion and the codec pixel format', () => {
+    assert.deepEqual(deliveryTailFilters(undefined, 'h264'), [bt709Scale, 'format=yuv420p']);
+    assert.deepEqual(deliveryTailFilters(undefined, 'hevc'), [bt709Scale, 'format=yuv420p']);
   });
 
   it('feeds prores yuv422p10le', () => {
-    assert.deepEqual(finishingFilters(undefined, 'prores'), ['format=gbrp16le', bt709Scale, 'format=yuv422p10le']);
+    assert.deepEqual(deliveryTailFilters(undefined, 'prores'), [bt709Scale, 'format=yuv422p10le']);
   });
 
-  it('with a full grade applies the quoted cube, the vignette in rgb24, the seeded grain in gbrp, then the conversion', () => {
-    assert.deepEqual(finishingFilters(grade, 'h264'), [
-      'format=gbrp16le',
-      `lut3d=file=${quotedCube}:interp=tetrahedral`,
-      'format=rgb24',
-      'vignette=angle=PI/8',
-      'format=gbrp',
-      'noise=all_seed=7:all_strength=6:all_flags=t+u:threads=1',
-      bt709Scale,
-      'format=yuv420p',
-    ]);
+  it('with a grade drops the joined clips to 8-bit RGB for the seeded grain, text plates included, before the conversion', () => {
+    assert.deepEqual(deliveryTailFilters(grade, 'h264'), ['format=gbrp', 'noise=all_seed=7:all_strength=6:all_flags=t+u:threads=1', bt709Scale, 'format=yuv420p']);
   });
 
-  it('skips the LUT for a null cube and the vignette and grain when their amounts are 0', () => {
-    assert.deepEqual(finishingFilters({ ...grade, cubePath: null, vignetteAmount: 0, grainAmount: 0 }, 'prores'), ['format=gbrp16le', bt709Scale, 'format=yuv422p10le']);
+  it('skips the grain when its amount is 0', () => {
+    assert.deepEqual(deliveryTailFilters({ ...grade, grainAmount: 0 }, 'prores'), [bt709Scale, 'format=yuv422p10le']);
   });
 });
 

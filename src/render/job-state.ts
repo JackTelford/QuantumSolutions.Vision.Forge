@@ -24,7 +24,7 @@ import { shotKey } from '../plan/shot-key.ts';
 import type { RenderFingerprint } from '../plan/shot-key.ts';
 import { runSemanticChecks } from '../schema/checks/index.ts';
 import { validateDocument } from '../schema/validator.ts';
-import type { Job, JobShot } from '../shared/contracts/job.ts';
+import type { Job, JobShot, JobStatus } from '../shared/contracts/job.ts';
 import type { LookBible } from '../shared/contracts/look-bible.ts';
 import type { RenderProfile, Shot, ShotSpec } from '../shared/contracts/shot-spec.ts';
 
@@ -84,6 +84,35 @@ export function findJobShot(job: Job, shotId: string): JobShot {
 export function updateShot(job: Job, shotId: string, changes: Partial<Omit<JobShot, 'id'>>): Job {
   findJobShot(job, shotId);
   return { ...job, shots: job.shots.map((shot) => (shot.id === shotId ? { ...shot, ...changes } : shot)) };
+}
+
+/**
+ * A new job with the named shot's text plate fields dropped. updateShot
+ * merges, so a shot that lost its text plate (its text removed, or its lane
+ * switched to html) would otherwise keep the old plate's key and manifest
+ * and the assembly would lay the old words over the new clip; the fields
+ * are optional, not nullable, so they are removed rather than set.
+ */
+export function withoutTextPlate(job: Job, shotId: string): Job {
+  findJobShot(job, shotId);
+  return {
+    ...job,
+    shots: job.shots.map((shot) => {
+      if (shot.id !== shotId) return shot;
+      const { textKey: _textKey, textManifestPath: _textManifestPath, ...rest } = shot;
+      return rest;
+    }),
+  };
+}
+
+/** A new job at another stage of the pipeline. */
+export function withStatus(job: Job, status: JobStatus): Job {
+  return { ...job, status };
+}
+
+/** A new job at the qa stage with its delivery recorded: what assemble leaves behind for qa. */
+export function withDelivery(job: Job, deliverablePath: string): Job {
+  return { ...job, status: 'qa', deliverablePath };
 }
 
 /** Validates the job against its schema and its semantic rules (the review round cap among them) and writes job.json atomically. */

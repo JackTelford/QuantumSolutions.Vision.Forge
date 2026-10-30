@@ -26,6 +26,7 @@
       "description": "Shot hash as 64 lowercase hex characters: SHA-256 over the browser major version, the launch flags, the lane code hash, the shot spec, the look bible and the render profile (ADR 0006, decision 8). Names the cache folder."
     },
     "lane": { "$ref": "#/$defs/Lane" },
+    "plate": { "$ref": "#/$defs/Plate" },
     "renderProfile": {
       "type": "object",
       "description": "How the lane rendered: the engine, its backend and whether a hardware or software renderer produced the pixels.",
@@ -193,6 +194,11 @@
       "type": "string",
       "enum": ["hardware", "software"],
       "description": "Whether the GPU (hardware) or a CPU rasterizer such as SwiftShader (software) produced the pixels."
+    },
+    "Plate": {
+      "type": "string",
+      "enum": ["picture", "text"],
+      "description": "What the frames hold (ADR 0008, decision 4): picture (the whole frame, the default when absent) or text (the html lane's text overlay alone over transparency, rendered under its own key for a three or blender shot and composited over the graded picture)."
     },
     "RenderStatus": {
       "type": "string",

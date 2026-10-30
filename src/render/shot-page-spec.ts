@@ -12,7 +12,7 @@ import { solveBasePose } from '../shared/composition/solver.ts';
 import type { LookBible } from '../shared/contracts/look-bible.ts';
 import type { Shot } from '../shared/contracts/shot-spec.ts';
 import { assetsUrlPrefix, fontsUrlPrefix } from '../shared/harness/protocol.ts';
-import type { BrowserLane, EnvironmentRef, ShotPageSpec } from '../shared/harness/protocol.ts';
+import type { BrowserLane, EnvironmentRef, Plate, ShotPageSpec } from '../shared/harness/protocol.ts';
 
 /** A shot asks for a lane this milestone cannot render. */
 export class LaneUnavailableError extends VisionForgeError {
@@ -36,12 +36,20 @@ export function browserLaneOf(shot: Shot): BrowserLane {
   throw new LaneUnavailableError(shot.id, shot.lane);
 }
 
-/** The page spec of a shot: the camera baked over the solver's base pose, the base distance the html stage scales by, the harness URL prefixes and the environment map (src/render/environment.ts) when one is installed. */
-export function buildShotPageSpec(shot: Shot, look: LookBible, spec: RenderSpec, environment: EnvironmentRef | null = null): ShotPageSpec {
-  const lane = browserLaneOf(shot);
+/**
+ * The page spec of a shot: the camera baked over the solver's base pose,
+ * the base distance the html stage scales by, the harness URL prefixes and
+ * the environment map (src/render/environment.ts) when one is installed.
+ * The text plate of any lane renders in the html lane (ADR 0008 decision
+ * 4), so with plate 'text' the shot's own lane is not consulted and a
+ * blender shot's text plate builds like any other.
+ */
+export function buildShotPageSpec(shot: Shot, look: LookBible, spec: RenderSpec, environment: EnvironmentRef | null = null, plate: Plate = 'picture'): ShotPageSpec {
+  const lane: BrowserLane = plate === 'text' ? 'html' : browserLaneOf(shot);
   const pose = solveBasePose(shot, spec);
   return {
     lane,
+    plate,
     fps: spec.fps,
     width: spec.width,
     height: spec.height,

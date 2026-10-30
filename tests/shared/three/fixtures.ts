@@ -30,6 +30,7 @@ export function threePageSpecFor(shot: Shot, scene?: 'calibration'): ShotPageSpe
   const base = solveBasePose(shot, spec);
   return {
     lane: 'three',
+    plate: 'picture',
     fps: spec.fps,
     width: spec.width,
     height: spec.height,

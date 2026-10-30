@@ -4,7 +4,7 @@
  * every function returns strings; the assembler runs them. Tests assert on
  * these arrays exactly.
  */
-import { finishingFilters } from '../finishing/finishing-chain.ts';
+import { deliveryTailFilters } from '../finishing/finishing-chain.ts';
 import type { AssemblyPlan, AudioMix } from '../shared/contracts/assembly-plan.ts';
 import { audioInputArguments, loudnormApplyFilter, loudnormMeasureFilter, mixGraph, mixLabel, normalizedLabel } from './audio.ts';
 import type { LoudnessMeasurement } from './audio.ts';
@@ -12,6 +12,7 @@ import { captionFilter } from './captions.ts';
 import { audioCodecArguments, encodeArguments } from './encode.ts';
 import { joinClips } from './graph.ts';
 import { allClipFilters, allClipInputArguments } from './normalize.ts';
+import { allOverlayInputArguments, allPlateFilters, videoInputCount } from './plate.ts';
 
 /** The label of the finished video stream the encoder maps. */
 export const finishedLabel = '[v]';
@@ -34,27 +35,28 @@ export function measureArguments(audio: AudioMix, mixPath: string): readonly str
 }
 
 /**
- * The complete video filter graph: every clip normalized, the clips joined,
- * the finishing chain, then captions burned in (when asked) onto the
+ * The complete video filter graph: every clip normalized, then graded and
+ * plated with its text plate (plate.ts), the clips joined, the grain and
+ * the BT.709 conversion, then captions burned in (when asked) onto the
  * finished frames, ending in `[v]`. Captions come last so the text is not
  * graded, vignetted or grained; libass draws onto the codec's pixel format.
- * Audio, when present, is input `clips.length` and is normalized with the
- * measured values into `[aout]`.
+ * Audio, when present, is the input after every clip and overlay and is
+ * normalized with the measured values into `[aout]`.
  */
 export function filterGraph(plan: AssemblyPlan, mix: MeasuredMix | undefined): string {
   const joined = joinClips(plan);
   const captions = captionFilter(plan.captions);
-  const finishing = [...finishingFilters(plan.grade, plan.output.codec), ...(captions === undefined ? [] : [captions])];
-  const chains = [...allClipFilters(plan), ...joined.filters, `${joined.label}${finishing.join(',')}${finishedLabel}`];
+  const tail = [...deliveryTailFilters(plan.grade, plan.output.codec), ...(captions === undefined ? [] : [captions])];
+  const chains = [...allClipFilters(plan), ...allPlateFilters(plan), ...joined.filters, `${joined.label}${tail.join(',')}${finishedLabel}`];
   if (mix !== undefined) {
-    chains.push(`[${plan.clips.length}:a]${loudnormApplyFilter(mix.audio, mix.measured)}${normalizedLabel}`);
+    chains.push(`[${videoInputCount(plan)}:a]${loudnormApplyFilter(mix.audio, mix.measured)}${normalizedLabel}`);
   }
   return chains.join(';');
 }
 
-/** The final encode: clip inputs, the mix, the graph, the stream maps, codecs and the output path. */
+/** The final encode: clip inputs, their overlays, the mix, the graph, the stream maps, codecs and the output path. */
 export function encodeInvocation(plan: AssemblyPlan, mix: MeasuredMix | undefined): readonly string[] {
-  const inputs = [...allClipInputArguments(plan), ...(mix === undefined ? [] : ['-i', mix.mixPath])];
+  const inputs = [...allClipInputArguments(plan), ...allOverlayInputArguments(plan), ...(mix === undefined ? [] : ['-i', mix.mixPath])];
   const audioMap = mix === undefined ? [] : ['-map', normalizedLabel, ...audioCodecArguments(plan.output.codec), '-ar', '48000'];
   return ['-y', ...inputs, '-filter_complex', filterGraph(plan, mix), '-map', finishedLabel, ...audioMap, ...encodeArguments(plan.output), plan.output.path];
 }

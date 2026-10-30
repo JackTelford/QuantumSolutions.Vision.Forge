@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -15,21 +16,33 @@ import { laneFingerprint, shotKey } from '../../src/plan/shot-key.ts';
 import { ChildProcessRunner } from '../../src/process/child-process-runner.ts';
 import { sceneHashesPath } from '../../src/render/blender-shot.ts';
 import { RenderProfileMismatchError } from '../../src/render/command-support.ts';
+import { framePath } from '../../src/render/cache.ts';
 import { readManifest } from '../../src/render/manifest.ts';
+import { ShotNotApprovedError } from '../../src/render/shot-not-approved-error.ts';
 import { validateDocument } from '../../src/schema/validator.ts';
 import type { Job } from '../../src/shared/contracts/job.ts';
 import type { ShotSpec } from '../../src/shared/contracts/shot-spec.ts';
+import { findFfmpeg, findFfprobe } from '../../src/tools/ffmpeg.ts';
 import { writeToolsManifest } from '../../src/tools/tools-manifest.ts';
 import { FakeBlenderRunner } from '../fakes/fake-blender-runner.ts';
 import { preferTestBrowserInManifest, testBrowser } from '../fakes/test-browser.ts';
 import { planBrief, planLook, planShotSpec, planTreatment } from '../plan/fixtures.ts';
 import { edgeExample, toolsManifestExample } from '../render/fixtures.ts';
-import { mutated } from '../schema/documents/examples.ts';
+import { hex64, mutated, textExample } from '../schema/documents/examples.ts';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const cliPath = join(repoRoot, 'scripts', 'cli.ts');
 const runner = new ChildProcessRunner();
 const never = new AbortController().signal;
+
+/** The pixel format ffprobe reads from a PNG, as tests/harness/text-plate.integration.test.ts reads it. */
+function pixelFormat(pngPath: string): string {
+  const ffprobe = findFfprobe(findFfmpeg()?.path)?.path;
+  assert.ok(ffprobe !== undefined, 'ffprobe is installed beside ffmpeg (doctor passed)');
+  const result = spawnSync(ffprobe, ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=pix_fmt', '-of', 'csv=p=0', pngPath], { shell: false, timeout: 60_000 });
+  assert.equal(result.status, 0, result.stderr.toString('utf8'));
+  return result.stdout.toString('utf8').trim();
+}
 
 interface CliRun {
   readonly exitCode: number | null;
@@ -166,7 +179,11 @@ describe('render command on a blender shot through a fake Blender', () => {
     assert.ok(!existsSync(join(dataDir, 'cache')), 'nothing was rendered');
   });
 
-  it('renders the whole shot with the pinned rung in batches of three then thirty, with an estimate, and records a complete manifest on the job', async () => {
+  it('renders the whole shot with the pinned rung in batches of three then thirty, with an estimate, records a complete manifest on the job and drops a text plate an earlier run recorded for a shot that has none', async () => {
+    const jobPath = join(jobDir, 'job.json');
+    // As if the shot's title had been removed after a run rendered its plate: the stale plate must not survive onto the assembly.
+    const stale = readJsonFile(jobPath) as Job;
+    writeJsonAtomic(jobPath, { ...stale, shots: stale.shots.map((shot) => (shot.id === 's02' ? { ...shot, textKey: hex64('e'), textManifestPath: join(dataDir, 'cache', hex64('e'), 'manifest.json') } : shot)) });
     const runner = new FakeBlenderRunner();
     const log = new MemoryLogger();
     const output = await runRender(runner, ['--shot', 's02'], log);
@@ -188,10 +205,13 @@ describe('render command on a blender shot through a fake Blender', () => {
     assert.equal(manifest.fingerprint.blender, '5.2.3');
     assert.equal(manifest.fingerprint.browser, undefined);
     assert.ok(existsSync(sceneHashesPath(join(shot.framesDir, '..'))));
-    const job = readJsonFile(join(jobDir, 'job.json')) as Job;
+    const job = readJsonFile(jobPath) as Job;
     assert.equal(job.status, 'rendering');
     assert.equal(job.shots[1]?.status, 'rendered');
     assert.equal(job.shots[1]?.manifestPath, shot.manifestPath);
+    assert.equal(job.shots[1]?.textKey, undefined, 'a shot without text records no text plate, whatever an earlier run recorded');
+    assert.equal(job.shots[1]?.textManifestPath, undefined);
+    assert.equal(shot.textFramePattern, null);
     assert.ok(log.messages.some((message) => /^info: s02 {2}blender {2}90 frames {2}\d+ ms {2}[0-9.]+ ms\/frame {2}0 reused$/.test(message)), log.messages.join('\n'));
     assert.ok(log.messages.some((message) => /^info: estimate: [0-9.]+ s per frame/.test(message)));
     assert.deepEqual(output.evidence, [shot.manifestPath]);
@@ -211,6 +231,29 @@ describe('render command on a blender shot through a fake Blender', () => {
     // s01 and s03 are not approved: the refusal comes before any Blender or browser launch.
     assert.ok(all instanceof Error && /not approved/.test(all.message), String(all));
     assert.equal(runner.invocations.length, 0);
+  });
+
+  it('refuses an approved shot whose text plate was re-keyed since the still (the html lane or the browser changed) before Blender or the browser launches, unless --allow-unapproved', async () => {
+    const specPath = join(jobDir, 'shot-spec.json');
+    const jobPath = join(jobDir, 'job.json');
+    const spec = readJsonFile(specPath) as ShotSpec;
+    const job = readJsonFile(jobPath) as Job;
+    // s02 gains a title, so it has a text plate; the picture's key is recomputed as the gate would, and the job's textKey is one the plate was never rendered under.
+    const titled = mutated(spec, (copy) => { copy.shots[1]!.text = [{ ...textExample, outFrame: 80 }]; });
+    writeJsonAtomic(specPath, titled);
+    const key = await shotKey(titled.shots[1]!, planLook, await laneFingerprint(dataDir, 'blender'));
+    writeJsonAtomic(jobPath, { ...job, shots: job.shots.map((shot) => (shot.id === 's02' ? { ...shot, key, status: 'still-approved' as const, textKey: hex64('e'), textManifestPath: join(dataDir, 'cache', hex64('e'), 'manifest.json') } : shot)) });
+    try {
+      const runner = new FakeBlenderRunner();
+      const refused = await runRender(runner, ['--shot', 's02']).catch((error: unknown) => error);
+      assert.ok(refused instanceof ShotNotApprovedError, String(refused));
+      assert.match(refused.message, /"s02" is not approved for rendering: its text plate's key changed since the still was approved \(the html lane or the browser changed\)/);
+      assert.equal(runner.invocations.length, 0, 'nothing launched');
+      assert.deepEqual(readJsonFile(jobPath), { ...job, shots: job.shots.map((shot) => (shot.id === 's02' ? { ...shot, key, status: 'still-approved', textKey: hex64('e'), textManifestPath: join(dataDir, 'cache', hex64('e'), 'manifest.json') } : shot)) }, 'the job is untouched');
+    } finally {
+      writeJsonAtomic(specPath, spec);
+      writeJsonAtomic(jobPath, job);
+    }
   });
 });
 
@@ -278,6 +321,60 @@ describe('render command on the real browser at 480x270', { skip: skipIntegratio
     assert.equal(cached.exitCode, 0, cached.stderr);
     const kept = (cached.result.data as RenderData).shots[0]!;
     assert.deepEqual([kept.frames, kept.reused, kept.elapsedMs], [120, 120, 0]);
+    assert.equal(kept.textFramePattern, null, 'an html shot has no text plate');
     assert.match(cached.stderr, /already rendered; reused/);
+  });
+
+  it('renders the text plate of a three shot with text right after its picture, under a key of its own, and reuses both on the next run', async () => {
+    const spec = readJsonFile(join(jobDir, 'shot-spec.json')) as ShotSpec;
+    writeJsonAtomic(join(jobDir, 'shot-spec.json'), mutated(spec, (copy) => { copy.shots[0]!.text = [{ ...textExample, outFrame: 100 }]; copy.shots[0]!.renderProfile = null; }));
+    const run = await cli(['render', '--job', jobDir, '--shot', 's01', '--frames', '0-3', '--allow-unapproved'], dataDir, 300_000);
+    assert.equal(run.exitCode, 0, `${JSON.stringify(run.result.errors)}\n${run.stderr}`);
+    const shot = (run.result.data as RenderData).shots[0]!;
+    assert.deepEqual([shot.id, shot.lane, shot.frames], ['s01', 'three', 4]);
+    assert.ok(shot.textFramePattern !== null && shot.textManifestPath !== null, 'the plate is reported');
+    const textCacheDir = dirname(shot.textManifestPath);
+    assert.notEqual(textCacheDir, dirname(shot.manifestPath), 'the plate has a cache folder of its own');
+    assert.equal(shot.textFramePattern, `${join(textCacheDir, 'frames').replace(/\\/g, '/')}/f%06d.png`);
+    assert.deepEqual(readdirSync(join(textCacheDir, 'frames')).sort(), Array.from({ length: 4 }, (_, frame) => `f${String(frame).padStart(6, '0')}.png`));
+    assert.equal(pixelFormat(framePath(join(textCacheDir, 'frames'), 2)), 'rgba', 'a cached plate frame carries alpha');
+    const text = readManifest(shot.textManifestPath);
+    assert.equal(text.lane, 'html');
+    assert.equal(text.plate, 'text');
+    assert.equal(text.frames.length, 4);
+    assert.notEqual(text.key, shot.key);
+    assert.equal(readManifest(shot.manifestPath).plate, undefined, 'the picture manifest reads as before');
+    assert.deepEqual(run.result.evidence, [shot.manifestPath, shot.textManifestPath]);
+    assert.match(run.stderr, /^s01 {2}text plate {2}4 frames {2}\d+ ms/m);
+    const job = readJsonFile(join(jobDir, 'job.json')) as Job;
+    assert.equal(job.shots[0]?.textKey, text.key);
+    assert.equal(job.shots[0]?.textManifestPath, shot.textManifestPath);
+    assert.equal(job.shots[0]?.status, 'pending', 'not every frame is rendered yet');
+
+    const again = await cli(['render', '--job', jobDir, '--shot', 's01', '--frames', '0-3', '--allow-unapproved'], dataDir, 300_000);
+    assert.equal(again.exitCode, 0, again.stderr);
+    const reused = (again.result.data as RenderData).shots[0]!;
+    assert.deepEqual([reused.reused, reused.textFramePattern], [4, shot.textFramePattern]);
+    assert.match(again.stderr, /^s01 {2}text plate {2}4 frames {2}\d+ ms {2}[0-9.]+ ms\/frame {2}4 reused$/m);
+  });
+
+  it('warns that a re-keyed text plate unapproves a rendered shot, and steps the shot back to still-approved while the plate is only partly rendered', async () => {
+    const jobPath = join(jobDir, 'job.json');
+    const before = readJsonFile(jobPath) as Job;
+    const rendered = before.shots[0]!;
+    assert.ok(rendered.textKey !== undefined, 'the previous test recorded the plate');
+    // As if the html lane had changed after the still: the job says rendered with a plate key the lane no longer computes.
+    writeJsonAtomic(jobPath, { ...before, shots: before.shots.map((shot) => (shot.id === 's01' ? { ...shot, status: 'rendered' as const, textKey: hex64('e') } : shot)) });
+    const refused = await cli(['render', '--job', jobDir, '--shot', 's01', '--frames', '0-3'], dataDir, 300_000);
+    assert.equal(refused.exitCode, 1);
+    assert.equal(refused.result.errors[0]?.code, 'shot-not-approved');
+    assert.match(refused.result.errors[0]?.message ?? '', /its text plate's key changed since the still was approved/);
+    const allowed = await cli(['render', '--job', jobDir, '--shot', 's01', '--frames', '0-3', '--allow-unapproved'], dataDir, 300_000);
+    assert.equal(allowed.exitCode, 0, `${JSON.stringify(allowed.result.errors)}\n${allowed.stderr}`);
+    assert.match(allowed.stderr, /warning: shot "s01" renders unapproved: its text plate's key changed/);
+    const after = (readJsonFile(jobPath) as Job).shots[0]!;
+    assert.equal(after.status, 'still-approved', 'a shot whose plate is 4 of 105 frames does not say rendered');
+    assert.equal(after.textKey, rendered.textKey, 'the plate key the lane computes now is recorded');
+    assert.equal(after.textManifestPath, rendered.textManifestPath);
   });
 });

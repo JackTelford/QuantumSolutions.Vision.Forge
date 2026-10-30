@@ -4,6 +4,12 @@
  * flat text overlay. init builds the elements once; render(frame) writes
  * every inline style from scratch from the shared, pure style functions
  * under src/shared/html/, so a frame depends on nothing but its number.
+ *
+ * With plate 'text' (ADR 0008 decision 4) the lane builds the text overlay
+ * alone over a transparent page, so the harness captures the words, their
+ * lower-third plates and caption scrims with alpha and the still and the
+ * assembly composite them over the graded picture of a three or blender
+ * shot. The text is styled, animated and measured exactly as on a picture.
  */
 import type { CameraFrame } from '../../shared/camera/types.ts';
 import type { TextElement } from '../../shared/contracts/shot-spec.ts';
@@ -16,7 +22,7 @@ import type { Mote } from '../../shared/html/motes.ts';
 import { backdropStyle, hazeStyle, shadowStyle, stageGeometry, stageStyle, viewportStyle } from '../../shared/html/stage.ts';
 import type { StageGeometry } from '../../shared/html/stage.ts';
 import { standInContainerStyle, standInPartNames, standInParts } from '../../shared/html/stand-in.ts';
-import { textBoxStyle, textElementVisible, textOverlayStyle, textPlate, textPlateStyle, textSpanContent, textSpanStates, textSpanStyle, textSpans } from '../../shared/html/text.ts';
+import { pageBackground, textBoxStyle, textElementVisible, textOverlayStyle, textPlate, textPlateStyle, textSpanContent, textSpanStates, textSpanStyle, textSpans } from '../../shared/html/text.ts';
 import { shownState } from '../../shared/typography/text-animation.ts';
 import { shotLightingRig } from '../../shared/lighting/rigs.ts';
 import type { LightingRig } from '../../shared/lighting/rigs.ts';
@@ -32,9 +38,8 @@ interface TextElements {
   readonly words: readonly string[];
 }
 
-/** Everything init built, kept for render. */
-interface Built {
-  readonly spec: ShotPageSpec;
+/** The elements of the 2.5D stage; absent on a text plate. */
+interface StageElements {
   readonly geometry: StageGeometry;
   readonly rig: LightingRig;
   readonly viewport: HTMLDivElement;
@@ -45,6 +50,12 @@ interface Built {
   readonly standIn: HTMLDivElement;
   readonly parts: readonly HTMLDivElement[];
   readonly motes: readonly { readonly mote: Mote; readonly element: HTMLDivElement }[];
+}
+
+/** Everything init built, kept for render. */
+interface Built {
+  readonly spec: ShotPageSpec;
+  readonly stage: StageElements | undefined;
   readonly texts: readonly TextElements[];
 }
 
@@ -60,29 +71,26 @@ export class HtmlLane implements LaneModule {
   private built: Built | undefined = undefined;
   private calibration: CalibrationElements | undefined = undefined;
 
-  /** Builds the stage and the text overlay under the root (or the flat calibration patches when the spec asks for that scene); a second init replaces the first. */
+  /** Builds the stage and the text overlay under the root (the overlay alone for a text plate, or the flat calibration patches when the spec asks for that scene); a second init replaces the first. */
   init(spec: ShotPageSpec, root: HTMLElement): void {
     root.replaceChildren();
     this.built = undefined;
     this.calibration = undefined;
+    // The page document paints black behind every plate (src/lanes/html/page.ts); a text plate must show nothing behind the words, so the lane clears that here rather than the page carrying a plate of its own, which would make the served page differ between the two plates of one shot.
+    const document = root.ownerDocument;
+    const background = pageBackground(spec.plate);
+    document.documentElement.style.background = background;
+    document.body.style.background = background;
     if (spec.scene === 'calibration') {
       const backdrop = appendDiv(root, 'vf-calibration');
       const patches = calibrationPatches(calibrationScene.elements).map((patch) => ({ patch, element: appendDiv(backdrop, `vf-patch vf-patch-${patch.id}`) }));
       this.calibration = { spec, backdrop, patches };
       return;
     }
-    const viewport = appendDiv(root, 'vf-viewport');
-    const stage = appendDiv(viewport, 'vf-stage');
-    const backdrop = appendDiv(stage, 'vf-backdrop');
-    const haze = appendDiv(stage, 'vf-haze');
-    const shadow = appendDiv(stage, 'vf-shadow');
-    const standIn = appendDiv(stage, 'vf-stand-in');
-    const parts = standInPartNames(spec.shot.subject.primitive).map((name) => appendDiv(standIn, `vf-part vf-part-${name}`));
-    const geometry = stageGeometry(spec);
-    const motes = moteField(spec.shot, geometry).map((mote) => ({ mote, element: appendDiv(stage, 'vf-mote') }));
+    const stage = spec.plate === 'text' ? undefined : buildStage(spec, root);
     const overlay = appendDiv(root, 'vf-text');
     const texts = spec.shot.text.map((element) => buildText(overlay, element));
-    this.built = { spec, geometry, rig: shotLightingRig(spec.shot.lighting), viewport, stage, backdrop, haze, shadow, standIn, parts, motes, texts };
+    this.built = { spec, stage, texts };
     setStyle(overlay, textOverlayStyle());
   }
 
@@ -99,8 +107,8 @@ export class HtmlLane implements LaneModule {
     if (built === undefined) throw new Error('The html lane has not been initialised.');
     const camera = built.spec.camera[frame];
     if (camera === undefined) throw new Error(`Frame ${String(frame)} has no baked camera; the shot has ${String(built.spec.camera.length)} frames.`);
-    renderStage(built, camera);
-    for (const text of built.texts) renderText(built, text, frame);
+    if (built.stage !== undefined) renderStage(built.spec, built.stage, camera);
+    for (const text of built.texts) renderText(built.spec, text, frame);
   }
 
   /**
@@ -130,6 +138,20 @@ export class HtmlLane implements LaneModule {
   }
 }
 
+/** Builds the viewport, the stage and its plates, the stand-in and the motes under the root. */
+function buildStage(spec: ShotPageSpec, root: HTMLElement): StageElements {
+  const viewport = appendDiv(root, 'vf-viewport');
+  const stage = appendDiv(viewport, 'vf-stage');
+  const backdrop = appendDiv(stage, 'vf-backdrop');
+  const haze = appendDiv(stage, 'vf-haze');
+  const shadow = appendDiv(stage, 'vf-shadow');
+  const standIn = appendDiv(stage, 'vf-stand-in');
+  const parts = standInPartNames(spec.shot.subject.primitive).map((name) => appendDiv(standIn, `vf-part vf-part-${name}`));
+  const geometry = stageGeometry(spec);
+  const motes = moteField(spec.shot, geometry).map((mote) => ({ mote, element: appendDiv(stage, 'vf-mote') }));
+  return { geometry, rig: shotLightingRig(spec.shot.lighting), viewport, stage, backdrop, haze, shadow, standIn, parts, motes };
+}
+
 /** Builds the box, plate and spans of a text element; words are separated by spaces so they wrap as text. */
 function buildText(overlay: HTMLElement, element: TextElement): TextElements {
   const box = appendDiv(overlay, `vf-text-box vf-role-${element.role}`);
@@ -145,8 +167,8 @@ function buildText(overlay: HTMLElement, element: TextElement): TextElements {
 }
 
 /** The stage for one camera frame: viewport, stage matrix, plates, stand-in and motes. */
-function renderStage(built: Built, camera: CameraFrame): void {
-  const { spec, geometry, rig } = built;
+function renderStage(spec: ShotPageSpec, built: StageElements, camera: CameraFrame): void {
+  const { geometry, rig } = built;
   const palette = spec.look.palette;
   setStyle(built.viewport, viewportStyle(spec, camera, geometry, rig, palette));
   setStyle(built.stage, stageStyle(spec, camera, geometry));
@@ -163,8 +185,7 @@ function renderStage(built: Built, camera: CameraFrame): void {
 }
 
 /** One text element at a frame: hidden entirely before and after it, otherwise its box, plate and every span restyled. */
-function renderText(built: Built, text: TextElements, frame: number): void {
-  const { spec } = built;
+function renderText(spec: ShotPageSpec, text: TextElements, frame: number): void {
   const states = textSpanStates(text.element, frame, spec);
   const boxStyle = textBoxStyle(text.element, spec, spec.look);
   setStyle(text.box, textElementVisible(states) ? boxStyle : { ...boxStyle, display: 'none' });

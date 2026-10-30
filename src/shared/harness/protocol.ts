@@ -15,6 +15,14 @@ import type { Shot } from '../contracts/shot-spec.ts';
 export type BrowserLane = 'html' | 'three';
 
 /**
+ * What a page renders of a shot (ADR 0008 decision 4): the picture (the
+ * whole frame, as every lane renders it) or the text plate alone (the html
+ * lane's text overlay over a transparent page, captured with alpha and
+ * composited over the graded picture of a three or blender shot).
+ */
+export type Plate = 'picture' | 'text';
+
+/**
  * Everything a page needs to render every frame of one shot as a pure
  * function of the frame number: the shot and its look, the frame size and
  * rate, the camera baked per frame (index = frame), the base distance the
@@ -23,6 +31,8 @@ export type BrowserLane = 'html' | 'three';
  */
 export interface ShotPageSpec {
   readonly lane: BrowserLane;
+  /** Which plate the page renders; the three lane always draws the picture and ignores it. */
+  readonly plate: Plate;
   readonly fps: number;
   readonly width: number;
   readonly height: number;

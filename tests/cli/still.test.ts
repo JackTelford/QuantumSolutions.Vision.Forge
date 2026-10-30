@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -12,23 +13,35 @@ import { MemoryLogger } from '../../src/cli/logger.ts';
 import type { CliResult } from '../../src/cli/result.ts';
 import { BlenderRenderError } from '../../src/errors/blender-errors.ts';
 import { readJsonFile, writeJsonAtomic } from '../../src/fs/atomic-json.ts';
+import { jobFileNames } from '../../src/plan/job.ts';
 import { ChildProcessRunner } from '../../src/process/child-process-runner.ts';
+import { finishStill } from '../../src/render/finish-still.ts';
+import { readManifest } from '../../src/render/manifest.ts';
 import { gateReportPath } from '../../src/render/still-gate.ts';
 import type { StillGateReport } from '../../src/render/still-gate.ts';
 import type { Job } from '../../src/shared/contracts/job.ts';
+import type { LookBible } from '../../src/shared/contracts/look-bible.ts';
 import type { ShotSpec } from '../../src/shared/contracts/shot-spec.ts';
 import { blenderCommand } from '../../src/tools/blender.ts';
+import { findFfmpeg } from '../../src/tools/ffmpeg.ts';
 import { writeToolsManifest } from '../../src/tools/tools-manifest.ts';
 import { FakeBlenderRunner } from '../fakes/fake-blender-runner.ts';
 import { preferTestBrowserInManifest, testBrowser } from '../fakes/test-browser.ts';
 import { planBrief, planLook, planShotSpec, planTreatment } from '../plan/fixtures.ts';
 import { edgeExample, toolsManifestExample } from '../render/fixtures.ts';
-import { mutated } from '../schema/documents/examples.ts';
+import { hex64, mutated, textExample } from '../schema/documents/examples.ts';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const cliPath = join(repoRoot, 'scripts', 'cli.ts');
 const runner = new ChildProcessRunner();
 const never = new AbortController().signal;
+
+/** The average luma of a `w:h:x:y` region of a PNG, from signalstats, as the gate and the assembler tests read frames. */
+function regionLuma(ffmpegPath: string, pngPath: string, crop: string): number {
+  const result = spawnSync(ffmpegPath, ['-hide_banner', '-loglevel', 'info', '-i', pngPath, '-vf', `crop=${crop},signalstats,metadata=print:key=lavfi.signalstats.YAVG`, '-f', 'null', '-'], { shell: false, timeout: 60_000 });
+  assert.equal(result.status, 0, result.stderr.toString('utf8'));
+  return Number.parseFloat(/lavfi\.signalstats\.YAVG=([0-9.]+)/.exec(result.stderr.toString('utf8'))?.[1] ?? 'NaN');
+}
 
 interface CliRun {
   readonly exitCode: number | null;
@@ -59,6 +72,7 @@ describe('still command helpers', () => {
     const paths = stillPaths('C:\\j', 's03', 2);
     assert.equal(paths.still, join('C:\\j', 'stills', 's03-r2.png'));
     assert.equal(paths.raw, join('C:\\j', 'stills', 's03-r2.raw.png'));
+    assert.equal(paths.text, join('C:\\j', 'stills', 's03-r2.text.png'));
     assert.equal(scaledStillPath(paths.still, 2), join('C:\\j', 'stills', 's03-r2-2x.png'));
   });
 });
@@ -190,8 +204,12 @@ describe('still command on a blender shot through a fake Blender', () => {
     assert.deepEqual(readJsonFile(join(jobDir, 'job.json')), before);
   });
 
-  it('renders the still with the first rung of the ladder, grades it, runs the gate, pins eevee on opengl and re-keys the shot without caching the frame', async () => {
-    const planned = (readJsonFile(join(jobDir, 'job.json')) as Job).shots[1]!;
+  it('renders the still with the first rung of the ladder, grades it, runs the gate, pins eevee on opengl, re-keys the shot without caching the frame, and drops a text plate an earlier round recorded for a shot that has none', async () => {
+    const jobPath = join(jobDir, 'job.json');
+    const planned = (readJsonFile(jobPath) as Job).shots[1]!;
+    // As if the shot's title had been removed after a round rendered its plate: the stale plate must not survive onto the assembly.
+    const stale = readJsonFile(jobPath) as Job;
+    writeJsonAtomic(jobPath, { ...stale, shots: stale.shots.map((shot) => (shot.id === 's02' ? { ...shot, textKey: hex64('e'), textManifestPath: join(dataDir, 'cache', hex64('e'), 'manifest.json') } : shot)) });
     const runner = new FakeBlenderRunner();
     const log = new MemoryLogger();
     const output = await runStill(runner, [], log);
@@ -208,11 +226,14 @@ describe('still command on a blender shot through a fake Blender', () => {
     const run = runner.blenderRuns[0]!;
     assert.deepEqual(run.args.slice(0, 7), ['-b', '--factory-startup', '--disable-autoexec', '-noaudio', '--offline-mode', '--gpu-backend', 'opengl']);
     assert.equal(run.env?.['BLENDER_USER_RESOURCES'], join(dataDir, 'blender-user'));
-    const job = readJsonFile(join(jobDir, 'job.json')) as Job;
+    const job = readJsonFile(jobPath) as Job;
     assert.equal(job.status, 'stills');
     assert.equal(job.shots[1]?.status, 'still-rendered');
     assert.equal(job.shots[1]?.rounds, 1);
     assert.notEqual(job.shots[1]?.key, planned.key, 'the key changes once at the gate');
+    assert.equal(job.shots[1]?.textKey, undefined, 'a shot without text records no text plate, whatever an earlier round recorded');
+    assert.equal(job.shots[1]?.textManifestPath, undefined);
+    assert.equal(data.textStillPath, null);
     const spec = readJsonFile(join(jobDir, 'shot-spec.json')) as ShotSpec;
     assert.deepEqual(spec.shots[1]?.renderProfile, data.renderProfile);
     assert.ok(log.messages.some((message) => /blender ladder for 480x270: eevee-opengl, eevee-vulkan, cycles-OPTIX, cycles-CUDA, cycles-CPU/.test(message)), log.messages.join('\n'));
@@ -287,7 +308,45 @@ describe('still command on the real browser at 480x270', { skip: skipIntegration
     assert.equal(data.round, 1);
     assert.equal(data.passed, true);
     assert.equal(data.frame, 26);
+    assert.equal(data.textStillPath, null, 'an html shot draws its text on its own picture');
+    assert.ok(!existsSync(paths.text));
+    assert.equal(job.shots[2]?.textKey, undefined);
     assert.deepEqual(run.result.artifacts, [paths.still]);
     assert.deepEqual(run.result.evidence, [gateReportPath(paths.still), paths.still]);
+  });
+
+  it('renders the text plate of a three shot with text beside its picture, lays its words over the graded still, passes the gate on the composite and records the plate on the job', async () => {
+    const spec = readJsonFile(join(jobDir, 'shot-spec.json')) as ShotSpec;
+    const title = { ...textExample, outFrame: 100 };
+    writeJsonAtomic(join(jobDir, 'shot-spec.json'), mutated(spec, (copy) => { copy.shots[0]!.text = [title]; copy.shots[0]!.renderProfile = null; }));
+    const run = await cli(['still', '--job', jobDir, '--shot', 's01'], dataDir, 300_000);
+    const paths = stillPaths(jobDir, 's01', 1);
+    // The fixture's near-white title over the dark three picture clears the gate at 480x270 (measured 2026-10-29); a failure here names its check.
+    assert.equal(run.exitCode, 0, `${JSON.stringify(run.result.errors)}\n${run.stderr}`);
+    for (const path of [paths.still, paths.raw, paths.text, gateReportPath(paths.still)]) assert.ok(existsSync(path), path);
+    // The same raw frame graded without the plate: the title box must be brighter on the composite than on the bare grade, so the words are on the still and not only in the cache.
+    const ffmpegPath = findFfmpeg()?.path;
+    assert.ok(ffmpegPath !== undefined, 'ffmpeg is installed (doctor passed)');
+    const bare = join(dir, 's01-bare.png');
+    await finishStill(runner, ffmpegPath, paths.raw, bare, readJsonFile(join(jobDir, jobFileNames.look)) as LookBible, never);
+    const box = `${Math.round(title.box.w * 480)}:${Math.round(title.box.h * 270)}:${Math.round(title.box.x * 480)}:${Math.round(title.box.y * 270)}`;
+    const composite = regionLuma(ffmpegPath, paths.still, box);
+    const graded = regionLuma(ffmpegPath, bare, box);
+    assert.ok(composite > graded + 10, `the title box reads Y ${composite} on the composite against ${graded} on the bare grade`);
+    const job = readJsonFile(join(jobDir, 'job.json')) as Job;
+    const shot = job.shots[0]!;
+    assert.equal(shot.status, 'still-rendered');
+    assert.match(shot.textKey ?? '', /^[0-9a-f]{64}$/);
+    assert.notEqual(shot.textKey, shot.key, 'the plate has a key of its own');
+    assert.ok(shot.textManifestPath !== undefined && existsSync(shot.textManifestPath), 'the plate\'s manifest is recorded');
+    const manifest = readManifest(shot.textManifestPath);
+    assert.equal(manifest.lane, 'html');
+    assert.equal(manifest.plate, 'text');
+    assert.equal(manifest.key, shot.textKey);
+    assert.equal(manifest.frames.length, 1);
+    assert.ok(existsSync(join(dataDir, 'cache', shot.textKey ?? '', 'frames')), 'the plate frame is cached under its key');
+    const report = readJsonFile(gateReportPath(paths.still)) as StillGateReport;
+    assert.ok(report.checks.find((check) => check.id === 'text-contrast')?.measured !== null, 'the gate measured the contrast behind the title on the composite');
+    assert.equal((run.result.data as StillData).textStillPath, paths.text);
   });
 });

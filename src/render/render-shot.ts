@@ -15,7 +15,7 @@ import { existsSync } from 'node:fs';
 import type { Logger } from '../cli/logger.ts';
 import { ensureDirectory } from '../fs/paths.ts';
 import type { BrowserRenderer, CapturedFrame } from '../harness/types.ts';
-import type { EnvironmentRef, InitReport } from '../shared/harness/protocol.ts';
+import type { EnvironmentRef, InitReport, Plate } from '../shared/harness/protocol.ts';
 import type { ProcessRunner } from '../process/process-runner.ts';
 import type { RenderSpec } from '../shared/camera/types.ts';
 import type { LookBible } from '../shared/contracts/look-bible.ts';
@@ -56,6 +56,8 @@ export interface RenderShotInputs {
   readonly onInit?: (report: InitReport) => void;
   /** The installed environment map of the shot, or null for the lane's built-in one. */
   readonly environment?: EnvironmentRef | null;
+  /** The plate to render; the picture when absent. A text plate renders in the html lane whatever the shot's lane and its manifest says so (ADR 0008 decision 4). */
+  readonly plate?: Plate;
 }
 
 /** What renderShot reports. */
@@ -92,7 +94,8 @@ export async function resumableManifest(inputs: RenderShotInputs, path: string):
   const fresh = (): Promise<RenderManifest> => newManifest({
     shotId: inputs.shot.id,
     key: inputs.key,
-    lane: inputs.shot.lane,
+    lane: inputs.plate === 'text' ? 'html' : inputs.shot.lane,
+    ...(inputs.plate === undefined ? {} : { plate: inputs.plate }),
     renderProfile: inputs.renderer.profile,
     fingerprint: inputs.fingerprint,
     fps: inputs.spec.fps,
@@ -195,7 +198,7 @@ export async function renderShot(inputs: RenderShotInputs): Promise<RenderShotRe
       };
       const request = {
         pageUrl: inputs.page.pageUrl(inputs.harnessUrl),
-        spec: buildShotPageSpec(inputs.shot, inputs.look, inputs.spec, inputs.environment ?? null),
+        spec: buildShotPageSpec(inputs.shot, inputs.look, inputs.spec, inputs.environment ?? null, inputs.plate ?? 'picture'),
         frames: toCapture,
         framePath: (frame: number): string => framePath(framesDirectory, frame),
         ...(inputs.onInit === undefined ? {} : { onInit: inputs.onInit }),

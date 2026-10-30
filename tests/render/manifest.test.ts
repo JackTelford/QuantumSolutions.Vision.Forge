@@ -76,3 +76,14 @@ describe('manifest files', () => {
     assert.throws(() => readManifest(path), (error: unknown) => error instanceof SchemaValidationError && /\/status/.test(error.message));
   });
 });
+
+describe('render manifest plates', () => {
+  it('records the plate when the inputs name one and leaves it out for a picture, so older manifests read unchanged', async () => {
+    const picture = await newManifest(manifestInputs());
+    assert.equal('plate' in picture, false);
+    const text = await newManifest(manifestInputs({ lane: 'html', plate: 'text' }));
+    validateDocument('render-manifest', text);
+    assert.equal(text.plate, 'text');
+    assert.equal(text.lane, 'html');
+  });
+});

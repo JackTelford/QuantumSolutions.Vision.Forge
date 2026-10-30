@@ -22,6 +22,7 @@ export function pageSpecFor(shot: Shot): ShotPageSpec {
   const base = solveBasePose(shot, spec);
   return {
     lane: 'html',
+    plate: 'picture',
     fps: spec.fps,
     width: spec.width,
     height: spec.height,

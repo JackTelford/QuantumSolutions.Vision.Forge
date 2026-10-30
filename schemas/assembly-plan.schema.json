@@ -82,6 +82,27 @@
           "type": "integer",
           "minimum": 1,
           "description": "Length of the clip in frames at the plan's fps, for example 90 for three seconds at 30 fps. A video source longer than this is trimmed."
+        },
+        "overlay": {
+          "type": ["object", "null"],
+          "description": "The clip's text plate (ADR 0008, decision 4): a numbered PNG sequence with alpha, composited over the clip's graded picture before the transitions and the grain. Null or absent when the clip has none.",
+          "additionalProperties": false,
+          "required": ["kind", "path", "startNumber"],
+          "properties": {
+            "kind": {
+              "const": "frames",
+              "description": "Always \"frames\": a text plate is a PNG sequence named by a printf pattern."
+            },
+            "path": {
+              "type": "string",
+              "description": "Absolute printf pattern of the text plate's frames, for example C:/vf/cache/<textKey>/frames/f%06d.png."
+            },
+            "startNumber": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "First frame number of the pattern, for example 0."
+            }
+          }
         }
       }
     },

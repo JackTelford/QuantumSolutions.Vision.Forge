@@ -86,6 +86,38 @@ export async function makeSyntheticSources(ffmpegPath: string, dir: string): Pro
   return { dir, testsrcPattern, colorPattern, largePattern, videoPath, anamorphicVideoPath, narration, music, srtPath };
 }
 
+/** Where a synthetic text plate's pixels are opaque, in pixels of the synthetic size. */
+export interface PlateBox {
+  readonly x: number;
+  readonly y: number;
+  readonly w: number;
+  readonly h: number;
+}
+
+/** The opaque box of makeAlphaPlate: white, inside the frame, away from the edges. */
+export const plateBox: PlateBox = { x: 40, y: 40, w: 80, h: 40 };
+
+/**
+ * Writes 30 PNG frames with alpha under `dir`, f0001.png onward: opaque
+ * white inside plateBox and fully transparent elsewhere, the way the html
+ * lane's text plate is captured. drawbox leaves alpha alone, so the alpha
+ * plane is written with geq.
+ */
+export async function makeAlphaPlate(ffmpegPath: string, dir: string): Promise<string> {
+  mkdirSync(dir, { recursive: true });
+  const pattern = join(dir, 'f%04d.png');
+  const { x, y, w, h } = plateBox;
+  const alpha = `if(between(X,${x},${x + w - 1})*between(Y,${y},${y + h - 1}),255,0)`;
+  await ffmpeg(ffmpegPath, ['-y', '-loglevel', 'error', '-f', 'lavfi', '-i', `color=c=white:size=${sourceSize.width}x${sourceSize.height}:rate=${sourceFps}:duration=1,format=rgba,geq=r='255':g='255':b='255':a='${alpha}'`, '-frames:v', String(sourceFrames), '-pix_fmt', 'rgba', pattern]);
+  return pattern;
+}
+
+/** The average luma (limited range) of a `w:h:x:y` region of frame `index` of a video, from signalstats. */
+export async function regionLuma(ffmpegPath: string, videoPath: string, index: number, crop: string): Promise<number> {
+  const result = await ffmpeg(ffmpegPath, ['-loglevel', 'info', '-i', videoPath, '-vf', `select=eq(n\\,${index}),crop=${crop},signalstats,metadata=print:key=lavfi.signalstats.YAVG`, '-frames:v', '1', '-f', 'null', '-']);
+  return Number.parseFloat(/lavfi\.signalstats\.YAVG=([0-9.]+)/.exec(result.stderr)?.[1] ?? 'NaN');
+}
+
 /** A clip of the synthetic length. */
 export function clip(id: string, kind: SourceKind, path: string, durationFrames = sourceFrames): Clip {
   return { id, source: { kind, path, startNumber: kind === 'frames' ? 1 : 0 }, durationFrames };

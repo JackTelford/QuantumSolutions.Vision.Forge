@@ -8,7 +8,7 @@ import { MemoryLogger } from '../../src/cli/logger.ts';
 import type { AssemblyPlan } from '../../src/shared/contracts/assembly-plan.ts';
 import { generateCube, identityGrade } from '../../src/shared/grade/grade.ts';
 import { findFfmpeg, findFfprobe } from '../../src/tools/ffmpeg.ts';
-import { clip, compare, countFrames, extractFrame, fileHash, integratedLoudness, makePlan, makeSyntheticSources, never, peakLuma, probeEntry, runner } from './support.ts';
+import { clip, compare, countFrames, extractFrame, fileHash, integratedLoudness, makeAlphaPlate, makePlan, makeSyntheticSources, never, peakLuma, plateBox, probeEntry, regionLuma, runner } from './support.ts';
 import type { SyntheticSources } from './support.ts';
 
 const ffmpeg = findFfmpeg();
@@ -164,6 +164,29 @@ describe('Assembler with the installed ffmpeg', { skip: ffmpeg === undefined || 
     assert.ok(top < 40, `the widened 4:3-pixel clip is letterboxed: the top 20 rows peak at Y ${top}`);
     const middle = await peakLuma(ffmpeg?.path ?? '', frame, '320:20:0:80');
     assert.ok(middle > 100, `the picture itself is there: the middle rows peak at Y ${middle}`);
+  });
+
+  it('(k) a text plate with an alpha hole lands on top of its clip\'s graded picture, grain and all, and not on the clip without one', async () => {
+    const plate = await makeAlphaPlate(ffmpeg?.path ?? '', join(dir, 'src', 'plate'));
+    const cube = join(dir, 'identity-k.cube');
+    writeFileSync(cube, generateCube(identityGrade), 'utf8');
+    const plated = { ...clip('a', 'frames', sources.colorPattern), overlay: { kind: 'frames' as const, path: plate, startNumber: 1 } };
+    const plan = makePlan(sources, out('k-plated.mp4'), {
+      clips: [plated, { ...clip('b', 'frames', sources.colorPattern), overlay: null }],
+      transitions: [{ afterClipId: 'a', type: 'dissolve', frames: 10 }],
+      grade: { cubePath: cube, vignetteAmount: 0.25, vignetteSoftness: 0.5, grainAmount: 0.15, grainSeed: 7 },
+    });
+    assert.equal(await assembleAndCount(plan), 50);
+    const { x, y, w, h } = plateBox;
+    const inside = `${w}:${h}:${x}:${y}`;
+    const beside = `${w}:${h}:${x + 160}:${y + 80}`;
+    const path = ffmpeg?.path ?? '';
+    const onPlate = await regionLuma(path, plan.output.path, 5, inside);
+    assert.ok(onPlate > 200, `the white plate reads Y ${onPlate} on frame 5 of the plated clip`);
+    const offPlate = await regionLuma(path, plan.output.path, 5, beside);
+    assert.ok(offPlate < 120, `the blue picture beside the plate reads Y ${offPlate}`);
+    const bareClip = await regionLuma(path, plan.output.path, 45, inside);
+    assert.ok(bareClip < 120, `the clip without a plate reads Y ${bareClip} where the other clip's plate was`);
   });
 
   it('reads the delivery back through ffprobe with the plan size, rate, BT.709 matrix and square pixels', async () => {

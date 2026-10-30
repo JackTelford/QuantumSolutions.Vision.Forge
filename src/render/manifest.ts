@@ -8,7 +8,7 @@
  */
 import { readJsonFile, writeJsonAtomic } from '../fs/atomic-json.ts';
 import { validateDocument } from '../schema/validator.ts';
-import type { Lane, RenderManifest } from '../shared/contracts/render-manifest.ts';
+import type { Lane, Plate, RenderManifest } from '../shared/contracts/render-manifest.ts';
 import type { RenderProfile } from '../shared/contracts/shot-spec.ts';
 import { toolVersionsHash } from '../harness/fingerprint.ts';
 
@@ -27,6 +27,8 @@ export interface ManifestInputs {
   /** The shot key, 64 lowercase hex characters; names the cache folder. */
   readonly key: string;
   readonly lane: Lane;
+  /** What the frames hold; absent means the picture (ADR 0008 decision 4). */
+  readonly plate?: Plate;
   readonly renderProfile: RenderProfile;
   readonly fingerprint: ManifestFingerprint;
   readonly fps: number;
@@ -56,6 +58,7 @@ export async function newManifest(inputs: ManifestInputs): Promise<RenderManifes
     shotId: inputs.shotId,
     key: inputs.key,
     lane: inputs.lane,
+    ...(inputs.plate === undefined ? {} : { plate: inputs.plate }),
     renderProfile: { ...inputs.renderProfile },
     fingerprint: structuredClone(inputs.fingerprint),
     fps: inputs.fps,

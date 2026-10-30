@@ -8,6 +8,13 @@
  */
 export type Lane = 'html' | 'three' | 'blender';
 /**
+ * What the frames hold (ADR 0008, decision 4): picture (the whole frame, the default when absent) or text (the html lane's text overlay alone over transparency, rendered under its own key for a three or blender shot and composited over the graded picture).
+ *
+ * This interface was referenced by `RenderManifest`'s JSON-Schema
+ * via the `definition` "Plate".
+ */
+export type Plate = 'picture' | 'text';
+/**
  * Whether the GPU (hardware) or a CPU rasterizer such as SwiftShader (software) produced the pixels.
  *
  * This interface was referenced by `RenderManifest`'s JSON-Schema
@@ -43,6 +50,7 @@ export interface RenderManifest {
    */
   key: string;
   lane: Lane;
+  plate?: Plate;
   /**
    * How the lane rendered: the engine, its backend and whether a hardware or software renderer produced the pixels.
    */
@@ -177,6 +185,9 @@ export const LaneValues = ['html', 'three', 'blender'] as const;
 
 /** Every Renderer value the schema allows, in schema order. */
 export const RendererValues = ['hardware', 'software'] as const;
+
+/** Every Plate value the schema allows, in schema order. */
+export const PlateValues = ['picture', 'text'] as const;
 
 /** Every RenderStatus value the schema allows, in schema order. */
 export const RenderStatusValues = ['rendering', 'complete', 'failed'] as const;
