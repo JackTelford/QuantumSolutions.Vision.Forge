@@ -2,6 +2,13 @@
 
 One short note per milestone for the owner, newest first: what finished, what to look at, what changed underfoot. The full report with evidence is in `handoff.md`.
 
+## M8 finished (2026-10-29): v0.1.0
+
+- The plugin installs from the clone's marketplace manifest (`claude plugin install vision-forge@quantum-solutions`: one skill, about 220 always-on tokens) and is installed on this machine at scope `user` for your testing. `package.json` says 0.1.0; no git tag was made without your word.
+- Start with `docs/owner-test-guide.md`: the machine's own checks (ten minutes), the shipped product film through the commands (twenty), then the three blind-test prompts through Claude Code with what Claude must do at each step and what "good" looks like.
+- README's limits are final for this pass: stand-in subjects, a job keyed on its documents, one text plate per shot, two of the three blind-test pieces still to be produced.
+- Everything else is in `docs/handoff.md`, newest first, with a review guide of five files per milestone.
+
 ## M7 finished (2026-10-29): the first film
 
 - The first piece of `docs/blind-test.md`, a 15-second product film, was made from its prompt through the commands only: four shots on the blender lane, a text plate for the name, 465 frames in 687 s, 31 minutes from `doctor` to `qa` including six planning rounds. Its documents ship as `skills/cinematic-studio/examples/product-film/`; the record with every command, timing, still round and honest viewing note is `docs/evidence/m7/README.md`. Look at `delivery-sheet.png` there, and play the delivery when you run it yourself.

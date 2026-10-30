@@ -2,7 +2,7 @@
 
 Follow `AGENTS.md`. It holds the working rules, the code rules and the milestone report format.
 
-- Current state and open items: `docs/handoff.md`; one short note per milestone for the owner: `docs/milestone-notes.md`.
+- Current state and open items: `docs/handoff.md`; one short note per milestone for the owner: `docs/milestone-notes.md`; how the owner tests it: `docs/owner-test-guide.md`.
 - Decisions and their reasons: `docs/adr/`.
 - Research with links and status: `docs/research.md`.
 - The skill itself: `skills/cinematic-studio/SKILL.md`; it calls only `node scripts/cli.ts`.

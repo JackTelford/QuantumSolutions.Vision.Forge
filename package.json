@@ -1,6 +1,6 @@
 {
   "name": "vision-forge",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "Claude Code skill that turns an English prompt into a finished video or still using only code: HTML/CSS, Three.js and Blender rendered deterministically, assembled and checked with ffmpeg.",
   "license": "Apache-2.0",
