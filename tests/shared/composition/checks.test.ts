@@ -4,6 +4,7 @@ import { cameraFrameAt } from '../../../src/shared/camera/bake.ts';
 import type { CameraFrame } from '../../../src/shared/camera/types.ts';
 import {
   compositionProblems,
+  cameraAboveFloor,
   compositionWarnings,
   focusWarnings,
   hasOrphan,
@@ -151,6 +152,17 @@ describe('compositionWarnings', () => {
     const modest = makeText({ id: 't2', role: 'caption', box: { x: 0.55, y: 0.55, w: 0.3, h: 0.03 } });
     assert.deepEqual(compositionWarnings(makeShot({ text: [title, modest] })), []);
     assert.deepEqual(compositionWarnings(makeShot({ text: [title] })), []);
+  });
+});
+
+describe('cameraAboveFloor', () => {
+  it('reports a low angle whose camera sits under the stage floor, naming the height, and passes an eye-level camera', () => {
+    const low = makeShot({ angle: 'low', subject: { ...makeShot({}).subject, boundsM: { w: 0.06, h: 0.16, d: 0.06 } } });
+    const lowProblems = cameraAboveFloor(low, solvedFrame(low));
+    assert.equal(lowProblems.length, 1, lowProblems.join('; '));
+    assert.match(lowProblems[0] ?? '', /below the stage floor at this angle .* raise the angle to eye/);
+    assert.deepEqual(cameraAboveFloor(makeShot({}), solvedFrame(makeShot({}))), []);
+    assert.ok(problemsOf(low).some((problem) => /below the stage floor/.test(problem)), 'the check is one of the composition problems');
   });
 });
 

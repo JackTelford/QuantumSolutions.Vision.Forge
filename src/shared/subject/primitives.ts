@@ -88,11 +88,13 @@ export function subjectParts(primitive: Primitive, bounds: BoundsM): readonly Su
       const capHeight = h * bottleCapHeightFraction;
       const neckHeight = h - bodyHeight - capHeight;
       const bodyCentre = -h / 2 + bodyHeight / 2;
-      const neckCentre = -h / 2 + bodyHeight + neckHeight / 2;
+      // The neck runs a tenth of the cap's height into the cap, so the two faces never coincide (a coincident pair showed as a notch at 100 percent in the first product film's 4K still).
+      const neckOverlap = capHeight * 0.1;
+      const neckCentre = -h / 2 + bodyHeight + (neckHeight + neckOverlap) / 2;
       const capCentre = h / 2 - capHeight / 2;
       return [
         { name: 'body', shape: 'cylinder', radiusM: radius, heightM: bodyHeight, offset: at(0, bodyCentre, 0), material: 'body' },
-        { name: 'neck', shape: 'cylinder', radiusM: radius * bottleNeckWidthFraction, heightM: neckHeight, offset: at(0, neckCentre, 0), material: 'body' },
+        { name: 'neck', shape: 'cylinder', radiusM: radius * bottleNeckWidthFraction, heightM: neckHeight + neckOverlap, offset: at(0, neckCentre, 0), material: 'body' },
         { name: 'cap', shape: 'cylinder', radiusM: radius * bottleNeckWidthFraction * 1.15, heightM: capHeight, offset: at(0, capCentre, 0), material: 'cap' },
       ];
     }

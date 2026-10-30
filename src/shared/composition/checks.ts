@@ -17,6 +17,7 @@ import type { LookBible } from '../contracts/look-bible.ts';
 import type { Shot, TextElement, TextRole } from '../contracts/shot-spec.ts';
 import { fitTextSize } from '../typography/fit.ts';
 import { framingPoint, subjectAnchor, verticalPlacement } from './framing.ts';
+import { floorY } from '../three/stage.ts';
 import { solveBasePose } from './solver.ts';
 import { anchorToleranceFraction, boxesOverlap, gridPoint, insideBox, safeAreas } from './grid.ts';
 import { headroomRange, shotSizeRanges } from './sizes.ts';
@@ -170,6 +171,7 @@ export function compositionProblems(shot: Shot, spec: RenderSpec, frame: CameraF
   } else {
     problems.push(...subjectInsideActionSafe(shot, subjectBox));
   }
+  problems.push(...cameraAboveFloor(shot, frame));
   problems.push(...anchorOnGrid(shot, frame, aspect));
   if (subjectBox !== null) {
     problems.push(...textBoxesClear(shot, subjectBox));
@@ -177,6 +179,23 @@ export function compositionProblems(shot: Shot, spec: RenderSpec, frame: CameraF
   }
   for (const text of shot.text) problems.push(...textLegible(text, spec, typography));
   return problems;
+}
+
+/** How far above the stage floor the camera must stay, in metres; the lens sees the floor's edge below this. */
+export const cameraFloorMarginM = 0.02;
+
+/**
+ * A camera under the stage floor sees nothing (the first product film's low
+ * arc on a 16 cm bottle put the camera 41 cm under it and every Blender rung
+ * rendered black): the elevation of `low` is measured around the subject's
+ * anchor, so a short product at a long distance drops the camera below
+ * y = -h/2. The problem names the height and says what to change.
+ */
+export function cameraAboveFloor(shot: Shot, frame: CameraFrame): readonly string[] {
+  const floor = floorY(shot.subject.boundsM);
+  const height = frame.position.y - floor;
+  if (height >= cameraFloorMarginM) return [];
+  return [`The camera sits ${(-height * 100).toFixed(0)} cm below the stage floor at this angle (${(frame.position.y * 100).toFixed(0)} cm against a floor at ${(floor * 100).toFixed(0)} cm): raise the angle to eye, or use the thirds-bottom anchor for stature.`];
 }
 
 /** The area of a frame box as a fraction of the frame's area. */

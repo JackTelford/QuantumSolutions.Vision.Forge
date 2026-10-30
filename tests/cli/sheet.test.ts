@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import type { CliResult } from '../../src/cli/result.ts';
 import type { SheetData } from '../../src/cli/commands/sheet.ts';
 import { findFfmpeg, runFfmpeg } from '../../src/tools/ffmpeg.ts';
-import { ffprobePath, makeFramePngs, never, runner } from '../qa/synthetic-clips.ts';
+import { ffprobePath, makeBoxesClip, makeFramePngs, never, runner } from '../qa/synthetic-clips.ts';
 
 const ffmpeg = findFfmpeg();
 const hasDrawtext = ffmpeg !== undefined && spawnSync(ffmpeg.path, ['-hide_banner', '-filters'], { encoding: 'utf8' }).stdout.includes(' drawtext ');
@@ -67,6 +67,23 @@ describe('sheet command', { skip: skipWithoutDrawtext }, () => {
     const data = run.result.data as SheetData;
     assert.deepEqual([data.count, data.columns, data.rows, data.outputPath], [3, 3, 1, output]);
     assert.deepEqual(await dimensions(output), [3 * 320 + 2 * 6 + 24, 180 + 24]);
+  });
+
+  it('takes every nth frame of a video with --video and --every, labelled by frame number, under <out>/sheets/<name>-frames', async () => {
+    const clip = await makeBoxesClip(dataDir);
+    const run = await cli(['sheet', '--video', clip, '--every', '10', '--columns', '3'], dataDir);
+    assert.equal(run.exitCode, 0, run.stderr);
+    const data = run.result.data as SheetData;
+    assert.deepEqual([data.count, data.columns, data.rows], [3, 3, 1]);
+    assert.equal(data.outputPath, join(dataDir, 'out', 'sheets', 'boxes.png'));
+    assert.ok(existsSync(join(dataDir, 'out', 'sheets', 'boxes-frames', 'f000003.png')));
+    assert.match(run.stderr, /3 frames of boxes.mp4, one every 10/);
+    const both = await cli(['sheet', '--video', clip, '--frames', framesDir], dataDir);
+    assert.equal(both.exitCode, 2);
+    assert.match(both.result.errors[0]?.message ?? '', /--video does not go with --frames/);
+    const zero = await cli(['sheet', '--video', clip, '--every', '0'], dataDir);
+    assert.equal(zero.exitCode, 2);
+    assert.match(zero.result.errors[0]?.message ?? '', /--every must be a whole number/);
   });
 
   it('refuses to run without --frames and rejects a bad column count', async () => {

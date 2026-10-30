@@ -22,9 +22,9 @@ function plan(clips: readonly Clip[], transitions: readonly Transition[]): Assem
 }
 
 describe('xfadeNames', () => {
-  it('names an ffmpeg transition for every TransitionType but cut', () => {
+  it('names an ffmpeg transition for every TransitionType but cut, the dissolve as the linear cross-fade and never the noise dissolve', () => {
     const expected: Record<Exclude<(typeof TransitionTypeValues)[number], 'cut'>, string> = {
-      dissolve: 'dissolve', 'fade-black': 'fadeblack', 'fade-white': 'fadewhite', 'wipe-left': 'wipeleft', 'wipe-right': 'wiperight',
+      dissolve: 'fade', 'fade-black': 'fadeblack', 'fade-white': 'fadewhite', 'wipe-left': 'wipeleft', 'wipe-right': 'wiperight',
       'wipe-up': 'wipeup', 'wipe-down': 'wipedown', 'slide-left': 'slideleft', 'slide-right': 'slideright',
     };
     assert.deepEqual(xfadeNames, expected);
@@ -41,24 +41,24 @@ describe('secondsText', () => {
 });
 
 describe('joinClips', () => {
-  it('adds nothing for a single clip and points at its label', () => {
-    assert.deepEqual(joinClips(plan([clip('a', 30)], [])), { filters: [], label: '[c0]' });
+  it('adds nothing for a single clip and points at its plated label', () => {
+    assert.deepEqual(joinClips(plan([clip('a', 30)], [])), { filters: [], label: '[p0]' });
   });
 
   it('joins two clips with a cut by concat followed by fps', () => {
-    assert.deepEqual(joinClips(plan([clip('a', 30), clip('b', 30)], [])), { filters: ['[c0][c1]concat=n=2:v=1:a=0,fps=30[vout]'], label: '[vout]' });
-    assert.deepEqual(joinClips(plan([clip('a', 30), clip('b', 30)], [{ afterClipId: 'a', type: 'cut', frames: 5 }])).filters, ['[c0][c1]concat=n=2:v=1:a=0,fps=30[vout]']);
+    assert.deepEqual(joinClips(plan([clip('a', 30), clip('b', 30)], [])), { filters: ['[p0][p1]concat=n=2:v=1:a=0,fps=30[vout]'], label: '[vout]' });
+    assert.deepEqual(joinClips(plan([clip('a', 30), clip('b', 30)], [{ afterClipId: 'a', type: 'cut', frames: 5 }])).filters, ['[p0][p1]concat=n=2:v=1:a=0,fps=30[vout]']);
   });
 
   it('joins two clips with a dissolve by xfade whose offset is the first clip minus the overlap', () => {
     const joined = joinClips(plan([clip('a', 30), clip('b', 30)], [{ afterClipId: 'a', type: 'dissolve', frames: 10 }]));
-    assert.deepEqual(joined, { filters: ['[c0][c1]xfade=transition=dissolve:duration=0.333333:offset=0.666667[vout]'], label: '[vout]' });
+    assert.deepEqual(joined, { filters: ['[p0][p1]xfade=transition=fade:duration=0.333333:offset=0.666667[vout]'], label: '[vout]' });
   });
 
   it('folds three clips left with a cut then a wipe, accumulating the joined length', () => {
     const three = plan([clip('a', 30), clip('b', 30), clip('c', 30)], [{ afterClipId: 'b', type: 'wipe-left', frames: 15 }]);
     assert.deepEqual(joinClips(three), {
-      filters: ['[c0][c1]concat=n=2:v=1:a=0,fps=30[j1]', '[j1][c2]xfade=transition=wipeleft:duration=0.5:offset=1.5[vout]'],
+      filters: ['[p0][p1]concat=n=2:v=1:a=0,fps=30[j1]', '[j1][p2]xfade=transition=wipeleft:duration=0.5:offset=1.5[vout]'],
       label: '[vout]',
     });
     assert.equal(totalFrames(three), 75);
@@ -67,8 +67,8 @@ describe('joinClips', () => {
   it('subtracts earlier overlaps from later offsets', () => {
     const three = plan([clip('a', 30), clip('b', 30), clip('c', 30)], [{ afterClipId: 'a', type: 'wipe-left', frames: 15 }, { afterClipId: 'b', type: 'fade-black', frames: 15 }]);
     assert.deepEqual(joinClips(three).filters, [
-      '[c0][c1]xfade=transition=wipeleft:duration=0.5:offset=0.5[j1]',
-      '[j1][c2]xfade=transition=fadeblack:duration=0.5:offset=1[vout]',
+      '[p0][p1]xfade=transition=wipeleft:duration=0.5:offset=0.5[j1]',
+      '[j1][p2]xfade=transition=fadeblack:duration=0.5:offset=1[vout]',
     ]);
     assert.equal(totalFrames(three), 60);
   });

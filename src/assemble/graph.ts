@@ -1,16 +1,22 @@
 /**
- * Joins the normalized clips in order into one video stream. A cut (or no
+ * Joins the graded and plated clips (plate.ts) in order into one video stream. A cut (or no
  * transition entry) is a concat; anything else is an xfade whose offset is
  * the length of everything joined so far minus the overlap. The fold is
  * left to right, so N clips give one stream. Pure: builds strings.
  */
 import type { AssemblyPlan, Transition, TransitionType } from '../shared/contracts/assembly-plan.ts';
 import { frameToSeconds } from '../shared/frame-time.ts';
-import { clipLabel } from './normalize.ts';
+import { platedLabel } from './plate.ts';
 
-/** ffmpeg xfade transition names for every non-cut TransitionType. */
+/**
+ * ffmpeg xfade transition names for every non-cut TransitionType. The
+ * grammar's dissolve is the linear cross-fade, which xfade calls `fade`;
+ * xfade's own `dissolve` switches each pixel between the two sources at
+ * random over the overlap and speckled the first product film's hero-to-name
+ * join (docs/evidence/m7/README.md), so it is never used.
+ */
 export const xfadeNames: Readonly<Record<Exclude<TransitionType, 'cut'>, string>> = {
-  dissolve: 'dissolve',
+  dissolve: 'fade',
   'fade-black': 'fadeblack',
   'fade-white': 'fadewhite',
   'wipe-left': 'wipeleft',
@@ -57,10 +63,10 @@ export function transitionAfter(plan: AssemblyPlan, clipId: string): OverlapTran
  */
 export function joinClips(plan: AssemblyPlan): JoinedGraph {
   const first = plan.clips[0];
-  if (first === undefined) return { filters: [], label: clipLabel(0) };
-  if (plan.clips.length === 1) return { filters: [], label: clipLabel(0) };
+  if (first === undefined) return { filters: [], label: platedLabel(0) };
+  if (plan.clips.length === 1) return { filters: [], label: platedLabel(0) };
   const filters: string[] = [];
-  let current = clipLabel(0);
+  let current = platedLabel(0);
   let accumulatedFrames = first.durationFrames;
   for (let index = 1; index < plan.clips.length; index += 1) {
     const previous = plan.clips[index - 1];
@@ -69,11 +75,11 @@ export function joinClips(plan: AssemblyPlan): JoinedGraph {
     const transition = transitionAfter(plan, previous.id);
     const output = index === plan.clips.length - 1 ? joinedLabel : `[j${index}]`;
     if (transition === undefined) {
-      filters.push(`${current}${clipLabel(index)}concat=n=2:v=1:a=0,fps=${plan.fps}${output}`);
+      filters.push(`${current}${platedLabel(index)}concat=n=2:v=1:a=0,fps=${plan.fps}${output}`);
       accumulatedFrames += clip.durationFrames;
     } else {
       const offsetFrames = accumulatedFrames - transition.frames;
-      filters.push(`${current}${clipLabel(index)}xfade=transition=${xfadeNames[transition.type]}:duration=${secondsText(transition.frames, plan.fps)}:offset=${secondsText(offsetFrames, plan.fps)}${output}`);
+      filters.push(`${current}${platedLabel(index)}xfade=transition=${xfadeNames[transition.type]}:duration=${secondsText(transition.frames, plan.fps)}:offset=${secondsText(offsetFrames, plan.fps)}${output}`);
       accumulatedFrames += clip.durationFrames - transition.frames;
     }
     current = output;
