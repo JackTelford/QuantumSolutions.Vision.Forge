@@ -137,9 +137,10 @@ export function catalogueIds(): readonly string[] {
  * low-key family (split, rim-only, contre-jour, practical-glow, neon-rim)
  * takes Studio Small 03, whose dark room keeps the fill low; golden-hour
  * takes the Kloofendal sky; neon-night takes Moonless Golf. The record type
- * makes the compiler refuse a preset without an HDRI.
+ * makes the compiler refuse a preset without an HDRI. Exported so the MCP
+ * prompt can print the table for the directing model.
  */
-const hdriByLighting: Readonly<Record<LightingPreset, string>> = {
+export const hdriByLighting: Readonly<Record<LightingPreset, string>> = {
   'product-studio': 'studio_small_09',
   'three-point-soft': 'studio_small_09',
   'high-key': 'studio_small_09',
