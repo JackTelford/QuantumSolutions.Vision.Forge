@@ -20,7 +20,7 @@ The single source of truth for where this repository stands. Newest milestone fi
 | --- | --- | --- |
 | Type checks, house rules, schema drift, licenses, the suite | `npm run check` exit 0 (1,765 tests, 0 failures, 3 skipped) | run locally 2026-10-29 |
 | The plugin installs from the marketplace manifest | one skill, 220 always-on tokens, scope user | `claude plugin details vision-forge`, run 2026-10-29 |
-| Continuous integration | run RUN_ID_PLACEHOLDER: RESULT_PLACEHOLDER | GitHub Actions |
+| Continuous integration | run 40986817213 on 5dedc96: success on windows-2025 and ubuntu-24.04, Node 24 and 26 | GitHub Actions |
 
 ### Untested
 
@@ -78,7 +78,7 @@ The owner's three prompts, and the blind-test scoring. Then the follow-ups the m
 | QA after the fixes | eleven checks and four hero comparisons pass; the job is `delivered` | `docs/evidence/m7/README.md`, the slice's `qa/88f8e97b.qa.json` in the scratch job |
 | The cross-fade | frame 337 of the join at 100 percent, before (speckle) and after (a soft blend) | `docs/evidence/m7/dissolve-frame-0337-crop-100.png` (after) and the slice reviewer's crops (before) |
 | Stills and rounds | 13 stills of the final job; the first still of every shot in each of the six rounds | `stills-sheet.png`, `still-rounds-sheet.png` |
-| Continuous integration | run RUN_ID_PLACEHOLDER: RESULT_PLACEHOLDER | GitHub Actions |
+| Continuous integration | run 40986207645 on 09069a6: success on windows-2025 and ubuntu-24.04, Node 24 and 26 | GitHub Actions |
 
 ### Untested
 
