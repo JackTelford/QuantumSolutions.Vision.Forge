@@ -1,0 +1,86 @@
+{
+  "kind": "treatment",
+  "version": 1,
+  "id": "product-film-t1",
+  "briefId": "product-film",
+  "logline": "A frosted bottle waits in low-key darkness; a sweep of light across its cap and shoulder leads into a slow eye-level arc that turns it toward the camera, and its name settles beneath it before the film returns to where it began.",
+  "lookId": "obsidian",
+  "beats": [
+    {
+      "id": "b1",
+      "title": "Open",
+      "intent": "establish the bottle in its dark studio from the hero pose the film will return to, with a slow push toward it",
+      "durationSeconds": 3.5,
+      "lane": "blender",
+      "shotIds": [
+        "s01"
+      ]
+    },
+    {
+      "id": "b2",
+      "title": "Macro",
+      "intent": "show the two materials up close: the satin cap and the frosted shoulder as the key sweeps across them",
+      "durationSeconds": 4,
+      "lane": "blender",
+      "shotIds": [
+        "s02"
+      ]
+    },
+    {
+      "id": "b3",
+      "title": "Hero reveal",
+      "intent": "turn the bottle toward the camera with a slow eye-level arc around it; the low angle the template suggests puts the camera under the stage floor on a bottle this short, so the longer lens and the arc carry the hero moment instead",
+      "durationSeconds": 4,
+      "lane": "blender",
+      "shotIds": [
+        "s03"
+      ]
+    },
+    {
+      "id": "b4",
+      "title": "Name",
+      "intent": "land the product name under the bottle on a breathing hold that ends on the opening pose, so the last frame cuts to the first without a seam",
+      "durationSeconds": 4,
+      "lane": "blender",
+      "shotIds": [
+        "s04"
+      ]
+    }
+  ],
+  "substitutions": [
+    {
+      "requested": "a frosted-glass body",
+      "substitute": "a glossy clear-coated body in the look's pale primary (#e8e4dc): the blender lane's Principled BSDF with a coat, opaque; the three lane's MeshPhysicalMaterial renders the same approximation",
+      "reason": "neither lane's material vocabulary carries transmission (the blender resolver writes transmission 0), so glass is approximated by a coated body; every shot renders on the blender lane so the approximation is the same one in every cut (the macro was planned on the three lane, whose coat read as gray plastic under the low-key rig after three still rounds, so the rubric's rule moved it)"
+    },
+    {
+      "requested": "a brushed-metal cap",
+      "substitute": "a satin metal cap in the look's highlight colour (metalness 0.8, roughness 0.25) without a brush texture",
+      "reason": "neither lane carries anisotropy or a texture; the roughness reads as satin metal in the key's reflection"
+    },
+    {
+      "requested": "the cosmetic bottle itself",
+      "substitute": "the procedural bottle stand-in, 0.06 by 0.16 by 0.06 m: a body, a neck and a cap",
+      "reason": "no model was supplied and nothing is generated; the stand-in is rotationally symmetric, so the loop rests on a camera hold rather than a turntable, which would show no turn"
+    },
+    {
+      "requested": "macro details",
+      "substitute": "one close-up at eye level at 100 mm f/2.8 with a 45-degree light sweep that shows the cap and the shoulder in turn",
+      "reason": "fifteen seconds hold four beats and one fifteen-frame dissolve (465 frames of shots for 450 of delivery), which leaves room for one macro beat of four seconds; the sweep shows both materials inside it. The opening shot runs 3.5 s, half a second under the calm range's floor of 4 s, because the macro, the hero and the name need their four seconds more than the establishing push-in does (the product template gives the establish 2 to 3 s)"
+    },
+    {
+      "requested": "the product name on screen",
+      "substitute": "the placeholder 'Vela' as a title under the bottle in the last shot",
+      "reason": "the prompt names no product; the user replaces one string in brief.mustHaveText and in the shot spec's text element"
+    }
+  ],
+  "risks": [
+    "every shot is on the blender lane (EEVEE), so the four plates share one material read; the three lane's macro was dropped after three still rounds because its coated body read as gray plastic next to the blender plates",
+    "the low-key rig's single key may leave the shadow side of the frosted body black on the blender lane; the still gate's exposure band (30 to 60) decides",
+    "the title over the blender plate is measured on the finished frame; the bottle's base shadow may bring the contrast behind the box close to 4.5:1",
+    "no haze or motes, so the depth cues come from focus falloff alone and the backdrop reads as a void rather than a room",
+    "a 15-frame dissolve from the end of the arc into the eye-level hold is the one dissolve of the film"
+  ],
+  "narrationFirst": false,
+  "createdAt": "2026-10-29T23:00:00.000Z"
+}

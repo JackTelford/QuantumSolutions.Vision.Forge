@@ -2,6 +2,14 @@
 
 One short note per milestone for the owner, newest first: what finished, what to look at, what changed underfoot. The full report with evidence is in `handoff.md`.
 
+## M7 finished (2026-10-29): the first film
+
+- The first piece of `docs/blind-test.md`, a 15-second product film, was made from its prompt through the commands only: four shots on the blender lane, a text plate for the name, 465 frames in 687 s, 31 minutes from `doctor` to `qa` including six planning rounds. Its documents ship as `skills/cinematic-studio/examples/product-film/`; the record with every command, timing, still round and honest viewing note is `docs/evidence/m7/README.md`. Look at `delivery-sheet.png` there, and play the delivery when you run it yourself.
+- `assemble --job` and `qa --job` close the loop: a job goes from `plan` to `delivered` through the commands with no hand-written plan. Text in a three or blender shot is now its own plate, laid over the graded picture.
+- The slice found four defects a viewer would see, all fixed before this note: the dissolve was ffmpeg's noise dissolve (now a cross-fade); the QA hero check failed every real production (now compares the still with the render, as ADR 0006 says); a low angle put the camera under the floor (now refused with the height); the cap and neck faces coincided (now overlapped). `sheet --video` tiles a delivery.
+- SKILL.md now holds the whole flow Claude follows from a prompt: questionnaire, treatment gate, shot list, stills with three named faults each, approval, render estimate, narration before durations lock, assemble, qa, what to tell you.
+- Review in this order: `skills/cinematic-studio/SKILL.md`, `src/render/text-plate.ts`, `src/assemble/plan-from-job.ts`, `src/cli/commands/qa.ts`, `docs/evidence/m7/README.md`.
+
 ## M6 finished (2026-10-29): narration
 
 - The `audio` command exists: `audio install` shows the sizes and the third-party notices and installs the Kokoro component into the data directory only after `--yes` (about 11 s here); `audio voices` lists the four offered voices; `audio synth --text "..."` turns text into a −16 LUFS WAV, an SRT and per-sentence frame timings (8 s of speech in about 8 s on the CPU).

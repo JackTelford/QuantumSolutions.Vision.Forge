@@ -1,0 +1,62 @@
+{
+  "kind": "look-bible",
+  "version": 1,
+  "createdAt": "2026-10-29T23:00:00.000Z",
+  "id": "obsidian",
+  "name": "Obsidian",
+  "preset": "obsidian",
+  "palette": {
+    "background": "#0b0b0d",
+    "surface": "#15161a",
+    "primary": "#e8e4dc",
+    "accent": "#c9a24a",
+    "text": "#f2efe8",
+    "highlight": "#ffffff"
+  },
+  "typography": {
+    "display": "space-grotesk",
+    "body": "inter",
+    "scaleRatio": 1.333,
+    "displayTrackingEm": -0.02,
+    "uppercaseTrackingEm": 0.08
+  },
+  "lightingDefault": "low-key",
+  "motionFamily": "cinematic",
+  "toneMapping": "agx",
+  "exposureEv": -0.3,
+  "grade": {
+    "lift": {
+      "r": 0.02,
+      "g": 0,
+      "b": 0
+    },
+    "gamma": {
+      "r": 1,
+      "g": 1,
+      "b": 1
+    },
+    "gain": {
+      "r": 0.98,
+      "g": 1,
+      "b": 1.03
+    },
+    "saturation": 0.95,
+    "contrast": 1,
+    "contrastPivot": 0.5,
+    "splitTone": {
+      "shadowHue": 0,
+      "shadowAmount": 0,
+      "highlightHue": 0,
+      "highlightAmount": 0
+    },
+    "vignetteAmount": 0.3,
+    "vignetteSoftness": 0.6,
+    "grainAmount": 0.15,
+    "grainSeed": 7,
+    "halationAmount": 0.2
+  },
+  "qa": {
+    "yavgMin": 30,
+    "yavgMax": 60
+  }
+}

@@ -1,0 +1,259 @@
+{
+  "kind": "shot-spec",
+  "version": 1,
+  "id": "product-film-shots",
+  "briefId": "product-film",
+  "treatmentId": "product-film-t1",
+  "lookId": "obsidian",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "shots": [
+    {
+      "id": "s01",
+      "title": "Open",
+      "lane": "blender",
+      "durationFrames": 105,
+      "size": "MS",
+      "angle": "eye",
+      "dutchDegrees": 0,
+      "lens": {
+        "focalMm": 85,
+        "fStop": 4,
+        "focusDistanceM": 1.41,
+        "shutterAngleDeg": 180
+      },
+      "move": {
+        "preset": "push-in",
+        "amplitude": 0.4,
+        "easing": "emphasized",
+        "startFrame": 0,
+        "endFrame": 95
+      },
+      "lighting": {
+        "preset": "low-key",
+        "keyIntensity": 1,
+        "fillRatio": 8,
+        "rimIntensity": 1.3,
+        "kelvin": 4500
+      },
+      "exposureOffsetEv": 0,
+      "composition": {
+        "anchor": "center",
+        "headroomPct": 10,
+        "leadRoomPct": 0,
+        "textSide": "none"
+      },
+      "text": [],
+      "subject": {
+        "assetId": null,
+        "primitive": "bottle",
+        "boundsM": {
+          "w": 0.06,
+          "h": 0.16,
+          "d": 0.06
+        }
+      },
+      "atmosphere": {
+        "haze": 0,
+        "motes": 0
+      },
+      "narrationEvent": null,
+      "seed": 7,
+      "renderProfile": null
+    },
+    {
+      "id": "s02",
+      "title": "Cap and shoulder",
+      "lane": "blender",
+      "durationFrames": 120,
+      "size": "CU",
+      "angle": "eye",
+      "dutchDegrees": 0,
+      "lens": {
+        "focalMm": 100,
+        "fStop": 2.8,
+        "focusDistanceM": 0.99,
+        "shutterAngleDeg": 180
+      },
+      "move": {
+        "preset": "light-sweep",
+        "amplitude": 0.35,
+        "easing": "sine-in-out",
+        "startFrame": 0,
+        "endFrame": 110
+      },
+      "lighting": {
+        "preset": "low-key",
+        "keyIntensity": 1,
+        "fillRatio": 8,
+        "rimIntensity": 1.3,
+        "kelvin": 4500
+      },
+      "exposureOffsetEv": -0.5,
+      "composition": {
+        "anchor": "golden-right",
+        "headroomPct": 10,
+        "leadRoomPct": 0,
+        "textSide": "none"
+      },
+      "text": [],
+      "subject": {
+        "assetId": null,
+        "primitive": "bottle",
+        "boundsM": {
+          "w": 0.06,
+          "h": 0.16,
+          "d": 0.06
+        }
+      },
+      "atmosphere": {
+        "haze": 0,
+        "motes": 0
+      },
+      "narrationEvent": null,
+      "seed": 7,
+      "renderProfile": null
+    },
+    {
+      "id": "s03",
+      "title": "Hero arc",
+      "lane": "blender",
+      "durationFrames": 120,
+      "size": "MS",
+      "angle": "eye",
+      "dutchDegrees": 0,
+      "lens": {
+        "focalMm": 85,
+        "fStop": 4,
+        "focusDistanceM": 1.41,
+        "shutterAngleDeg": 180
+      },
+      "move": {
+        "preset": "arc-left",
+        "amplitude": 0.5,
+        "easing": "sine-in-out",
+        "startFrame": 0,
+        "endFrame": 110
+      },
+      "lighting": {
+        "preset": "low-key",
+        "keyIntensity": 1,
+        "fillRatio": 8,
+        "rimIntensity": 1.3,
+        "kelvin": 4500
+      },
+      "exposureOffsetEv": 0,
+      "composition": {
+        "anchor": "center",
+        "headroomPct": 10,
+        "leadRoomPct": 0,
+        "textSide": "none"
+      },
+      "text": [],
+      "subject": {
+        "assetId": null,
+        "primitive": "bottle",
+        "boundsM": {
+          "w": 0.06,
+          "h": 0.16,
+          "d": 0.06
+        }
+      },
+      "atmosphere": {
+        "haze": 0,
+        "motes": 0
+      },
+      "narrationEvent": null,
+      "seed": 7,
+      "renderProfile": null
+    },
+    {
+      "id": "s04",
+      "title": "Name",
+      "lane": "blender",
+      "durationFrames": 120,
+      "size": "MS",
+      "angle": "eye",
+      "dutchDegrees": 0,
+      "lens": {
+        "focalMm": 85,
+        "fStop": 4,
+        "focusDistanceM": 1.41,
+        "shutterAngleDeg": 180
+      },
+      "move": {
+        "preset": "breathe",
+        "amplitude": 0.5,
+        "easing": "sine-in-out",
+        "startFrame": 0,
+        "endFrame": 110
+      },
+      "lighting": {
+        "preset": "low-key",
+        "keyIntensity": 1,
+        "fillRatio": 8,
+        "rimIntensity": 1.3,
+        "kelvin": 4500
+      },
+      "exposureOffsetEv": 0,
+      "composition": {
+        "anchor": "center",
+        "headroomPct": 10,
+        "leadRoomPct": 0,
+        "textSide": "center"
+      },
+      "text": [
+        {
+          "id": "t1",
+          "role": "title",
+          "content": "Vela",
+          "box": {
+            "x": 0.2,
+            "y": 0.64,
+            "w": 0.6,
+            "h": 0.14
+          },
+          "animation": "fade-rise",
+          "staggerMs": 0,
+          "inFrame": 12,
+          "outFrame": 110
+        }
+      ],
+      "subject": {
+        "assetId": null,
+        "primitive": "bottle",
+        "boundsM": {
+          "w": 0.06,
+          "h": 0.16,
+          "d": 0.06
+        }
+      },
+      "atmosphere": {
+        "haze": 0,
+        "motes": 0
+      },
+      "narrationEvent": null,
+      "seed": 7,
+      "renderProfile": null
+    }
+  ],
+  "transitions": [
+    {
+      "afterShotId": "s01",
+      "type": "cut",
+      "frames": 1
+    },
+    {
+      "afterShotId": "s02",
+      "type": "cut",
+      "frames": 1
+    },
+    {
+      "afterShotId": "s03",
+      "type": "dissolve",
+      "frames": 15
+    }
+  ],
+  "createdAt": "2026-10-29T23:00:00.000Z"
+}

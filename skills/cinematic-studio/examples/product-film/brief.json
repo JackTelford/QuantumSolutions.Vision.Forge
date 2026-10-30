@@ -1,0 +1,37 @@
+{
+  "kind": "brief",
+  "version": 1,
+  "id": "product-film",
+  "title": "Frosted bottle product film",
+  "prompt": "A 15-second studio product film of a frosted-glass cosmetic bottle with a brushed-metal cap on a dark backdrop. Macro details, a slow hero reveal, and the product name on screen at the end. Loopable. 16:9.",
+  "useCase": "product-shot",
+  "goal": "make the frosted bottle and its metal cap feel premium in fifteen seconds that loop without a seam",
+  "audience": "shoppers on a product page and a looping screen at a counter",
+  "durationSeconds": 15,
+  "aspect": "16:9",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "tempo": "calm",
+  "emotion": "quiet confidence",
+  "genre": "luxury advertising",
+  "era": null,
+  "paletteHints": ["frosted glass", "brushed metal", "dark backdrop"],
+  "mustHaveText": ["Vela"],
+  "subject": {
+    "description": "a frosted-glass cosmetic bottle with a brushed-metal cap, 60 mm wide and 160 mm tall",
+    "kind": "product",
+    "primitive": "bottle",
+    "assetIds": ["hdri:studio_small_03-1k", "hdri:studio_small_03-2k"]
+  },
+  "narration": { "enabled": false, "voice": "af_heart", "script": null },
+  "music": { "policy": "none", "path": null },
+  "limitsAcknowledged": [
+    "frosted glass is approximated: both 3D lanes render an opaque clear-coated body in a pale tint, since neither material vocabulary carries transmission",
+    "the brushed-metal cap is a satin metal without a brush texture: neither lane carries anisotropy",
+    "the bottle is the procedural stand-in (body, neck and cap cylinders), not a modelled product; nothing is generated",
+    "the prompt names no product; the placeholder 'Vela' stands in until the user names it",
+    "no music: none was supplied and nothing is downloaded"
+  ],
+  "createdAt": "2026-10-29T23:00:00.000Z"
+}

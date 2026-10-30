@@ -2,6 +2,74 @@
 
 The single source of truth for where this repository stands. Newest milestone first. Every claim here points at a test or a file under `docs/evidence/`; anything else is listed under "Untested".
 
+## M7: the vertical slice (2026-10-29)
+
+### Done
+
+- **Text plates over picture plates** (ADR 0008 decision 4; `src/render/text-plate.ts`, the html lane's `plate: 'text'` build, `src/harness/browser-session.ts` capturing with alpha, `src/render/finish-still.ts` compositing, `src/assemble/plate.ts`): a three or blender shot with text elements renders its words through the html lane over a transparent root as PNGs with alpha, under its own key (the picture's key, the plate's name and the html lane's fingerprint) and its own manifest, cached and resumable like a shot; the still gate composites the plate over the graded picture before measuring contrast and composition and keeps the raw frame and the plate's frame beside the still; `render` renders the plate right after the picture through the run's one browser and reports `textFramePattern`; the approved still is the composite, so a plate re-keyed by an html lane or browser change makes the shot unapproved like a picture change, and a shot that loses its text drops the recorded plate. The delivery grades per clip and lays the plate over the graded picture before the join; the join stays in 16-bit RGB unless a vignette or a plate forces 8 bits.
+- **The assembly plan from the job** (`src/assemble/plan-from-job.ts`, `assemble --job`, `qa --job`): one clip per rendered shot from its cache with its text plate as the overlay, the shot spec's transitions, the narration `audio synth --out <job>` wrote with its captions (burnt in on request), the user's music ducked under it, the look's grade baked to `<job>/grade.cube`, the delivery at CRF 16; the plan written beside the job, the job moved through `assembling` and `qa` to `delivered` or `failed`; `qa --job` takes the delivery, the plan, every text element's boxes at the frames the gate judged, and every shot's still for the hero comparison.
+- **The product film** (`skills/cinematic-studio/examples/product-film/`, `docs/evidence/m7/`, `docs/evidence/blind-test/our-side-product.md`): the first piece of `docs/blind-test.md` made from its prompt through the commands alone: four documents written as the skill directs (four beats, five steering-table substitutions, the obsidian look, a placeholder name), six planning rounds (three still rounds with three faults named per still, one design change after the rubric's cap, one timing fix found by viewing the delivery, one prose correction of the treatment after the review), 465 blender frames at 1080p in 687 s, a 4K hero still, the delivery assembled and measured, 31 minutes of wall clock in all with 21.7 inside the commands. SKILL.md's "The order of a production" is now the eleven-step flow Claude follows from a prompt, with the treatment gate.
+- **Integration fixes**, each a defect the slice exposed:
+  - the grammar's `dissolve` mapped to ffmpeg's xfade `dissolve`, a per-pixel noise dissolve that speckled the hero-to-name join; it is now xfade `fade`, the linear cross-fade, and the job was re-assembled from the same frames;
+  - `hero-still-match` compared the grain-free still with the delivery frame after grain and x264 and failed every real production (0.85 to 0.94 on dark gradients); `qa --job` now compares the approved still's raw frame with frame k of the render in the cache, the comparison ADR 0006 decision 7 names (the slice reads 1.0, 0.9997, 0.9999, 1.0 and is `delivered`);
+  - a `low` angle on a short product put the camera 41 cm under the stage floor and every Blender rung rendered black for 84 s; `plan` and the still gate now refuse a camera below the floor with the height and what to change;
+  - the cap's underside coincided with the neck's top and showed as a notch at 100 percent; the neck now runs a tenth of the cap's height into the cap;
+  - a stale text plate recorded on a shot that lost its text is ignored by the plan builder, and an overlay without a printf pattern is a semantic problem;
+  - `sheet --video <delivery> --every <n>` tiles every nth frame of a finished piece, labelled by frame number (the slice's delivery sheet had to be made with ffmpeg by hand).
+- Docs: ADR 0006 decision 7 and ADR 0008 decisions 3 and 4 amended, SKILL.md (the flow, the still and render text-plate paragraphs, assemble and qa with `--job`, sheet with `--video`), README, this section, the milestone note.
+- Process: two modules in parallel (text plates; the plan from the job), then the slice, each built, adversarially reviewed and fixed: 21 findings, 19 applied, 2 declined with reasons; two real bugs (stale plate fields composited over a new clip; a plate change not covered by approval) and the slice's own review catching the noise dissolve the viewing notes had misread.
+
+### Evidence
+
+| Claim | Number | Where |
+| --- | --- | --- |
+| Type checks, house rules, schema drift, licenses | `npm run check` exit 0 | run locally 2026-10-29 |
+| Unit and integration tests | `npm test`: see the CI row | same |
+| Text plate alpha | a text-plate frame of the fixture is rgba with a transparent corner and opaque glyph pixels; the composite still's title box reads 105 YAVG against 72 on the bare grade | `tests/harness/text-plate.integration.test.ts`, `tests/cli/still.test.ts` |
+| The product film | 450 frames, 15.00 s, 1920x1080, H.264 CRF 16, BT.709; four shots on the blender lane; the title as a text plate; loop join PSNR 47.0 dB | `docs/evidence/m7/README.md`, `delivery-sheet.png`, `frame-0000-640.png`, `frame-0449-640.png` |
+| The run | 31 min wall clock (21.7 min inside the commands) over five rounds, 2.5 min for the sixth; 465 blender frames in 687 s (1.30 to 1.84 s per frame, EEVEE on OpenGL); a 1080p blender still 7 to 9 s; the 4K still 63 s; assemble 22 s; qa 12 s | `docs/evidence/m7/README.md` |
+| QA after the fixes | eleven checks and four hero comparisons pass; the job is `delivered` | `docs/evidence/m7/README.md`, the slice's `qa/88f8e97b.qa.json` in the scratch job |
+| The cross-fade | frame 337 of the join at 100 percent, before (speckle) and after (a soft blend) | `docs/evidence/m7/dissolve-frame-0337-crop-100.png` (after) and the slice reviewer's crops (before) |
+| Stills and rounds | 13 stills of the final job; the first still of every shot in each of the six rounds | `stills-sheet.png`, `still-rounds-sheet.png` |
+| Continuous integration | run RUN_ID_PLACEHOLDER: RESULT_PLACEHOLDER | GitHub Actions |
+
+### Untested
+
+- The delivery and the 4K still were not re-rendered after the cap-neck overlap (every bottle shot's key changed), so the submitted piece still carries the notch at 100 percent; the next production renders without it.
+- The camera-under-floor check has not been run against the product film's final documents (every shot is at eye level); it was exercised by its unit test and by the first round's black render.
+- Real-time playback of the delivery: the review tools read frames; the owner should play the file in a looping player.
+- A narrated piece through `assemble --job` (the explainer of `docs/blind-test.md`): the narration and captions paths are tested with fakes and a synthetic WAV, not with a Kokoro narration in a real job.
+- Text plates on a blender shot through the real browser at 1080p ran once in the slice (the title); the three-shot path is covered by the CLI tests at 480x270.
+- The three lane's coated body read as mid-gray plastic under the low-key rig across three still rounds while the blender lane's read pale; the gray-card calibration cannot show a material-level gap, and no lookdev row of the product bottle exists for both lanes.
+
+### Risks
+
+- The job id hashes the four documents, so every still-loop edit (even a treatment's prose) opens a new job folder and restarts approvals and round numbers; the render cache saves the frames (345 of 465 reused in the fix pass, all 465 in the sixth round) but every still re-renders. One folder per production would need the job keyed on the brief.
+- The ladder descends through every engine when the first rung renders black (84 s in the first round); the under-floor check removes the one cause seen, but a scene that renders black for another reason still costs the whole ladder.
+- `plan` reports no warning when a shot's length falls outside the brief's tempo range (the opener runs 3.5 s under the calm floor of 4 s); the product template's establish beat of 2 to 3 s is the reason the rule was not added.
+- The grammar's `dissolve` on a pale subject over black still reads as a double image mid-fade; that is what a cross-fade is, and the treatment should prefer a cut where a double image would read as a mistake.
+- The slice's per-clip grade pins every clip to 8-bit RGB at the join when a text plate or a vignette is present (every look of the bible has a vignette); a LUT-only look keeps the 16-bit path.
+
+### Deliberately not done
+
+- A `pops`-style check that measures each transition against a linear blend of its neighbours; the cross-fade fix removed the artifact the check would have caught.
+- One job folder per production; a tempo-range warning; a transmission (glass) material; the three lane's material gap.
+- The explainer and the title sequence of `docs/blind-test.md` (the owner's test guide names them as the next prompts).
+
+### Review guide
+
+Read these five in order (about 1,100 lines):
+
+1. `skills/cinematic-studio/SKILL.md`: the flow from a prompt to a delivery, which is the product.
+2. `src/render/text-plate.ts` and `src/assemble/plate.ts`: a plate's key, its cache and how it is laid over the graded clip.
+3. `src/assemble/plan-from-job.ts`: what a job becomes at assembly.
+4. `src/cli/commands/qa.ts` (`jobShotStills`) and `src/qa/still-match.ts`: what the hero comparison measures now.
+5. `docs/evidence/m7/README.md` with `delivery-sheet.png` and `still-rounds-sheet.png`: the run, round by round, and the honest viewing notes.
+
+### Next: M8
+
+Packaging: both plugin load paths verified on a clean profile (`claude --plugin-dir .` and the marketplace manifest), THIRD-PARTY regenerated, the example prompts and the owner's test guide, README limits final, version 0.1.0 in package.json (no git tag without the owner's word).
+
 ## M6: narration (2026-10-29)
 
 ### Done
