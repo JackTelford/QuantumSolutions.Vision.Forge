@@ -121,3 +121,9 @@ Then score each piece against the comparison side on the five criteria of `docs/
 - The three lane's coated body reads grayer than the blender lane's under the low-key rig; the product film moved its macro to Blender for that reason.
 - Blender never runs on CI; the runners have no GPU, so the browser lanes run on SwiftShader there with a looser golden threshold.
 - The title sequence has not been produced yet; the product film and the explainer have, once each (`skills/cinematic-studio/examples/`). The explainer's diagrams are typographic cards, and its treatment gate was passed on your standing permission, not on a yes to the page: your own run stops there.
+
+## 6. Fifteen minutes: another AI app through the MCP server
+
+Add the server to Claude Desktop (Settings, Developer, Edit Config) with the snippet in `docs/SETUP.md`, "Use it from other AI apps (MCP)", pointing `--out` at a folder of your choice, and restart the app.
+
+Good: the tools icon lists `vision-forge` with sixteen tools; asking "run doctor" returns the tools manifest and names the lanes; asking for the title-sequence prompt of section 2 makes the app follow the same flow (treatment, stills shown as pictures, a yes before the render, the MP4 path under your `--out`). If the app says the server did not start, replace `node` in the snippet with the full path from `(Get-Command node).Source`. From a terminal, `node scripts/mcp.ts` then a pasted line `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"me","version":"0"}}}` answers with one JSON line naming `vision-forge`; Ctrl+C ends it.

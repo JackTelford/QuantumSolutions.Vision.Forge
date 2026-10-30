@@ -10,6 +10,7 @@ Vision.Forge is a Claude Code skill that turns an English prompt into a finished
 | --- | --- |
 | new to all of this and want a video | [docs/getting-started.md](docs/getting-started.md): install three programs, add the plugin, type one line, play the MP4 |
 | installing on a new PC, macOS or Linux | [docs/SETUP.md](docs/SETUP.md): every program, why it is separate, where files go, troubleshooting |
+| connecting another AI app (Claude Desktop, Cursor, Copilot, Codex, Gemini) | [docs/SETUP.md, "Use it from other AI apps (MCP)"](docs/SETUP.md#use-it-from-other-ai-apps-mcp): the launch command and a config snippet per app |
 | a developer who wants to run, steer or extend it | this page, then [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/adr/](docs/adr/) |
 | the owner, testing a release | [docs/owner-test-guide.md](docs/owner-test-guide.md), then [docs/milestone-notes.md](docs/milestone-notes.md) |
 
@@ -51,6 +52,8 @@ claude plugin install vision-forge@quantum-solutions
 ```
 
 The skill is then available as `/vision-forge:cinematic-studio`. While developing, `claude --plugin-dir <path to the clone>` loads the working tree instead of the cached copy.
+
+Other AI apps connect through MCP: see [docs/SETUP.md, "Use it from other AI apps (MCP)"](docs/SETUP.md#use-it-from-other-ai-apps-mcp) for the launch command (`node <clone>/scripts/mcp.ts --out <dir>`) and the config snippet for Claude Desktop, Cursor, VS Code, Codex CLI and Gemini CLI.
 
 ## Commands
 
@@ -115,6 +118,10 @@ Everything the skill does is `node scripts/cli.ts <command> --data-dir <dir> --o
 - A new camera move or text animation: `src/shared/camera/` and `src/shared/typography/`, with a row in the matching reference table; the vocabulary lives once in `schemas/` and is generated into `src/shared/contracts/` by `npm run schema:gen`.
 - A new check: `src/qa/` for the delivery, `src/render/still-gate` for the still; every check reports a measured value, a threshold and a sentence.
 - The rules every file follows are in `AGENTS.md`; `npm run check` runs the type checks, the house-rules lint, the schema drift check, the license allowlist and the suite. Decisions and their reasons are in `docs/adr/`.
+
+### From other AI apps
+
+The same studio is an MCP server: `node scripts/mcp.ts --data-dir <dir> --out <dir>` over stdio, launched by the app (ADR 0009). Every tool is a command run in-process through `src/cli/run.ts`, so a tool call and a command line do exactly the same thing and return the same JSON result; `plan` takes the four documents inline for apps that cannot write files; `still` and `sheet` return the picture as an image; `render` runs as a task polled with `task_status`. The knowledge base is served as `vision-forge://` resources and the directing flow as the `cinematic-studio` prompt, so an app's model follows the same questionnaire, treatment gate, still loop and QA a Claude Code session does; how well it directs depends on how well its model follows that prompt. The config snippets per app are in [docs/SETUP.md](docs/SETUP.md#use-it-from-other-ai-apps-mcp).
 
 ## Project layout
 

@@ -2,6 +2,57 @@
 
 The single source of truth for where this repository stands. Newest milestone first. Every claim here points at a test or a file under `docs/evidence/`; anything else is listed under "Untested".
 
+## M9: the MCP server (2026-10-30)
+
+The studio as a Model Context Protocol server, so any MCP client on the same PC (Claude Desktop, Cursor, VS Code with Copilot, Codex CLI, Gemini CLI) drives the same commands with the same gates. Decided in ADR 0009; built as three modules in parallel (protocol core, command tools, knowledge and docs), each adversarially reviewed and fixed, then integrated.
+
+### Done
+
+- **One runner for both doors** (`src/cli/run.ts`): `runCommand(argv, options)` runs a command in-process and always returns the result document; `scripts/cli.ts` is a thin shell around it (same output, same exit codes, same stderr lines).
+- **The protocol core** (`src/mcp/jsonrpc.ts`, `transport.ts`, `server.ts`, `scripts/mcp.ts`), written by hand, no dependency: newline-delimited JSON-RPC over stdio; initialize with version negotiation (2025-06-18, 2025-03-26, 2024-11-05); ping, tools, resources, prompts, logging/setLevel; one AbortController per request, cancelled by `notifications/cancelled` or a closed transport (a cancelled request gets no response); progress as `notifications/progress` under the request's token, else `notifications/message`; exclusive tools queued one at a time; a thrown tool error becomes a result with `isError` and the error's message and hint, never a crash; standard output carries protocol lines only.
+- **The tools** (`src/mcp/tools/`): sixteen, one per command plus `task_status` and `task_cancel`, declared as specs (argv prefix, camelCase-to-option map, JSON Schema, annotations, exclusive flag, attach hook); inline documents for `plan`, `validate` and `audio_synth` written under `<out>/documents/<hash>/` so an inline plan gets the same job id as the CLI; `still` returns the finished still as an image (and the failed still when the gate fails), `sheet` the sheet; `render` runs as a task (`wait: true` for the inline form; any tool with `background: true`); paths confined to the out, data, repository and home directories with the roots in the hint.
+- **The knowledge** (`src/mcp/resources.ts`, `prompts.ts`, `prompt-text.ts`): 39 resources under `vision-forge://` (every reference, every schema, both examples, SKILL.md with its placeholders resolved and a note mapping its command lines to the tools), the `cinematic-studio` prompt (the eleven steps for the tools, the does and does-not lists, seven behaviour rules, the rig-to-HDRI table generated from the catalogue) and the initialize instructions.
+- **Docs**: ADR 0009; `docs/SETUP.md` "Use it from other AI apps (MCP)" with the launch command, defaults and a config snippet per client; README (reader's guide row, quick start line, "From other AI apps"); `docs/getting-started.md` "Using it from another AI app" in plain words; `docs/ARCHITECTURE.md` "Two front doors"; the test guide's MCP step; `docs/evidence/m9/README.md`.
+- Process: three build agents in parallel, three adversarial reviews (21 findings: the transport's flush on close answered nothing, progress after a call was answered, the failed still not attached, a task cancelled while queued still entering the command, the prompt's narration step naming an option the tool lacks, the rig-to-HDRI table missing from the prompt, hollow tests), three fix passes applying all of them; the integration pass wired the registry and ran the server with a stdio client.
+
+### Evidence
+
+| Claim | Number | Where |
+| --- | --- | --- |
+| Type checks, house rules, schema drift, licenses, the suite | `npm run check` exit 0 (1,881 tests, 0 failures, 3 skipped) | run locally 2026-10-30 |
+| The MCP tests | 114 tests, 0 failures over `tests/mcp/` | `node --test "tests/mcp/*.test.ts"` |
+| The server end to end | initialize, 16 tools, 39 resources, the prompt, doctor, an inline plan with the CLI's job id, a still with its image and 85 progress notifications, a refused path, a render as a task polled to done, −32602 and −32601, exit 0 with stdout all JSON | `docs/evidence/m9/README.md` |
+| Continuous integration | CI_ROW | GitHub Actions |
+
+### Untested
+
+- A real client connected (Claude Desktop, Cursor, Codex, Gemini CLI): the configs follow each client's documentation and were not exercised from this session; the test guide's step 6 is the owner's check.
+- macOS and Linux beyond the ubuntu CI runner's tests.
+
+### Risks
+
+- A client's model follows the prompt as well as it can; the measured gates still refuse bad frames, but a weaker model takes more rounds and may skip the treatment gate. The prompt's rules say to wait for a yes; the server cannot enforce it.
+- The task table lives in the server process: a client that restarts the server loses its task ids (the render itself resumes from the cache on the next call).
+- The 4 MB image cap is a guess at clients' message limits; a client with a lower cap sees the still's path instead.
+
+### Deliberately not done
+
+- The streamable HTTP transport and a hosted server (a browser-only client cannot reach a local stdio server; hosting needs a machine with the programs and a GPU).
+- Sampling, elicitation, resource subscriptions, list-changed notifications: nothing here needs them.
+- Bundling the server in the plugin manifest for Claude Code: the skill is Claude Code's route.
+
+### Review guide
+
+1. `docs/adr/0009-mcp-server-over-the-cli.md`: the ten decisions.
+2. `src/mcp/server.ts`: the lifecycle, cancellation, progress and the exclusive queue.
+3. `src/mcp/tools/command-tool.ts` and `definitions.ts`: how an input becomes an argv and a result becomes a tool result.
+4. `src/mcp/prompt-text.ts`: what another app's model is told.
+5. `docs/SETUP.md`, "Use it from other AI apps (MCP)": what a user does.
+
+### Next
+
+The owner connects Claude Desktop (test guide step 6) and runs the title-sequence prompt through it, which tests both the server and the third blind-test piece. Then the follow-ups the earlier milestones list.
+
 ## Explainer and its fixes (2026-10-30)
 
 Post-v0.1.0: the second piece of `docs/blind-test.md` made through the commands, and the four pipeline faults it exposed, fixed with tests.

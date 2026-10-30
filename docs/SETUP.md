@@ -51,6 +51,89 @@ Environment variables `FFMPEG`, `BLENDER` and `CHROME` override discovery when a
 
 Narration uses Kokoro-82M on the CPU through `kokoro-js`. It is not installed with the repository because its package chain is about 425 MB and contains components under GPL-3.0 (eSpeak NG), LGPL-3.0 (libvips) and a proprietary Microsoft DirectML library that is present but not used. `node scripts\cli.ts audio install --data-dir <dir>` prints the sizes and the licenses and stops; `audio install --yes` then copies the component's package.json and lockfile into `<data>\narration\`, runs `npm ci --ignore-scripts` there through node and npm-cli.js (never npm.cmd), downloads the four model files (92 MB) pinned to one commit and verified by SHA-256 through the allowlisted downloader, records them in the data directory's asset ledger and writes `narration\provenance.json`; about 11 s here on a warm npm cache. `audio status` says what is on disk, `audio voices` lists the four offered voices, `audio install --yes --verify` re-hashes the weights. You can skip narration entirely and supply your own recording.
 
+## Use it from other AI apps (MCP)
+
+Claude Code drives the studio through the skill. Every other AI app on the same PC (Claude Desktop, Cursor, VS Code with Copilot, Codex CLI, Gemini CLI, any client that speaks the Model Context Protocol) drives it through the MCP server, a second entry point beside `scripts\cli.ts` that runs the same commands in-process (`docs/adr/0009-mcp-server-over-the-cli.md`). The app launches the server as a child process and talks JSON-RPC to it over standard input and output; nothing listens on a port and nothing leaves the PC.
+
+The launch command is
+
+```
+node <clone>/scripts/mcp.ts --data-dir <dir> --out <dir>
+```
+
+`--data-dir` defaults to the platform data directory named under "File locations" above (the same one the CLI uses, so `doctor`, the HDRIs, the voice and the frame cache are shared), and `--out` defaults to `VisionForge\out` under your home folder, because an AI app's working directory is not yours. Pass `--out` to put deliveries where you want them. The clone must have had `npm ci --ignore-scripts` run in it (`Setup-VisionForge.cmd` does that), and the same programs as for the CLI must be installed: run `node scripts\cli.ts doctor` once before connecting an app. Node 24.12 or newer is required, as for the CLI. If the app reports that the server did not start, replace `node` with the full path `(Get-Command node).Source` prints (on macOS and Linux `which node`): apps launch servers without your shell's PATH. Use forward slashes in the paths below; Node accepts them on Windows and JSON needs no escaping for them.
+
+**Claude Desktop**: Settings, Developer, Edit Config opens `claude_desktop_config.json` (`%APPDATA%\Claude\` on Windows, `~/Library/Application Support/Claude/` on macOS). Add the server and restart the app:
+
+```json
+{
+  "mcpServers": {
+    "vision-forge": {
+      "command": "node",
+      "args": ["C:/Code/QuantumSolutions.Vision.Forge/scripts/mcp.ts", "--out", "C:/Videos/Forge"]
+    }
+  }
+}
+```
+
+**Cursor**: `.cursor/mcp.json` in the project (or `~/.cursor/mcp.json` for every project), the same shape:
+
+```json
+{
+  "mcpServers": {
+    "vision-forge": {
+      "command": "node",
+      "args": ["C:/Code/QuantumSolutions.Vision.Forge/scripts/mcp.ts", "--out", "C:/Videos/Forge"]
+    }
+  }
+}
+```
+
+**VS Code with Copilot**: `.vscode/mcp.json` in the workspace, under `servers`:
+
+```json
+{
+  "servers": {
+    "vision-forge": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["C:/Code/QuantumSolutions.Vision.Forge/scripts/mcp.ts", "--out", "C:/Videos/Forge"]
+    }
+  }
+}
+```
+
+**Codex CLI**: `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.vision-forge]
+command = "node"
+args = ["C:/Code/QuantumSolutions.Vision.Forge/scripts/mcp.ts", "--out", "C:/Videos/Forge"]
+```
+
+**Gemini CLI**: `~/.gemini/settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "vision-forge": {
+      "command": "node",
+      "args": ["C:/Code/QuantumSolutions.Vision.Forge/scripts/mcp.ts", "--out", "C:/Videos/Forge"]
+    }
+  }
+}
+```
+
+**Claude Code**: `claude mcp add vision-forge -- node C:/Code/QuantumSolutions.Vision.Forge/scripts/mcp.ts --out C:/Videos/Forge`. Claude Code users should prefer the skill (`/vision-forge:cinematic-studio`): it carries the plugin's own data directory and the project directory, which the server cannot know, and it is the route the examples were made through. The MCP route exists in Claude Code for testing the server.
+
+What the model sees once connected:
+
+- **Tools**, one per command, named as the commands are with an underscore where the command has a space or a flag: `doctor`, `validate`, `plan`, `still`, `approve_still`, `render`, `task_status`, `task_cancel`, `assemble`, `qa`, `sheet`, `assets`, `audio_install`, `audio_status`, `audio_voices`, `audio_synth`. Each tool's arguments mirror its command's options in camelCase (`shotSpec` for `--shot-spec`), and its result is the command's JSON result document, so the model reads the same `errors[].hint` a Claude Code session reads. `plan`, `validate` and `audio_synth` accept the documents or the script inline as well as by path, since not every app can write files; inline documents are saved under `<out>\documents\<content hash>\`. `still` and `sheet` return the picture as an image beside the JSON. `render` returns a task id at once, because most apps time out a tool call near a minute; `task_status` reports progress and the result, `task_cancel` stops it, and a cancelled render resumes on the next call.
+- **Resources**, the knowledge base read from disk on each request: `vision-forge://references/<path>` for every Markdown file under `skills\cinematic-studio\references\`, `vision-forge://schemas/<name>.schema.json` for the contracts, `vision-forge://examples/<name>/<file>` for the two shipped productions, and `vision-forge://skill` for SKILL.md with its placeholders resolved to the server's own paths, behind a note that maps its command lines to the tools.
+- **A prompt**, `cinematic-studio`, which takes the brief and expands to the directing flow of SKILL.md phrased for the tools (questionnaire, treatment gate, shot list, look, the still loop, approval, the render as a task with the yes before a long one, narration, assembly, QA, what to tell the user). Apps that use tools only still get the same flow in short through the server's initialize instructions.
+
+Limits: the server is local only (stdio on the PC that renders; a browser-only client cannot reach it, and a hosted server is a separate decision); the same programs must be installed and `doctor` must pass; the tools that render or encode (`still`, `render`, `assemble`, `qa`, `sheet`, `audio_synth`) run one at a time, since the browser profile and Blender cannot be shared, while the others run concurrently; an image over 4 MB encoded comes back as its path and a sentence, since apps cap message size; and how well the piece is directed depends on how well the app's model follows the prompt.
+
 ## Troubleshooting
 
 - **`doctor` says Blender is missing after installing it**: open a new terminal so PATH is refreshed, or set `BLENDER` to the full path of `blender.exe`. Microsoft Store builds are not supported; use the winget or blender.org installer.

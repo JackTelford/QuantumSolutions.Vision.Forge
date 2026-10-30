@@ -1,6 +1,10 @@
 # Architecture
 
-Vision.Forge is a Claude Code skill. Claude reads `skills/cinematic-studio/SKILL.md`, turns an English brief into a treatment, a shot list and a look bible using the knowledge base under `references/`, and then calls one command-line program, `node scripts/cli.ts`, for everything that touches a renderer, ffmpeg or the file system. Claude is the only model; it also reviews rendered contact sheets.
+Vision.Forge is a studio driven by an AI model: a Claude Code skill or, through MCP, any client's model. The model reads `skills/cinematic-studio/SKILL.md` (as the skill, or served as a resource with the directing prompt), turns an English brief into a treatment, a shot list and a look bible using the knowledge base under `references/`, and then calls one command-line program, `node scripts/cli.ts`, or the MCP tool of the same name, for everything that touches a renderer, ffmpeg or the file system. No generative model is involved; the directing model is the only model, and it also reviews rendered contact sheets.
+
+## Two front doors
+
+The studio has two ways in and one way through. Claude Code enters through the skill: SKILL.md carries the plugin's data directory and project directory as substituted paths and calls `node scripts/cli.ts` with them. Every other AI app enters through the MCP server, `node scripts/mcp.ts` over stdio (ADR 0009): one tool per command, the knowledge base as `vision-forge://` resources and the directing flow as the `cinematic-studio` prompt and the initialize instructions. Both doors open onto `src/cli/run.ts`, which runs a command in-process from an argv and returns the one result document, so a tool call and a command line do exactly the same thing with the same gates; `scripts/cli.ts` is a thin shell around it that prints the result, and `src/mcp/` wraps it in JSON-RPC, adds background tasks for the long commands and returns stills and sheets as images.
 
 ## Pipeline
 
@@ -24,7 +28,8 @@ A frame is a pure function of its frame number. The browser harness calls `seek(
 
 ## Repository map
 
-- `scripts/cli.ts` — the single entry point; one file per command under `src/cli/commands/`.
+- `scripts/cli.ts` — the command-line entry point; one file per command under `src/cli/commands/`, run through `src/cli/run.ts`.
+- `scripts/mcp.ts` and `src/mcp/` — the MCP entry point: the JSON-RPC server over stdio, the command tools and tasks, the knowledge-base resources, the directing prompt.
 - `src/shared/` — pure TypeScript that runs in Node and the browser: contracts (generated from schemas), camera, easing, timeline, composition, grade, hashing.
 - `src/browser/` — the frame protocol runtime, html templates and three scenes.
 - `src/harness/` — the loopback server that serves TypeScript stripped to JavaScript, and the capture driver.

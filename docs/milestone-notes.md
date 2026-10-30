@@ -2,6 +2,13 @@
 
 One short note per milestone for the owner, newest first: what finished, what to look at, what changed underfoot. The full report with evidence is in `handoff.md`.
 
+## M9 finished (2026-10-30): the MCP server
+
+- The studio is now also an MCP server: `node scripts/mcp.ts --out <dir>`, launched by Claude Desktop, Cursor, VS Code, Codex or Gemini CLI from a config snippet (`docs/SETUP.md`, "Use it from other AI apps (MCP)"; the plain-language version is in `docs/getting-started.md`). Sixteen tools, one per command; the knowledge base and both examples as resources; the directing flow as a prompt. A tool call runs the same code as the command line, so the gates are the same.
+- Written by hand, no new dependency (ADR 0009). Renders run as background tasks the app polls, stills and sheets come back as pictures, inline documents work for apps that cannot write files, and paths are confined to your out, data, repository and home folders.
+- Verified with a stdio client driving the real server through doctor, an inline plan (same job id as the CLI), a still with its image, a render task and the error paths; 114 new tests. Not verified: a real app connected (that is your first test: step 6 of the test guide, Claude Desktop).
+- Review in this order: `docs/adr/0009-mcp-server-over-the-cli.md`, `src/mcp/server.ts`, `src/mcp/tools/command-tool.ts`, `src/mcp/prompt-text.ts`, `docs/SETUP.md`.
+
 ## Explainer finished (2026-10-30): the second film
 
 - The 45-second explainer of `docs/blind-test.md` was made from its prompt through the commands only: narration first (seven sentences by the local voice, their timings as the clock), seven html cards on a paper stage, captions burnt in, 1350 frames in 152 s, 25 minutes from `doctor` to a passing `qa`. Its documents ship as `skills/cinematic-studio/examples/explainer/`; the record is `docs/evidence/explainer/README.md` and the blind-test write-up with its blank scoring sheet is `docs/evidence/blind-test/our-side-explainer.md`. The delivery is `out/62fedd4e/62fedd4e.mp4` on this machine; play it with sound.
