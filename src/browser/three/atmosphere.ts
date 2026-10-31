@@ -7,7 +7,7 @@
 import { BufferAttribute, BufferGeometry, FogExp2, Points, PointsMaterial } from 'three';
 import type { Scene } from 'three';
 import type { ShotPageSpec } from '../../shared/harness/protocol.ts';
-import { moteSizeM, threeMoteField, threeMoteOpacity, threeMotePositions } from '../../shared/three/motes.ts';
+import { frameSizeAtAnchorM, threeMoteField, threeMoteOpacity, threeMotePositions, threeMoteSizeM } from '../../shared/three/motes.ts';
 import type { ThreeMote } from '../../shared/three/motes.ts';
 import { fogDensity } from '../../shared/three/stage.ts';
 
@@ -29,7 +29,8 @@ export class Atmosphere {
     const geometry = new BufferGeometry();
     this.positions = new BufferAttribute(new Float32Array(this.motes.length * 3), 3);
     geometry.setAttribute('position', this.positions);
-    const material = new PointsMaterial({ size: moteSizeM, sizeAttenuation: true, color: spec.look.palette.highlight, opacity: threeMoteOpacity, transparent: true, depthWrite: false });
+    const frameHeightM = frameSizeAtAnchorM(spec.shot.lens.focalMm, spec.baseDistanceM, spec.width / spec.height).heightM;
+    const material = new PointsMaterial({ size: threeMoteSizeM(frameHeightM), sizeAttenuation: true, color: spec.look.palette.highlight, opacity: threeMoteOpacity, transparent: true, depthWrite: false });
     const points = new Points(geometry, material);
     points.name = 'motes';
     // The bounding sphere is computed once from the rest positions; the drift never exceeds 2 cm.

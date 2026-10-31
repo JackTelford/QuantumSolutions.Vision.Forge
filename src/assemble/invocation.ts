@@ -60,5 +60,5 @@ export function filterGraph(plan: AssemblyPlan, mix: MeasuredMix | undefined): s
 export function encodeInvocation(plan: AssemblyPlan, mix: MeasuredMix | undefined): readonly string[] {
   const inputs = [...allClipInputArguments(plan), ...allOverlayInputArguments(plan), ...(mix === undefined ? [] : ['-i', mix.mixPath])];
   const audioMap = mix === undefined ? [] : ['-map', normalizedLabel, ...audioCodecArguments(plan.output.codec), '-ar', '48000'];
-  return ['-y', ...inputs, '-filter_complex', filterGraph(plan, mix), '-map', finishedLabel, ...audioMap, ...encodeArguments(plan.output), plan.output.path];
+  return ['-y', ...inputs, '-filter_complex', filterGraph(plan, mix), '-map', finishedLabel, ...audioMap, ...encodeArguments(plan.output, { width: plan.width, height: plan.height, fps: plan.fps }), plan.output.path];
 }

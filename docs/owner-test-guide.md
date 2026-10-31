@@ -120,6 +120,7 @@ Then score each piece against the comparison side on the five criteria of `docs/
 - The ladder tries every Blender engine when a scene renders black (84 s); `plan` now refuses the one cause seen (a camera under the floor).
 - The three lane's coated body reads grayer than the blender lane's under the low-key rig; the product film moved its macro to Blender for that reason.
 - Blender never runs on CI; the runners have no GPU, so the browser lanes run on SwiftShader there with a looser golden threshold.
+- A brief about a place (a field, a landscape) gets an abstract stage: a horizon band in haze under the key, never grass, weather or sky. The field test of 2026-10-30 ("Rooster Season") took three design rounds to reach that, and the result is honest but thin; the voice and the type carry such a piece.
 - The title sequence has not been produced yet; the product film and the explainer have, once each (`skills/cinematic-studio/examples/`). The explainer's diagrams are typographic cards, and its treatment gate was passed on your standing permission, not on a yes to the page: your own run stops there.
 
 ## 6. Fifteen minutes: another AI app through the MCP server

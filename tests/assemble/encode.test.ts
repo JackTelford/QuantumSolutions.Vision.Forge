@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { audioCodecArguments, encodeArguments } from '../../src/assemble/encode.ts';
+import { audioCodecArguments, bitrateCeilingKbps, encodeArguments } from '../../src/assemble/encode.ts';
 import type { Output } from '../../src/shared/contracts/assembly-plan.ts';
 
 const tags = ['-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709', '-color_range', 'tv'];
@@ -10,6 +10,7 @@ describe('encodeArguments', () => {
     const output: Output = { path: 'C:\\vf\\out\\film.mp4', codec: 'h264', crf: 16, preset: 'medium', faststart: true };
     assert.deepEqual(encodeArguments(output), ['-c:v', 'libx264', '-crf', '16', '-preset', 'medium', '-pix_fmt', 'yuv420p', ...tags, '-movflags', '+faststart']);
     assert.deepEqual(encodeArguments({ ...output, faststart: false }), ['-c:v', 'libx264', '-crf', '16', '-preset', 'medium', '-pix_fmt', 'yuv420p', ...tags]);
+    assert.deepEqual(encodeArguments(output, { width: 1920, height: 1080, fps: 30 }), ['-c:v', 'libx264', '-crf', '16', '-preset', 'medium', '-maxrate', '10000k', '-bufsize', '20000k', '-pix_fmt', 'yuv420p', ...tags, '-movflags', '+faststart']);
   });
 
   it('encodes hevc with libx265 tagged hvc1', () => {
@@ -34,5 +35,15 @@ describe('audioCodecArguments', () => {
     assert.deepEqual(audioCodecArguments('h264'), ['-c:a', 'aac', '-b:a', '192k']);
     assert.deepEqual(audioCodecArguments('hevc'), ['-c:a', 'aac', '-b:a', '192k']);
     assert.deepEqual(audioCodecArguments('prores'), ['-c:a', 'pcm_s16le']);
+  });
+});
+
+describe('bitrateCeilingKbps', () => {
+  it('is 10 Mb/s at 1080p30, scales with pixels and frame rate, and never drops under 500 kb/s', () => {
+    assert.equal(bitrateCeilingKbps({ width: 1920, height: 1080, fps: 30 }), 10_000);
+    assert.equal(bitrateCeilingKbps({ width: 3840, height: 2160, fps: 30 }), 40_000);
+    assert.equal(bitrateCeilingKbps({ width: 1920, height: 1080, fps: 60 }), 20_000);
+    assert.equal(bitrateCeilingKbps({ width: 320, height: 180, fps: 30 }), 500);
+    assert.deepEqual(encodeArguments({ path: 'x.mov', codec: 'prores', crf: 16, preset: 'medium', faststart: false }, { width: 1920, height: 1080, fps: 30 }).includes('-maxrate'), false);
   });
 });

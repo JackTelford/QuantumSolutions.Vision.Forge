@@ -161,6 +161,7 @@ Node 24.13.0, TypeScript 6.0.3, ffmpeg 9.0.2, Edge 156 and Chrome 156 on Windows
 - Text on a three or blender shot is one plate per shot, laid over the picture after the grade; a three-dimensional title is not offered.
 - The three blind-test pieces are judged by the owner; the product film and the explainer are made, the title sequence is the next prompt to run.
 - An explainer's "diagram" is typographic: one labelled card per step on a 2.5D stage, with the numbers, names and hashes as type; no arrows, icons or connected boxes are drawn.
+- A place is not rendered: a field, a landscape or a sky becomes a horizon band on a stage in haze, and it reads as an abstract stage. A brief whose heart is a place gets its heart from the voice and the type.
 
 ## Current non-goals
 

@@ -11,7 +11,8 @@ export class CrossDocumentError extends VisionForgeError {
   constructor(problems: readonly string[]) {
     super({
       code: 'cross-document',
-      message: `The four documents do not agree: ${problems.slice(0, 3).join('; ')}${problems.length > 3 ? ` (and ${problems.length - 3} more)` : ''}.`,
+      // Every problem, not the first three: a shot list with twenty faults is fixed in one pass only when all twenty are named (the field test of 2026-10-30 hid 21).
+      message: `The four documents do not agree (${problems.length} problem${problems.length === 1 ? '' : 's'}): ${problems.join('; ')}.`,
       hint: 'Fix the listed problems in the documents; the rules are in src/plan/cross-checks.ts and skills/cinematic-studio/references/editing/pacing-and-transitions.md.',
     });
     this.problems = problems;

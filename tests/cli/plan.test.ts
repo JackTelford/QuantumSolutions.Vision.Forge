@@ -165,7 +165,7 @@ describe('plan command', () => {
     const run = await plan(options(dir, { ...all, treatment: 'other-treatment.json' }), dataDir);
     assert.equal(run.exitCode, 1);
     assert.equal(run.result.errors[0]?.code, 'cross-document');
-    assert.match(run.result.errors[0]?.message ?? '', /The four documents do not agree: treatment "obsidian-bottle-t1" answers brief "other"/);
+    assert.match(run.result.errors[0]?.message ?? '', /The four documents do not agree \(1 problem\): treatment "obsidian-bottle-t1" answers brief "other"/);
     assert.match(run.result.errors[0]?.hint ?? '', /src\/plan\/cross-checks\.ts/);
   });
 

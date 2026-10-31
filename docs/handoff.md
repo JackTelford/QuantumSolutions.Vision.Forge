@@ -2,6 +2,50 @@
 
 The single source of truth for where this repository stands. Newest milestone first. Every claim here points at a test or a file under `docs/evidence/`; anything else is listed under "Untested".
 
+## Field test: "Rooster Season" and four fixes (2026-10-30)
+
+The owner's first prompt-to-video test from a fresh folder (`C:\Code\vision-test`): a 70-second narrated field-guide film about pheasant hunting with a dog in Ohio, written to hit the limits on purpose (animals, a person, a field at dawn, fog, a map, a counter, verbatim rules, a brass whistle, captions). Delivered as job `794bf239`: 13 shots (seven three, five html, one blender), 15 narrated sentences paced to 67.5 s, all 23 QA checks passing, 2,190 frames rendered in about 9 minutes. Not shipped as an example (the field reads as an abstract stage; the write-up is in the session, the delivery under the owner's folder).
+
+### Done
+
+- **The planner names every problem** (`src/plan/plan-error.ts`): the cross-document error listed three of its problems and said "and 21 more"; a shot list with twenty faults could only be fixed by calling the checks directly. It now lists all of them with the count.
+- **An undrawn subject blocks nothing** (`src/shared/composition/checks.ts`, `subjectIsDrawn`): a shot whose primitive is `none` still frames the camera and places the floor, but its invisible box no longer fails text for overlapping it or the subject for leaving action safe (the field test's type cards had to be laid out around a box that was not there).
+- **Motes sized to the frame** (`src/shared/three/motes.ts`, `threeMoteSizeM`): a 4 mm point was invisible past two metres; a mote is now 0.8 percent of the frame's height at the anchor (about 9 px at 1080p before attenuation) at opacity 0.55. The fog itself is unchanged: exponential haze in the background colour is a depth fade, which is what it should be, and the goldens carry no haze.
+- **A bitrate ceiling on H.264 and HEVC deliveries** (`src/assemble/encode.ts`, `bitrateCeilingKbps`): `-maxrate` 10 Mb/s at 1080p30 scaled by pixels and frame rate with a two-second `-bufsize`; CRF 16 stays the quality and the cap bites only when grain or noise would balloon the file. The noir-title look's grain 0.25 had encoded the 70 s piece at 38 Mb/s, 331 MB. ProRes carries no cap.
+- Docs: SKILL.md (the plan and assemble paragraphs), the steering table (a row for a field or a landscape, with what it becomes and that it reads as a stage), README and the test guide's limits, this section, the milestone note.
+
+### Evidence
+
+| Claim | Number | Where |
+| --- | --- | --- |
+| Type checks, house rules, schema drift, licenses, the suite | `npm run check` exit 0 (1,884 tests, 0 failures, 3 skipped) | run locally 2026-10-30 |
+| Every problem named | the message of five problems carries all five with the count | `tests/plan/cross-checks.test.ts` |
+| An undrawn subject | a `none` subject under a text box yields no overlap and no action-safe problem; a drawn one yields the overlap | `tests/shared/composition/checks.test.ts` |
+| The ceiling | 10,000 kb/s at 1080p30, 40,000 at 2160p30, 20,000 at 1080p60, 500 at 320x180; ProRes carries none; the assembler's argv goldens carry `-maxrate 500k -bufsize 1000k` at the fixture size | `tests/assemble/encode.test.ts`, `assembler.test.ts` |
+| The field test's delivery | 2,100 frames, 23 checks passing, text contrast 9.11:1 at worst, −16 LUFS, 13 hero matches at 0.9999 or better; 331 MB at 38 Mb/s before the cap, 89 MB at 10.1 Mb/s re-assembled after it, still 23 checks passing | `C:\Code\vision-test\out\794bf239\qa\794bf239.qa.json` (the owner's folder) |
+| Continuous integration | CI_ROW | GitHub Actions |
+
+### Untested
+
+- The mote size and opacity on a real production after the change (the field test rendered before it; the next three-lane piece shows it).
+
+### Risks
+
+- The ceiling is a guess at what a page or a feed wants (YouTube's recommended 1080p30 upload rate is 8 Mb/s); a user who wants a mezzanine chooses ProRes.
+- A `none` subject that leaves action safe is now silent by design; the camera still frames its box.
+
+### Review guide
+
+1. `src/plan/plan-error.ts`: one line, the whole list.
+2. `src/shared/composition/checks.ts`: `subjectIsDrawn` and its two uses.
+3. `src/assemble/encode.ts`: the ceiling and where it applies.
+4. `src/shared/three/motes.ts`: the mote size as a fraction of the frame.
+5. `skills/cinematic-studio/references/direction/steering-table.md`: the new row.
+
+### Next
+
+The title sequence through Claude Code; the Claude Desktop check of the MCP server; the follow-ups M9 lists. From this test: a landscape vocabulary for the three lane (a sky gradient on the cyc, a ground plane that is not the stage floor, layered silhouettes) would be the first real step past "a band on a stage".
+
 ## M9: the MCP server (2026-10-30)
 
 The studio as a Model Context Protocol server, so any MCP client on the same PC (Claude Desktop, Cursor, VS Code with Copilot, Codex CLI, Gemini CLI) drives the same commands with the same gates. Decided in ADR 0009; built as three modules in parallel (protocol core, command tools, knowledge and docs), each adversarially reviewed and fixed, then integrated.

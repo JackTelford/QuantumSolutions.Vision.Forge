@@ -104,12 +104,18 @@ function anchorOnGrid(shot: Shot, frame: CameraFrame, aspect: number): readonly 
   return [`The subject anchor projects at (${percent(projected.x)}, ${percent(projected.y)}), ${percent(offset)} of the frame width from the ${shot.composition.anchor} grid point (${percent(grid.x)}, ${percent(grid.y)}); the tolerance is ${percent(anchorToleranceFraction)}.`];
 }
 
-/** Check 3: every text box lies inside the title-safe area and does not overlap the subject's box. */
+/** True when the shot draws its subject: a `none` primitive frames the camera and places the stage floor but puts nothing in the picture, so it blocks no text and may leave action safe. */
+export function subjectIsDrawn(shot: Shot): boolean {
+  return shot.subject.primitive !== 'none';
+}
+
+/** Check 3: every text box lies inside the title-safe area and, when the subject is drawn, does not overlap its box. */
 function textBoxesClear(shot: Shot, subjectBox: FrameBox): readonly string[] {
   const problems: string[] = [];
+  const drawn = subjectIsDrawn(shot);
   for (const text of shot.text) {
     if (!insideBox(text.box, safeAreas.title)) problems.push(`Text ${text.id} (${text.role}) leaves the title-safe area (the central 90%).`);
-    if (boxesOverlap(text.box, subjectBox)) problems.push(`Text ${text.id} (${text.role}) overlaps the subject box.`);
+    if (drawn && boxesOverlap(text.box, subjectBox)) problems.push(`Text ${text.id} (${text.role}) overlaps the subject box.`);
   }
   return problems;
 }
@@ -168,7 +174,7 @@ export function compositionProblems(shot: Shot, spec: RenderSpec, frame: CameraF
   const problems: string[] = [];
   if (subjectBox === null) {
     problems.push('The subject box is partly behind the camera.');
-  } else {
+  } else if (subjectIsDrawn(shot)) {
     problems.push(...subjectInsideActionSafe(shot, subjectBox));
   }
   problems.push(...cameraAboveFloor(shot, frame));

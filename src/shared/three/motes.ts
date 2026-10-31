@@ -16,11 +16,16 @@ import { moteDepthRangeM, moteDrift, moteVolumeFrameMultiple } from '../html/mot
 /** The most motes the three lane draws, whatever the shot asks for. */
 export const maxThreeMotes = 400;
 
-/** The size of a mote in metres (PointsMaterial.size with size attenuation). */
-export const moteSizeM = 0.004;
+/** A mote's diameter as a fraction of the frame's height at the anchor: 0.8 percent is about 9 px at 1080p before size attenuation (a 4 mm constant was invisible past 2 m: the field test of 2026-10-30). */
+export const threeMoteSizeFraction = 0.008;
+
+/** The size of a mote in metres for PointsMaterial.size with size attenuation: a fraction of the frame's height at the anchor. */
+export function threeMoteSizeM(frameHeightM: number): number {
+  return Math.max(0.001, frameHeightM * threeMoteSizeFraction);
+}
 
 /** The opacity of the mote points. */
-export const threeMoteOpacity = 0.35;
+export const threeMoteOpacity = 0.55;
 
 /** One mote: where it rests and the phase of its drift in radians. */
 export interface ThreeMote {

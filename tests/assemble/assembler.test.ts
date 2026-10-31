@@ -87,7 +87,7 @@ describe('Assembler', () => {
       '-framerate', '30', '-start_number', '1', '-i', 'C:\\vf\\b\\f%04d.png',
       '-filter_complex', graph,
       '-map', '[v]',
-      '-c:v', 'libx264', '-crf', '16', '-preset', 'medium', '-pix_fmt', 'yuv420p', ...tags, '-movflags', '+faststart',
+      '-c:v', 'libx264', '-crf', '16', '-preset', 'medium', '-maxrate', '500k', '-bufsize', '1000k', '-pix_fmt', 'yuv420p', ...tags, '-movflags', '+faststart',
       plan.output.path,
     ]]);
     assert.equal(fake.invocations[0]?.executable, ffmpegExe);
@@ -179,7 +179,7 @@ describe('Assembler', () => {
         '-i', mixPath,
         '-filter_complex', encodeGraph,
         '-map', '[v]', '-map', '[aout]', '-c:a', 'aac', '-b:a', '192k', '-ar', '48000',
-        '-c:v', 'libx264', '-crf', '16', '-preset', 'medium', '-pix_fmt', 'yuv420p', ...tags, '-movflags', '+faststart',
+        '-c:v', 'libx264', '-crf', '16', '-preset', 'medium', '-maxrate', '500k', '-bufsize', '1000k', '-pix_fmt', 'yuv420p', ...tags, '-movflags', '+faststart',
         plan.output.path,
       ],
     ]);
@@ -230,7 +230,7 @@ describe('Assembler', () => {
   it('applies the hevc encoder arguments', () => {
     const plan = twoClipDissolve(dir, { output: { path: join(dir, 'film.mp4'), codec: 'hevc', crf: 22, preset: 'fast', faststart: true } });
     const args = encodeInvocation(plan, undefined);
-    assert.deepEqual(args.slice(args.indexOf('-c:v')), ['-c:v', 'libx265', '-crf', '22', '-preset', 'fast', '-pix_fmt', 'yuv420p', '-tag:v', 'hvc1', ...tags, '-movflags', '+faststart', join(dir, 'film.mp4')]);
+    assert.deepEqual(args.slice(args.indexOf('-c:v')), ['-c:v', 'libx265', '-crf', '22', '-preset', 'fast', '-maxrate', '500k', '-bufsize', '1000k', '-pix_fmt', 'yuv420p', '-tag:v', 'hvc1', ...tags, '-movflags', '+faststart', join(dir, 'film.mp4')]);
   });
 
   it('throws ProcessFailedError when ffmpeg fails, leaves the temp directory with its log and removes the half-written delivery and the copied sidecar', async () => {

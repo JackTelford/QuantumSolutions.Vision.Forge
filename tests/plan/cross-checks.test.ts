@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { crossDocumentProblems, crossDocumentWarnings, crossProblemRules, crossWarningRules, shotStartFrames, transitionAfter } from '../../src/plan/cross-checks.ts';
+import { CrossDocumentError } from '../../src/plan/plan-error.ts';
 import type { PlanDocuments } from '../../src/plan/cross-checks.ts';
 import { planDocuments, planDocumentsWith } from './fixtures.ts';
 
@@ -165,5 +166,13 @@ describe('shotStartFrames', () => {
     const { shotSpec } = planDocuments();
     assert.deepEqual(shotStartFrames(shotSpec), [0, 90, 180]);
     assert.deepEqual(transitionAfter(shotSpec, 's03'), { afterShotId: 's03', type: 'cut', frames: 0 });
+  });
+});
+
+describe('CrossDocumentError', () => {
+  it('names every problem in its message, not the first three', () => {
+    const error = new CrossDocumentError(['one', 'two', 'three', 'four', 'five']);
+    assert.equal(error.message, 'The four documents do not agree (5 problems): one; two; three; four; five.');
+    assert.equal(new CrossDocumentError(['only']).message, 'The four documents do not agree (1 problem): only.');
   });
 });

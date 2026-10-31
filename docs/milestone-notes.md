@@ -2,6 +2,13 @@
 
 One short note per milestone for the owner, newest first: what finished, what to look at, what changed underfoot. The full report with evidence is in `handoff.md`.
 
+## Field test finished (2026-10-30): "Rooster Season" and four fixes
+
+- Your first prompt from the fresh folder went through the whole flow: treatment, 13 stills (three design rounds on the field), your two yeses, a 9-minute render, assembly, 23 QA checks passing. The delivery is `C:\Code\vision-test\out\794bf239\794bf239.mp4`. The honest verdict: the type, the voice and the whistle hold; the field is an abstract stage, because no lane draws a place.
+- It exposed four pipeline faults, now fixed with tests: the planner hid all but three problems (now lists every one); an invisible `none` subject blocked text (now blocks nothing); motes were a fixed 4 mm and vanished (now sized to the frame); grain ballooned the file to 331 MB (now a 10 Mb/s ceiling at 1080p30, scaled).
+- The steering table has a row for a field or a landscape that says what it becomes and that it reads as a stage.
+- Review in this order: `src/plan/plan-error.ts`, `src/shared/composition/checks.ts`, `src/assemble/encode.ts`, `src/shared/three/motes.ts`, the steering table.
+
 ## M9 finished (2026-10-30): the MCP server
 
 - The studio is now also an MCP server: `node scripts/mcp.ts --out <dir>`, launched by Claude Desktop, Cursor, VS Code, Codex or Gemini CLI from a config snippet (`docs/SETUP.md`, "Use it from other AI apps (MCP)"; the plain-language version is in `docs/getting-started.md`). Sixteen tools, one per command; the knowledge base and both examples as resources; the directing flow as a prompt. A tool call runs the same code as the command line, so the gates are the same.

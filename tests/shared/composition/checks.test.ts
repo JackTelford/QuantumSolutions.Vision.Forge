@@ -183,3 +183,13 @@ describe('focusWarnings', () => {
     assert.deepEqual(focusWarnings(racked, renderSpec), []);
   });
 });
+
+describe('an undrawn subject', () => {
+  it('frames the camera but blocks no text and may leave action safe when the primitive is none', () => {
+    const onSubject = makeText({ box: { x: 0.25, y: 0.3, w: 0.2, h: 0.1 } });
+    const undrawn = makeShot({ text: [onSubject], subject: { assetId: null, primitive: 'none', boundsM: { w: 0.24, h: 0.3, d: 0.02 } } });
+    assert.equal(problemsAbout(problemsOf(undrawn), 'overlaps the subject box').length, 0);
+    assert.equal(problemsAbout(problemsOf(undrawn), 'action-safe').length, 0);
+    assert.equal(problemsAbout(problemsOf(makeShot({ text: [onSubject] })), 'overlaps the subject box').length, 1);
+  });
+});
