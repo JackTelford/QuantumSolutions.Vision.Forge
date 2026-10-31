@@ -23,7 +23,7 @@ The owner's first prompt-to-video test from a fresh folder (`C:\Code\vision-test
 | An undrawn subject | a `none` subject under a text box yields no overlap and no action-safe problem; a drawn one yields the overlap | `tests/shared/composition/checks.test.ts` |
 | The ceiling | 10,000 kb/s at 1080p30, 40,000 at 2160p30, 20,000 at 1080p60, 500 at 320x180; ProRes carries none; the assembler's argv goldens carry `-maxrate 500k -bufsize 1000k` at the fixture size | `tests/assemble/encode.test.ts`, `assembler.test.ts` |
 | The field test's delivery | 2,100 frames, 23 checks passing, text contrast 9.11:1 at worst, −16 LUFS, 13 hero matches at 0.9999 or better; 331 MB at 38 Mb/s before the cap, 89 MB at 10.1 Mb/s re-assembled after it, still 23 checks passing | `C:\Code\vision-test\out\794bf239\qa\794bf239.qa.json` (the owner's folder) |
-| Continuous integration | CI_ROW | GitHub Actions |
+| Continuous integration | run 41152821407 on d39e1be: success on windows-2025 and ubuntu-24.04, Node 24 and 26 | GitHub Actions |
 
 ### Untested
 
